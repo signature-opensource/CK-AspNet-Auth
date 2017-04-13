@@ -24,8 +24,8 @@ namespace CK.AspNet.AuthService
         public static IServiceCollection AddWebFrontAuth( this IServiceCollection services )
         {
             services.AddAuthentication();
-            services.AddSingleton<IAuthenticationTypeSystem>( new StdAuthenticationTypeSystem() );
-            services.AddSingleton<WebFrontAuthService>();
+            services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
+            services.AddSingleton<WebFrontAuthService, WebFrontAuthServiceDB>();
             return services;
         }
 

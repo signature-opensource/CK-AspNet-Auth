@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="1.0.0-d17-00-develop-0003" />
-    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0005" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0006" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="1.1.1" />
   </ItemGroup>

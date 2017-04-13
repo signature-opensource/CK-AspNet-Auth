@@ -13,6 +13,12 @@ namespace CK.AspNet.AuthService
 {
     public class WebFrontAuthMiddlewareOptions : AuthenticationOptions, IOptions<WebFrontAuthMiddlewareOptions>
     {
+        /// <summary>
+        /// The <see cref="WebFrontAuthMiddleware"/> is not designed to be added multiple 
+        /// times to an application, hence its name is unique.
+        /// </summary>
+        public const string OnlyAuthenticationScheme = "WebFrontAuth";
+
         public WebFrontAuthMiddlewareOptions()
         {
             AuthenticationScheme = "WebFrontAuth";

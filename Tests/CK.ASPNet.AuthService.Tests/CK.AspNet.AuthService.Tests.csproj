@@ -10,7 +10,7 @@
     <PackageReference Include="FluentAssertions" Version="4.19.2" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="1.1.1" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="5.0.0-a46" />
-    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0005" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0006" />
   </ItemGroup>
   
   <ItemGroup>

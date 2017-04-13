@@ -9,7 +9,10 @@ using System.Text;
 
 namespace CK.AspNet.AuthService
 {
-    class AuthenticationInfoSecureDataFormat : SecureDataFormat<IAuthenticationInfo>
+    /// <summary>
+    /// Secure <see cref="IAuthenticationInfo"/> data.
+    /// </summary>
+    public class AuthenticationInfoSecureDataFormat : SecureDataFormat<IAuthenticationInfo>
     {
         class Serializer : IDataSerializer<IAuthenticationInfo>
         {

@@ -34,7 +34,6 @@ namespace CK.AspNet.AuthService
         readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
-        readonly AuthenticationInfoSecureDataFormat _tokenFormat;
         readonly AuthenticationInfoSecureDataFormat _cookieFormat;
         readonly PathString _entryPath;
         readonly string _cookiePath;
@@ -50,10 +49,15 @@ namespace CK.AspNet.AuthService
         {
             if (dataProtectionProvider == null) throw new ArgumentNullException(nameof(dataProtectionProvider));
             if (authService == null) throw new ArgumentNullException(nameof(authService));
+            if( Options.AuthenticationScheme != WebFrontAuthMiddlewareOptions.OnlyAuthenticationScheme )
+            {
+                throw new ArgumentException( $"Must not be changed.", nameof(Options.AuthenticationScheme));
+            }
             _authService = authService;
             var provider = Options.DataProtectionProvider ?? dataProtectionProvider;
-            IDataProtector dataProtector = provider.CreateProtector(typeof(WebFrontAuthMiddleware).FullName, Options.AuthenticationScheme);
-            _tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
+            IDataProtector dataProtector = provider.CreateProtector(typeof(WebFrontAuthMiddleware).FullName);
+            var tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
+            _authService.Initialize(tokenFormat,Options);
             _cookieFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Cookie", "v1") );
             _entryPath = Options.EntryPath;
             _cookiePath = Options.EntryPath + "/c/";
@@ -64,7 +68,6 @@ namespace CK.AspNet.AuthService
             readonly WebFrontAuthMiddleware _middleware;
             readonly WebFrontAuthService _authService;
             readonly IAuthenticationTypeSystem _typeSystem;
-            IAuthenticationInfo _cachedAuthenticationInfo;
 
             public Handler(WebFrontAuthMiddleware middleware)
             {
@@ -106,14 +109,15 @@ namespace CK.AspNet.AuthService
             async Task<bool> HandleRefresh()
             {
                 // First try is from the bearer: we need to handle the "no cookie at all" case.
-                IAuthenticationInfo authInfo = DoAuthenticate();
-                if( authInfo == null )
+                IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo(Context);
+                Debug.Assert(authInfo != null);
+                if( authInfo.Level == AuthLevel.None )
                 {
                     // Best case is when we have the authentication cookie, otherwise use the long term cookie.
                     string cookie;
                     if (Options.UseCookie && Request.Cookies.TryGetValue(CookieName, out cookie))
                     {
-                        authInfo = _middleware._cookieFormat.Unprotect(cookie, GetTlsTokenBinding());
+                        authInfo = _middleware._cookieFormat.Unprotect(cookie, WebFrontAuthService.GetTlsTokenBinding(Context));
                     }
                     else if (Options.UseLongTermCookie && Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
                     {
@@ -122,7 +126,7 @@ namespace CK.AspNet.AuthService
                     }
                 }
                 bool refreshable = false;
-                if (authInfo != null && authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero)
+                if (authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero)
                 {
                     refreshable = true;
                     DateTime newExp = DateTime.UtcNow + Options.SlidingExpirationTime;
@@ -151,11 +155,9 @@ namespace CK.AspNet.AuthService
                 BasicLoginRequest req = await ReadBasicLoginRequest();
                 if (req != null)
                 {
-                    using (var ctx = new SqlStandardCallContext())
-                    {
-                        IUserInfo u = await _authService.BasicLoginAsync(ctx, req.UserName, req.Password);
-                        await DoLogin(u);
-                    }
+                    IUserInfo u = await _authService.BasicLoginAsync(req.UserName, req.Password);
+                    await DoLogin(u);
+
                 }
                 return true;
             }
@@ -182,37 +184,19 @@ namespace CK.AspNet.AuthService
             #region Authentication handling.
             protected override Task<AuthenticateResult> HandleAuthenticateAsync()
             {
-                IAuthenticationInfo info = DoAuthenticate();
-                if (info == null) return Task.FromResult(AuthenticateResult.Skip());
-                Context.Items.Add(typeof(IAuthenticationInfo), info);
+                IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo(Context);
+                if (authInfo.IsNullOrNone()) return Task.FromResult(AuthenticateResult.Skip());
                 var principal = new ClaimsPrincipal();
-                principal.AddIdentity(_typeSystem.AuthenticationInfo.ToClaimsIdentity(info));
+                principal.AddIdentity(_typeSystem.AuthenticationInfo.ToClaimsIdentity(authInfo, userInfoOnly:false));
                 var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), Options.AuthenticationScheme);
                 return Task.FromResult(AuthenticateResult.Success(ticket));
             }
 
-            IAuthenticationInfo DoAuthenticate()
-            {
-                if(_cachedAuthenticationInfo == null)
-                {
-                    string authorization = Request.Headers[Options.BearerHeaderName];
-                    if (string.IsNullOrEmpty(authorization)) return null;
-                    string token = null;
-                    if (authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Debug.Assert("Bearer ".Length == 7);
-                        token = authorization.Substring(7).Trim();
-                    }
-                    if (string.IsNullOrEmpty(token)) return null;
-                    _cachedAuthenticationInfo = _middleware._tokenFormat.Unprotect(token, GetTlsTokenBinding());
-                }
-                return _cachedAuthenticationInfo;
-            }
             #endregion
 
             Task<bool> HandleToken()
             {
-                var info = DoAuthenticate();
+                var info = _authService.EnsureAuthenticationInfo(Context);
                 var text = info != null
                             ? _typeSystem.AuthenticationInfo.ToJObject(info).ToString(Formatting.Indented)
                             : "{}";
@@ -233,9 +217,9 @@ namespace CK.AspNet.AuthService
             {
                 return new JObject(
                     new JProperty("info", _typeSystem.AuthenticationInfo.ToJObject(authInfo)),
-                    new JProperty("token", authInfo == null
-                                    ? null
-                                    : _middleware._tokenFormat.Protect(authInfo, GetTlsTokenBinding())),
+                    new JProperty("token", authInfo.IsNullOrNone()
+                                            ? null
+                                            : _authService.CreateToken(Context,authInfo)),
                     new JProperty("refreshable", refreshable) );
             }
 
@@ -264,7 +248,7 @@ namespace CK.AspNet.AuthService
                 if( authInfo != null && Options.UseCookie && authInfo.Level >= AuthLevel.Normal)
                 {
                     Debug.Assert(authInfo.Expires.HasValue);
-                    string value = _middleware._cookieFormat.Protect(authInfo, GetTlsTokenBinding());
+                    string value = _middleware._cookieFormat.Protect(authInfo, WebFrontAuthService.GetTlsTokenBinding(Context));
                     Response.Cookies.Append(CookieName, value, new CookieOptions()
                     {
                         Path = _middleware._cookiePath,
@@ -283,11 +267,6 @@ namespace CK.AspNet.AuthService
                 Response.Cookies.Delete(cookieName, new CookieOptions() { Path = _middleware._cookiePath });
             }
 
-            string GetTlsTokenBinding()
-            {
-                var binding = Context.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
-                return binding == null ? null : Convert.ToBase64String(binding);
-            }
         }
 
         protected override AuthenticationHandler<WebFrontAuthMiddlewareOptions> CreateHandler()
