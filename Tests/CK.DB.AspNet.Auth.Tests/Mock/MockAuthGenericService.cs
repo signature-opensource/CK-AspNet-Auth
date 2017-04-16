@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using CK.SqlServer;
 using System.Threading;
 
-namespace CK.AspNet.AuthService.Tests
+namespace CK.DB.AspNet.Auth.Tests
 {
     public class MockAuthGenericService : IGenericAuthenticationProvider
     {
@@ -42,16 +42,15 @@ namespace CK.AspNet.AuthService.Tests
             return Task.FromResult(0);
         }
 
-        public int? LoginUser(ISqlCallContext ctx, object payload, bool actualLogin = true)
+        public int LoginUser(ISqlCallContext ctx, object payload, bool actualLogin = true)
         {
             Tuple<string, string> byName = payload as Tuple<string, string>;
             if (byName != null) return _db.LoginUser(byName.Item1, byName.Item2, actualLogin, ProviderName);
-            Tuple<int, string> byId = payload as Tuple<int, string>;
-            if (byId != null) return _db.LoginUser(byId.Item1, byId.Item2, actualLogin, ProviderName);
-            return null;
+            Tuple<int, string> byId = (Tuple<int,string>)payload;
+            return _db.LoginUser(byId.Item1, byId.Item2, actualLogin, ProviderName);
         }
 
-        public Task<int?> LoginUserAsync(ISqlCallContext ctx, object payload, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<int> LoginUserAsync(ISqlCallContext ctx, object payload, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
         {
             return Task.FromResult( LoginUser(ctx, payload, actualLogin ));
         }

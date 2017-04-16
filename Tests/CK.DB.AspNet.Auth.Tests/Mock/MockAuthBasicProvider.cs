@@ -8,7 +8,7 @@ using CK.SqlServer;
 using System.Threading;
 using CK.Core;
 
-namespace CK.AspNet.AuthService.Tests
+namespace CK.DB.AspNet.Auth.Tests
 {
     public class MockAuthBasicProvider : IBasicAuthenticationProvider
     {

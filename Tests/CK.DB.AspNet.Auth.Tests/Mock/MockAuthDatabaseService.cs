@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using CK.SqlServer;
 using CK.Core;
 
-namespace CK.AspNet.AuthService.Tests
+namespace CK.DB.AspNet.Auth.Tests
 {
     public class MockAuthDatabaseService : IAuthenticationDatabaseService
     {

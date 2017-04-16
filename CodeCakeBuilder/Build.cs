@@ -60,7 +60,7 @@ namespace CodeCake
         {
             Cake.Log.Verbosity = Verbosity.Diagnostic;
 
-            const string solutionName = "CK-AspNet-AuthService";
+            const string solutionName = "CK-AspNet-Auth";
             const string solutionFileName = solutionName + ".sln";
             var coreBuildFile = Cake.File("CodeCakeBuilder/CoreBuild.proj");
             var releasesDir = Cake.Directory("CodeCakeBuilder/Releases");

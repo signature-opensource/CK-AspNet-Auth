@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.AspNet.AuthService.Tests
+namespace CK.DB.AspNet.Auth.Tests
 {
     public class MockAuthUser : IUserAuthInfo
     {

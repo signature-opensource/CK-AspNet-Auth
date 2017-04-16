@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace CK.AspNet.AuthService
+namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Secure <see cref="IAuthenticationInfo"/> data.

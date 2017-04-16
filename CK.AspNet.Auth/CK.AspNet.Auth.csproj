@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\Common\Shared.props" />
+  
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.6;net451</TargetFrameworks>
+    <Description>Implements CK.ASPNet.Auth.WebFrontAuthMiddleware CK.ASPNet.Auth.WebFrontAuthService abstract base class.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0007" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="1.1.1" />
+  </ItemGroup>
+  
+</Project>

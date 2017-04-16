@@ -1,28 +1,21 @@
-﻿using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using System;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System.IdentityModel.Tokens.Jwt;
-using System.Diagnostics;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
-using CK.Auth;
-using CK.SqlServer;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.Extensions.Logging;
+﻿using CK.Auth;
 using Microsoft.AspNetCore.Authentication;
-using System.Text.Encodings.Web;
-using Microsoft.Extensions.Options;
-using System.Text;
-using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Authentication;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 
-namespace CK.AspNet.AuthService
+namespace CK.AspNet.Auth
 {
     public class WebFrontAuthMiddleware : AuthenticationMiddleware<WebFrontAuthMiddlewareOptions>
     {
@@ -96,6 +89,10 @@ namespace CK.AspNet.AuthService
                                 Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                             }
                         }
+                        if (remainder.Value == "/logout")
+                        {
+                            return HandleLogout();
+                        }
                     }
                     else
                     {
@@ -139,6 +136,22 @@ namespace CK.AspNet.AuthService
                 SetCookies(authInfo);
                 await WriteResponseAsync(response.ToString(Formatting.None));
                 return true;
+            }
+
+            Task<bool> HandleToken()
+            {
+                var info = _authService.EnsureAuthenticationInfo(Context);
+                var text = info != null
+                            ? _typeSystem.AuthenticationInfo.ToJObject(info).ToString(Formatting.Indented)
+                            : "{}";
+                return WriteResponseAsync(text);
+            }
+
+            Task<bool> HandleLogout()
+            {
+                ClearCookie(CookieName);
+                if (Request.Query.ContainsKey("full")) ClearCookie(UnsafeCookieName);
+                return Task.FromResult(true);
             }
 
             #region Basic Authentication support
@@ -194,18 +207,9 @@ namespace CK.AspNet.AuthService
 
             #endregion
 
-            Task<bool> HandleToken()
-            {
-                var info = _authService.EnsureAuthenticationInfo(Context);
-                var text = info != null
-                            ? _typeSystem.AuthenticationInfo.ToJObject(info).ToString(Formatting.Indented)
-                            : "{}";
-                return WriteResponseAsync(text);
-            }
-
             Task<bool> DoLogin(IUserInfo u)
             {
-                IAuthenticationInfo authInfo = u != null && u.ActorId != 0
+                IAuthenticationInfo authInfo = u != null && u.UserId != 0
                                                 ? _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow + Options.ExpireTimeSpan )
                                                 : null;
                 JObject response = CreateAuthResponse(authInfo, authInfo != null && Options.SlidingExpirationTime > TimeSpan.Zero);
@@ -233,7 +237,7 @@ namespace CK.AspNet.AuthService
 
             void SetCookies(IAuthenticationInfo authInfo)
             {
-                if (authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.ActorId != 0 )
+                if (authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
                 {
                     string value = _typeSystem.UserInfo.ToJObject( authInfo.UnsafeActualUser ).ToString(Formatting.None);
                     Response.Cookies.Append(UnsafeCookieName, value, new CookieOptions()

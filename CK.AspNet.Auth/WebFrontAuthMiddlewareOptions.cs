@@ -1,15 +1,10 @@
-﻿using CK.Auth;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 
-namespace CK.AspNet.AuthService
+namespace CK.AspNet.Auth
 {
     public class WebFrontAuthMiddlewareOptions : AuthenticationOptions, IOptions<WebFrontAuthMiddlewareOptions>
     {
@@ -33,7 +28,7 @@ namespace CK.AspNet.AuthService
 
         /// <summary>
         /// Controls how much time the authentication will remain valid 
-        /// from the point it is created. 
+        /// from the point it is created. Defeults to 20 minutes.
         /// This time is extended if <see cref="SlidingExpirationTime"/> is set and
         /// when "<see cref="EntryPath"/>/c/refresh" is called.
         /// </summary>
