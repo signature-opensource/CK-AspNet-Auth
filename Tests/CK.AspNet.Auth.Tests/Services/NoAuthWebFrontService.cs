@@ -4,13 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CK.Auth;
-using CK.Core;
 
 namespace CK.AspNet.Auth.Tests
 {
-    class NoBasicWebFrontService : WebFrontAuthService
+    class NoAuthWebFrontService : WebFrontAuthService
     {
-        public NoBasicWebFrontService(IAuthenticationTypeSystem typeSystem)
+        public NoAuthWebFrontService(IAuthenticationTypeSystem typeSystem)
             : base(typeSystem)
         {
         }

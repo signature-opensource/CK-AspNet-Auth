@@ -8,9 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="4.19.2" />
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="5.0.0-a46" />
-    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0007" />
-    <PackageReference Include="CK.AspNet.Tester" Version="0.1.0-a" />
+    
+    <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
+    
+    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetVersion)" />
+    
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
+    
+    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,7 +20,15 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
-  <PropertyGroup>
+    <PropertyGroup>
+      <!-- Centralized dependencies versions. -->
+      <CKDatabaseVersion>5.0.0-a46</CKDatabaseVersion>
+      <CKDBVersion>1.0.0-d17-00-develop-0006</CKDBVersion>
+      <CKAspNetVersion>0.1.0-a01</CKAspNetVersion>
+      <CKAuthAbstractionsVersion>0.2.2-Cdevelop-0007</CKAuthAbstractionsVersion>
+    </PropertyGroup>
+  
+    <PropertyGroup>
     <!-- Standard properties. -->
     <AssemblyOriginatorKeyFile>$(SharedDir)SharedKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>

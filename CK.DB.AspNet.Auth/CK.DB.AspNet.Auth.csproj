@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CK.DB.Auth" Version="1.0.0-d17-00-develop-0006" />
+    <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
   </ItemGroup>
 
   <ItemGroup>

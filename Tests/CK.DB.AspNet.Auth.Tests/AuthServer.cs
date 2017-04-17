@@ -1,4 +1,5 @@
-﻿using CK.AspNet.Auth;
+﻿using CK.AspNet;
+using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
 using CK.DB.Auth;
@@ -24,8 +25,8 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication();
+                    services.AddDefaultStObjMap("CK.AspNet.Auth.Generated");
                     services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
-                    services.AddSingleton<IAuthenticationDatabaseService, MockAuthDatabaseService>();
                     services.AddSingleton<WebFrontAuthService, SqlWebFrontAuthService>();
                     configureServices?.Invoke(services);
                 },

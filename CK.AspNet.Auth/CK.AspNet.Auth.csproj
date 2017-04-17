@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="0.2.2-Cdevelop-0007" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="1.1.1" />
   </ItemGroup>
   

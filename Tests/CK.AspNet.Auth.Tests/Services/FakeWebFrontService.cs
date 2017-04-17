@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CK.Auth;
-using CK.Core;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -18,15 +17,15 @@ namespace CK.AspNet.Auth.Tests
             _users = new List<IUserInfo>();
             // Albert is registered in Basic.
             _users.Add(typeSystem.UserInfo.Create(1, "System"));
-            _users.Add(typeSystem.UserInfo.Create(2, "Albert", new[] { new StdUserProviderInfo("Basic", Util.UtcMinValue) }));
+            _users.Add(typeSystem.UserInfo.Create(2, "Albert", new[] { new StdUserProviderInfo("Basic", DateTime.MinValue) }));
             _users.Add(typeSystem.UserInfo.Create(3, "Robert"));
             // Hubert is registered in Google.
-            _users.Add(typeSystem.UserInfo.Create(3, "Hubert", new[] { new StdUserProviderInfo("Google", Util.UtcMinValue) }));
+            _users.Add(typeSystem.UserInfo.Create(3, "Hubert", new[] { new StdUserProviderInfo("Google", DateTime.MinValue) }));
         }
 
         public override bool HasBasicLogin => true;
 
-        public override IReadOnlyList<string> Providers => throw new NotImplementedException();
+        public override IReadOnlyList<string> Providers => new string[] { "Basic" };
 
         public override Task<IUserInfo> BasicLoginAsync(string userName, string password)
         {

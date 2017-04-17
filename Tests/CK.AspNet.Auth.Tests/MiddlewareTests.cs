@@ -76,7 +76,7 @@ namespace CK.AspNet.Auth.Tests
         [Test]
         public void basic_login_is_404NotFound_when_no_BasicAutheticationProvider_exists()
         {
-            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions(), services => services.Replace<WebFrontAuthService, NoBasicWebFrontService>()))
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions(), services => services.Replace<WebFrontAuthService, NoAuthWebFrontService>()))
             {
                 HttpResponseMessage response = s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
                 response.StatusCode.Should().Be(HttpStatusCode.NotFound);
