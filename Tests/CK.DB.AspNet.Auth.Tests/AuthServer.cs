@@ -2,6 +2,7 @@
 using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
+using CK.Core;
 using CK.DB.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -25,7 +26,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication();
-                    services.AddDefaultStObjMap("CK.AspNet.Auth.Generated");
+                    services.AddStObjMap( TestHelper.StObjMap.Default );
                     services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddSingleton<WebFrontAuthService, SqlWebFrontAuthService>();
                     configureServices?.Invoke(services);
