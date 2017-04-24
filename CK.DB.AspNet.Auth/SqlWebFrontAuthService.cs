@@ -1,5 +1,6 @@
 ﻿using CK.AspNet.Auth;
 using CK.Auth;
+using CK.Core;
 using CK.DB.Auth;
 using CK.SqlServer;
 using CK.SqlServer.Setup;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,6 +22,7 @@ namespace CK.DB.AspNet.Auth
         public SqlWebFrontAuthService(IAuthenticationDatabaseService authPackage, IAuthenticationTypeSystem typeSystem )
             : base( typeSystem )
         {
+            if (authPackage == null) throw new ArgumentNullException(nameof(authPackage));
             _authPackage = authPackage;
             _providers = _authPackage.AllProviders.Select(p => p.ProviderName).ToArray();
         }

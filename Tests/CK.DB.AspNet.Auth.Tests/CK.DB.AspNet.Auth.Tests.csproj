@@ -8,9 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="4.19.2" />
-    
-    <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
-    
+        
     <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetVersion)" />
     
