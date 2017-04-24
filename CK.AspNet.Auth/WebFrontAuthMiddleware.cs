@@ -89,6 +89,11 @@ namespace CK.AspNet.Auth
                                 Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                             }
                         }
+                        if (remainder.Value == "/login")
+                        {
+                            if (HttpMethods.IsPost(Request.Method)) return ProviderLoginAsync();
+                            Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                        }
                         if (remainder.Value == "/logout")
                         {
                             return HandleLogout();
@@ -153,6 +158,43 @@ namespace CK.AspNet.Auth
                 if (Request.Query.ContainsKey("full")) ClearCookie(UnsafeCookieName);
                 return Task.FromResult(true);
             }
+
+
+            class ProviderLoginRequest
+            {
+                public string Provider { get; set; }
+                public object Payload { get; set; }
+            }
+
+
+            async Task<bool> ProviderLoginAsync()
+            {
+                ProviderLoginRequest req = await ReadProviderLoginRequest();
+                if (req != null)
+                {
+                    IUserInfo u = await _authService.LoginAsync(req.Provider, req.Payload);
+                    await DoLogin(u);
+                }
+                return true;
+            }
+
+            async Task<ProviderLoginRequest> ReadProviderLoginRequest()
+            {
+                ProviderLoginRequest req = null;
+                try
+                {
+                    var b = await new StreamReader(Request.Body).ReadToEndAsync();
+                    var r = JsonConvert.DeserializeObject<ProviderLoginRequest>(b);
+                    if (!string.IsNullOrWhiteSpace(r.Provider)) req = r;
+                }
+                catch (Exception ex)
+                {
+                    Options.OnError?.Invoke(ex);
+                }
+                if (req == null) Response.StatusCode = StatusCodes.Status400BadRequest;
+                return req;
+            }
+
 
             #region Basic Authentication support
 
