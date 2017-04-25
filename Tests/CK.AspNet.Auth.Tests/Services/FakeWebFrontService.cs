@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CK.Auth;
+using Microsoft.AspNetCore.Http;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -27,7 +28,7 @@ namespace CK.AspNet.Auth.Tests
 
         public override IReadOnlyList<string> Providers => new string[] { "Basic" };
 
-        public override Task<IUserInfo> BasicLoginAsync(string userName, string password)
+        public override Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password)
         {
             IUserInfo u = null;
             if (password == "success")
@@ -43,7 +44,7 @@ namespace CK.AspNet.Auth.Tests
             return Task.FromResult(u);
         }
 
-        public override Task<IUserInfo> LoginAsync(string providerName, object payload)
+        public override Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload)
         {
             throw new NotImplementedException();
         }

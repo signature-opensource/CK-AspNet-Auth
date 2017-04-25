@@ -134,10 +134,11 @@ namespace CK.AspNet.Auth
         /// Attempts to login. If it fails, null is returned. <see cref="HasBasicLogin"/> must be true for this
         /// to be called otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
+        /// <param name="ctx">Current http context.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public abstract Task<IUserInfo> BasicLoginAsync(string userName, string password);
+        public abstract Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password);
 
         /// <summary>
         /// Gets the existing providers's name.
@@ -149,10 +150,11 @@ namespace CK.AspNet.Auth
         /// The provider must exist and the payload must be compatible otherwise an <see cref="ArgumentException"/>
         /// is thrown.
         /// </summary>
+        /// <param name="ctx">Current http context.</param>
         /// <param name="providerName">The provider name to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public abstract Task<IUserInfo> LoginAsync(string providerName, object payload);
+        public abstract Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload);
     }
 
 }

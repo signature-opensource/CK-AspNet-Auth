@@ -4,7 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth
 {
-    public static class ApplicationBuilderExtensions
+    /// <summary>
+    /// Adds classical helper to <see cref="IApplicationBuilder"/>.
+    /// </summary>
+    public static class CKAspNetAuthApplicationBuilderExtensions
     {
         /// <summary>
         /// Configures the pipe line with the <see cref="WebFrontAuthMiddleware"/>.
@@ -16,8 +19,6 @@ namespace CK.AspNet.Auth
         {
             return app.UseMiddleware<WebFrontAuthMiddleware>( options );
         }
-
-
 
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CK.Auth;
+using Microsoft.AspNetCore.Http;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -18,12 +19,12 @@ namespace CK.AspNet.Auth.Tests
 
         public override IReadOnlyList<string> Providers => new string[0];
 
-        public override Task<IUserInfo> BasicLoginAsync(string userName, string password)
+        public override Task<IUserInfo> BasicLoginAsync(HttpContext ctx, string userName, string password)
         {
             throw new NotSupportedException();
         }
 
-        public override Task<IUserInfo> LoginAsync(string providerName, object payload)
+        public override Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload)
         {
             throw new NotSupportedException();
         }

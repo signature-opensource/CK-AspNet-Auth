@@ -28,7 +28,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Controls how much time the authentication will remain valid 
-        /// from the point it is created. Defeults to 20 minutes.
+        /// from the point it is created. Defaults to 20 minutes.
         /// This time is extended if <see cref="SlidingExpirationTime"/> is set and
         /// when "<see cref="EntryPath"/>/c/refresh" is called.
         /// </summary>
@@ -50,19 +50,18 @@ namespace CK.AspNet.Auth
         public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue && UnsafeExpireTimeSpan > ExpireTimeSpan;
 
         /// <summary>
-        /// Gets whether the authentication cookie (see <see cref="UseCookie"/>) requires or not https.
+        /// Gets whether the authentication cookie (see <see cref="CookieMode"/>) requires or not https.
         /// Note that the long term cookie uses <see cref="CookieOptions.Secure"/> sets to false since it 
         /// does not require any protection.
         /// Defaults to <see cref="CookieSecurePolicy.SameAsRequest"/>.
         /// </summary>
-        public CookieSecurePolicy SecurePolicy { get; set; }
+        public CookieSecurePolicy CookieSecurePolicy { get; set; }
 
         /// <summary>
-        /// Gets or sets whether a cookie (which <see cref="CookieOptions.Path"/> is "<see cref="EntryPath"/>/c/") 
-        /// is used to store the authentication information.
-        /// Defaults to true.
+        /// Gets or sets if and how the cookie is managed to store the authentication information.
+        /// Defaults to <see cref="AuthenticationCookieMode.WebFrontPath"/>.
         /// </summary>
-        public bool UseCookie { get; set; } = true;
+        public AuthenticationCookieMode CookieMode { get; set; }
 
         /// <summary>
         /// If set this will be used by the middleware for data protection (bearer token as well
@@ -73,7 +72,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets or sets the refresh validation time. 
         /// When set to other than <see cref="TimeSpan.Zero"/> the middleware will re-issue a new token 
-        /// (and new authentication cookie if <see cref="UseCookie"/> is true) with a new expiration time any time it 
+        /// (and new authentication cookie if <see cref="CookieMode"/> allows it) with a new expiration time any time it 
         /// processes a "<see cref="EntryPath"/>/c/refresh" request.
         /// This applies to <see cref="IAuthenticationInfo.Expires"/> but not to <see cref="IAuthenticationInfo.CriticalExpires"/>. 
         /// </summary>

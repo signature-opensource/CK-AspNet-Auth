@@ -83,13 +83,14 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [Test]
-        public void successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication()
+        [TestCase(AuthenticationCookieMode.WebFrontPath)]
+        [TestCase(AuthenticationCookieMode.RootPath)]
+        public void successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(AuthenticationCookieMode mode)
         {
-            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = LoginAlbertViaBasicProvider(s);
+                var login = LoginAlbertViaBasicProvider(s,mode);
                 DateTime basicLoginTime = login.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
@@ -116,13 +117,14 @@ namespace CK.AspNet.Auth.Tests
         }
 
 
-        [Test]
-        public void logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one()
+        [TestCase(AuthenticationCookieMode.WebFrontPath)]
+        [TestCase(AuthenticationCookieMode.RootPath)]
+        public void logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(AuthenticationCookieMode mode)
         {
-            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var firstLogin = LoginAlbertViaBasicProvider(s);
+                var firstLogin = LoginAlbertViaBasicProvider(s,mode);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
@@ -138,13 +140,14 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [Test]
-        public void logout_with_full_query_parameter_removes_both_cookies()
+        [TestCase(AuthenticationCookieMode.WebFrontPath)]
+        [TestCase(AuthenticationCookieMode.RootPath)]
+        public void logout_with_full_query_parameter_removes_both_cookies(AuthenticationCookieMode mode)
         {
-            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var firstLogin = LoginAlbertViaBasicProvider(s);
+                var firstLogin = LoginAlbertViaBasicProvider(s,mode);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
@@ -187,12 +190,31 @@ namespace CK.AspNet.Auth.Tests
         }
 
 
-        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s)
+        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s, AuthenticationCookieMode mode)
         {
             HttpResponseMessage response = s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
             response.EnsureSuccessStatusCode();
-            s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().BeEmpty();
-            s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(2);
+            switch(mode)
+            {
+                case AuthenticationCookieMode.WebFrontPath:
+                    {
+                        s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().BeEmpty();
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(2);
+                        break;
+                    }
+                case AuthenticationCookieMode.RootPath:
+                    {
+                        s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().HaveCount(1);
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(2);
+                        break;
+                    }
+                case AuthenticationCookieMode.None:
+                    {
+                        s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().BeEmpty();
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().BeEmpty();
+                        break;
+                    }
+            }
             var c = RefreshResponse.Parse(s.TypeSystem, response.Content.ReadAsStringAsync().Result);
             c.Info.Level.Should().Be(AuthLevel.Normal);
             c.Info.User.UserName.Should().Be("Albert");

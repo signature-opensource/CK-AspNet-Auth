@@ -6,7 +6,10 @@ using System.Text;
 
 namespace Microsoft.AspNetCore.Http
 {
-    static public class HttpContextExtensions
+    /// <summary>
+    /// Exposes <see cref="WebFrontAuthenticate"/> extension method on <see cref="HttpContext"/>.
+    /// </summary>
+    static public class CKAspNetAuthHttpContextExtensions
     {
         /// <summary>
         /// Obtains the current <see cref="IAuthenticationInfo"/>, either because it is already 

@@ -10,7 +10,8 @@ using System.Text;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Secure <see cref="IAuthenticationInfo"/> data.
+    /// Secure <see cref="IAuthenticationInfo"/> data, using a binary serialization 
+    /// thanks to <see cref="IAuthenticationTypeSystem"/>.
     /// </summary>
     public class AuthenticationInfoSecureDataFormat : SecureDataFormat<IAuthenticationInfo>
     {
@@ -42,6 +43,11 @@ namespace CK.AspNet.Auth
             }
         }
 
+        /// <summary>
+        /// Initialize a new AuthenticationInfoSecureDataFormat.
+        /// </summary>
+        /// <param name="t">Type system to use.</param>
+        /// <param name="p">Data protector to use.</param>
         public AuthenticationInfoSecureDataFormat(IAuthenticationTypeSystem t, IDataProtector p)
             : base(new Serializer(t), p)
 

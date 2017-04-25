@@ -1,9 +1,11 @@
-﻿using CK.AspNet.Auth;
+﻿using CK.AspNet;
+using CK.AspNet.Auth;
 using CK.Auth;
 using CK.Core;
 using CK.DB.Auth;
 using CK.SqlServer;
 using CK.SqlServer.Setup;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -44,15 +46,13 @@ namespace CK.DB.AspNet.Auth
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public override async Task<IUserInfo> BasicLoginAsync( string userName, string password)
+        public override async Task<IUserInfo> BasicLoginAsync(HttpContext ctx, string userName, string password)
         {
-            using (var ctx = new SqlStandardCallContext())
-            {
-                int userId = await _authPackage.BasicProvider.LoginUserAsync(ctx, userName, password);
-                return userId > 0
-                        ? ToUserInfo(await _authPackage.ReadUserAuthInfoAsync(ctx, 1, userId))
-                        : null;
-            }
+            var c = ctx.GetSqlCallContext();
+            int userId = await _authPackage.BasicProvider.LoginUserAsync(c, userName, password);
+            return userId > 0
+                    ? ToUserInfo(await _authPackage.ReadUserAuthInfoAsync(c, 1, userId))
+                    : null;
         }
 
         /// <summary>
@@ -63,22 +63,23 @@ namespace CK.DB.AspNet.Auth
         /// <param name="providerName">The provider name to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public override async Task<IUserInfo> LoginAsync(string providerName, object payload)
+        public override async Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload)
         {
             IGenericAuthenticationProvider p = _authPackage.FindProvider(providerName);
             if (p == null) throw new ArgumentException("Unknown provider.", nameof(providerName));
-            using (var ctx = new SqlStandardCallContext())
-            {
-                int userId = await p.LoginUserAsync(ctx, payload);
-                return userId > 0
-                        ? ToUserInfo(await _authPackage.ReadUserAuthInfoAsync(ctx, 1, userId))
-                        : null;
-            }
+            var c = ctx.GetSqlCallContext();
+            int userId = await p.LoginUserAsync(c, payload);
+            return userId > 0
+                    ? ToUserInfo(await _authPackage.ReadUserAuthInfoAsync(c, 1, userId))
+                    : null;
         }
 
         IUserInfo ToUserInfo(IUserAuthInfo p)
         {
-            return AuthenticationTypeSystem.UserInfo.Create( p.UserId, p.UserName, p.Providers.Select( x => new StdUserProviderInfo( x.Name, x.LastUsed)).ToArray() );
+            return AuthenticationTypeSystem.UserInfo.Create( 
+                p.UserId, 
+                p.UserName, 
+                p.Providers.Select( x => new StdUserProviderInfo( x.Name, x.LastUsed)).ToArray() );
         }
     }
 
