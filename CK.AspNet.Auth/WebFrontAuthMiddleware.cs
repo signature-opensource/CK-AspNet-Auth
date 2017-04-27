@@ -1,4 +1,5 @@
 ﻿using CK.Auth;
+using CK.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
@@ -9,8 +10,10 @@ using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -199,8 +202,30 @@ namespace CK.AspNet.Auth
                 try
                 {
                     var b = await new StreamReader(Request.Body).ReadToEndAsync();
-                    var r = JsonConvert.DeserializeObject<ProviderLoginRequest>(b);
-                    if (!string.IsNullOrWhiteSpace(r.Provider)) req = r;
+                    // By using our poor StringMatcher here, we parse the JSON
+                    // to basic List<KeyValuePair<string, object>> because 
+                    // JObject are IEnumerable<KeyValuePair<string, JToken>> and
+                    // KeyValuePair is not covariant. Moreover JToken is not easily 
+                    // convertible (to basic types) without using the JToken type.
+                    // A dependency on NewtonSoft.Json may not be suitable for some 
+                    // providers.
+                    var m = new StringMatcher(b);
+                    if( m.MatchJSONObject( out object val ) )
+                    {
+                        var o = val as List<KeyValuePair<string, object>>;
+                        if( o != null )
+                        {
+                            string provider = o.FirstOrDefault(kv => StringComparer.OrdinalIgnoreCase.Equals(kv.Key, "provider")).Value as string;
+                            if (!string.IsNullOrWhiteSpace(provider) )
+                            {
+                                req = new ProviderLoginRequest()
+                                {
+                                    Provider = provider,
+                                    Payload = o.FirstOrDefault(kv => StringComparer.OrdinalIgnoreCase.Equals(kv.Key, "payload")).Value
+                                };
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

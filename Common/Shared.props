@@ -30,7 +30,7 @@
       <!-- Centralized dependencies versions. -->
       <CKDatabaseVersion>5.0.0-a49</CKDatabaseVersion>
       <CKDBVersion>1.0.0-d20</CKDBVersion>
-      <CKAspNetVersion>0.1.0-a04</CKAspNetVersion>
+      <CKAspNetVersion>0.1.0-a05</CKAspNetVersion>
       <CKAuthAbstractionsVersion>0.3.0</CKAuthAbstractionsVersion>
     </PropertyGroup>
   
