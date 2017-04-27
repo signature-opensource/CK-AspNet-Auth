@@ -48,8 +48,8 @@ namespace CK.AspNet.Auth.Tests
         public override Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload)
         {
             if (providerName != "Basic") throw new ArgumentException( "Unknown provider.", nameof(providerName));
-            JObject o = (JObject)payload;
-            return BasicLoginAsync(ctx, (string)o["userName"], (string)o["password"]);
+            var o = (List<KeyValuePair<string, object>>)payload;
+            return BasicLoginAsync(ctx, (string)o.FirstOrDefault( kv => kv.Key == "userName").Value, (string)o.FirstOrDefault(kv => kv.Key == "password" ).Value);
         }
     }
 }
