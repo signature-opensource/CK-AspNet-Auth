@@ -16,11 +16,19 @@ using System.Threading.Tasks;
 
 namespace CK.DB.AspNet.Auth
 {
+    /// <summary>
+    /// Specialized <see cref="WebFrontAuthService"/> that interfaces <see cref="IAuthenticationDatabaseService"/>.
+    /// </summary>
     public class SqlWebFrontAuthService : WebFrontAuthService
     {
         readonly IAuthenticationDatabaseService _authPackage;
         readonly IReadOnlyList<string> _providers;
 
+        /// <summary>
+        /// Initializes a new <see cref="SqlWebFrontAuthService"/>.
+        /// </summary>
+        /// <param name="authPackage">The database service to use.</param>
+        /// <param name="typeSystem">The authentication type sytem to use.</param>
         public SqlWebFrontAuthService(IAuthenticationDatabaseService authPackage, IAuthenticationTypeSystem typeSystem )
             : base( typeSystem )
         {
@@ -43,6 +51,7 @@ namespace CK.DB.AspNet.Auth
         /// Attempts to login. If it fails, null is returned. <see cref="HasBasicLogin"/> must be true for this
         /// to be called.
         /// </summary>
+        /// <param name="ctx">Current Http context.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
@@ -60,6 +69,7 @@ namespace CK.DB.AspNet.Auth
         /// The provider must exist and the payload must be compatible otherwise an <see cref="ArgumentException"/>
         /// is thrown.
         /// </summary>
+        /// <param name="ctx">Current Http context.</param>
         /// <param name="providerName">The provider name to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>

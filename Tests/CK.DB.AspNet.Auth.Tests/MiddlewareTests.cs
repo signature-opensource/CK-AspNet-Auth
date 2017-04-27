@@ -21,6 +21,7 @@ namespace CK.DB.AspNet.Auth.Tests
     public class MiddlewareTests
     {
         const string basicLoginUri = "/.webFront/c/basicLogin";
+        const string loginUri = "/.webFront/c/login";
         const string refreshUri = "/.webFront/c/refresh";
         const string logoutUri = "/.webFront/c/logout";
         const string tokenExplainUri = "/.webFront/token";
@@ -44,6 +45,41 @@ namespace CK.DB.AspNet.Auth.Tests
                 r.Token = (string)o["token"];
                 r.Refreshable = (bool)o["refreshable"];
                 return r;
+            }
+        }
+
+        [Test]
+        public void basic_authentication_via_generic_wrapper_on_a_created_user()
+        {
+            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
+            var auth = TestHelper.StObjMap.Default.Obtain<IAuthenticationDatabaseService>();
+            var basic = auth.FindProvider("Basic");
+            using (var ctx = new SqlStandardCallContext())
+            using (var server = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            {
+                string userName = Guid.NewGuid().ToString();
+                int idUser = user.CreateUser(ctx, 1, userName);
+                basic.CreateOrUpdateUser(ctx, 1, idUser, "pass");
+
+                {
+                    var payload = new JObject(new JProperty("userName", userName), new JProperty("password", "pass"));
+                    var param = new JObject(new JProperty("provider", "Basic"), new JProperty("payload", payload));
+                    HttpResponseMessage authBasic = server.Client.Post(loginUri, param.ToString());
+                    var c = RefreshResponse.Parse(server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result);
+                    c.Info.Level.Should().Be(AuthLevel.Normal);
+                    c.Info.User.UserId.Should().Be(idUser);
+                    c.Info.User.Providers.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
+                    c.Token.Should().NotBeNullOrWhiteSpace();
+                }
+
+                {
+                    var payload = new JObject(new JProperty("userName", userName), new JProperty("password", "failed"));
+                    var param = new JObject(new JProperty("provider", "Basic"), new JProperty("payload", payload));
+                    HttpResponseMessage authFailed = server.Client.Post(loginUri, param.ToString());
+                    var c = RefreshResponse.Parse(server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result);
+                    c.Info.Should().BeNull();
+                    c.Token.Should().BeNull();
+                }
             }
         }
 

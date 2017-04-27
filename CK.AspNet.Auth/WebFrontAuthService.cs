@@ -22,6 +22,7 @@ namespace CK.AspNet.Auth
         /// Initializes a new <see cref="WebFrontAuthService"/>.
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
+        /// <param name="inner">Optional decorated service.</param>
         protected WebFrontAuthService(IAuthenticationTypeSystem typeSystem, WebFrontAuthService inner = null)
         {
             if (typeSystem == null) throw new ArgumentNullException(nameof(typeSystem));
@@ -46,11 +47,11 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Handles cached authentication header or calls <see cref="ReadAndCacheAuthenticationHeader"/>.
+        /// Never null, can be <see cref="IAuthenticationInfoType.None"/>.
         /// </summary>
         /// <param name="c">The context.</param>
         /// <returns>
         /// The cached or resolved authentication info. 
-        /// Never null, can be <see cref="IAuthenticationInfoType.None"/>.
         /// </returns>
         internal IAuthenticationInfo EnsureAuthenticationInfo( HttpContext c )
         {
@@ -126,7 +127,7 @@ namespace CK.AspNet.Auth
         public IAuthenticationTypeSystem AuthenticationTypeSystem => _typeSystem;
 
         /// <summary>
-        /// Gets whether <see cref="BasicLoginAsync(string, string)"/> is supported.
+        /// Gets whether <see cref="BasicLoginAsync"/> is supported.
         /// </summary>
         public abstract bool HasBasicLogin { get; }
 
@@ -138,7 +139,7 @@ namespace CK.AspNet.Auth
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public abstract Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password);
+        public abstract Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password );
 
         /// <summary>
         /// Gets the existing providers's name.

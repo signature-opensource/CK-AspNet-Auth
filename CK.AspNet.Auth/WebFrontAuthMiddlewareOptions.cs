@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using CK.Auth;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -6,6 +7,9 @@ using System;
 
 namespace CK.AspNet.Auth
 {
+    /// <summary>
+    /// Options for <see cref="WebFrontAuthMiddleware"/>.
+    /// </summary>
     public class WebFrontAuthMiddlewareOptions : AuthenticationOptions, IOptions<WebFrontAuthMiddlewareOptions>
     {
         /// <summary>
@@ -14,6 +18,9 @@ namespace CK.AspNet.Auth
         /// </summary>
         public const string OnlyAuthenticationScheme = "WebFrontAuth";
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WebFrontAuthMiddlewareOptions"/>.
+        /// </summary>
         public WebFrontAuthMiddlewareOptions()
         {
             AuthenticationScheme = "WebFrontAuth";
@@ -28,7 +35,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Controls how much time the authentication will remain valid 
-        /// from the point it is created. Defaults to 20 minutes.
+        /// from the point it is created. 
+        /// Defaults to 20 minutes.
         /// This time is extended if <see cref="SlidingExpirationTime"/> is set and
         /// when "<see cref="EntryPath"/>/c/refresh" is called.
         /// </summary>

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CK.Auth;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -46,7 +47,9 @@ namespace CK.AspNet.Auth.Tests
 
         public override Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload)
         {
-            throw new NotImplementedException();
+            if (providerName != "Basic") throw new ArgumentException( "Unknown provider.", nameof(providerName));
+            JObject o = (JObject)payload;
+            return BasicLoginAsync(ctx, (string)o["userName"], (string)o["password"]);
         }
     }
 }

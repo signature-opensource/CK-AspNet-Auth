@@ -14,6 +14,7 @@ namespace CK.AspNet.Auth.Tests
     public class MiddlewareTests
     {
         const string basicLoginUri = "/.webFront/c/basicLogin";
+        const string loginProviderUri = "/.webFront/c/login";
         const string refreshUri = "/.webFront/c/refresh";
         const string logoutUri = "/.webFront/c/logout";
         const string tokenExplainUri = "/.webFront/token";
@@ -26,6 +27,8 @@ namespace CK.AspNet.Auth.Tests
 
             public bool Refreshable { get; set; }
 
+            public string[] Providers { get; set; }
+
             public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
             {
                 JObject o = JObject.Parse(json);
@@ -36,12 +39,13 @@ namespace CK.AspNet.Auth.Tests
                 }
                 r.Token = (string)o["token"];
                 r.Refreshable = (bool)o["refreshable"];
+                r.Providers = o["providers"]?.Values<string>().ToArray();
                 return r;
             }
         }
 
         [Test]
-        public void calling_cred_refresh_from_scrath_returns_null_info_and_token()
+        public void calling_c_refresh_from_scrath_returns_null_info_and_token()
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
             {
@@ -49,6 +53,18 @@ namespace CK.AspNet.Auth.Tests
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse(s.TypeSystem, response.Content.ReadAsStringAsync().Result);
                 c.ShouldBeEquivalentTo(new RefreshResponse());
+            }
+        }
+
+        [Test]
+        public void calling_c_refresh_from_scrath_with_providers_query_parameter_returns_null_info_and_null_token_but_the_array_of_providers_name()
+        {
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            {
+                HttpResponseMessage response = s.Client.Get(refreshUri+"?providers");
+                response.EnsureSuccessStatusCode();
+                var c = RefreshResponse.Parse(s.TypeSystem, response.Content.ReadAsStringAsync().Result);
+                c.ShouldBeEquivalentTo(new RefreshResponse() { Providers = new[] { "Basic" } });
             }
         }
 
@@ -83,14 +99,16 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [TestCase(AuthenticationCookieMode.WebFrontPath)]
-        [TestCase(AuthenticationCookieMode.RootPath)]
-        public void successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(AuthenticationCookieMode mode)
+        [TestCase(AuthenticationCookieMode.WebFrontPath, false)]
+        [TestCase(AuthenticationCookieMode.RootPath, false)]
+        [TestCase(AuthenticationCookieMode.WebFrontPath, true)]
+        [TestCase(AuthenticationCookieMode.RootPath, true)]
+        public void successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(AuthenticationCookieMode mode, bool useGenericWrapper)
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = LoginAlbertViaBasicProvider(s,mode);
+                var login = LoginAlbertViaBasicProvider(s,mode, useGenericWrapper);
                 DateTime basicLoginTime = login.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
@@ -112,6 +130,17 @@ namespace CK.AspNet.Auth.Tests
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserName.Should().Be("Albert");
                     c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                }
+                // Request with token and ?providers query parametrers: we receinve the providers.
+                {
+                    s.Client.SetToken(originalToken);
+                    HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri+"?providers");
+                    tokenRefresh.EnsureSuccessStatusCode();
+                    var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
+                    c.Info.Level.Should().Be(AuthLevel.Normal);
+                    c.Info.User.UserName.Should().Be("Albert");
+                    c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                    c.Providers.Should().ContainSingle( "Basic" );
                 }
             }
         }
@@ -190,9 +219,11 @@ namespace CK.AspNet.Auth.Tests
         }
 
 
-        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s, AuthenticationCookieMode mode)
+        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s, AuthenticationCookieMode mode, bool useGenericWrapper = false)
         {
-            HttpResponseMessage response = s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
+            HttpResponseMessage response = useGenericWrapper
+                                            ? s.Client.Post(loginProviderUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }")
+                                            : s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
             response.EnsureSuccessStatusCode();
             switch(mode)
             {

@@ -17,7 +17,11 @@ using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
-    public class WebFrontAuthMiddleware : AuthenticationMiddleware<WebFrontAuthMiddlewareOptions>
+    /// <summary>
+    /// Handles both a cookie and a token authentication.
+    /// This middleware must be added once and only once at the beginning of the pipeline.
+    /// </summary>
+    public sealed class WebFrontAuthMiddleware : AuthenticationMiddleware<WebFrontAuthMiddlewareOptions>
     {
         const string HeaderValueNoCache = "no-cache";
         const string HeaderValueMinusOne = "-1";
@@ -31,6 +35,15 @@ namespace CK.AspNet.Auth
         readonly PathString _entryPath;
         readonly string _cookiePath;
 
+        /// <summary>
+        /// Initializes a new <see cref="WebFrontAuthMiddleware"/>.
+        /// </summary>
+        /// <param name="next">The next middleware.</param>
+        /// <param name="dataProtectionProvider">The data protecion provider.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="urlEncoder">The url encoder.</param>
+        /// <param name="authService">The autehntication service.</param>
+        /// <param name="options">Middleware options.</param>
         public WebFrontAuthMiddleware(
                 RequestDelegate next,
                 IDataProtectionProvider dataProtectionProvider,
@@ -138,6 +151,10 @@ namespace CK.AspNet.Auth
                     }
                 }
                 JObject response = CreateAuthResponse(authInfo, refreshable);
+                if( Request.Query.Keys.Contains("providers") )
+                {
+                    response.Add("providers", new JArray(_authService.Providers));
+                }
                 SetCookies(authInfo);
                 await WriteResponseAsync(response.ToString(Formatting.None));
                 return true;
@@ -146,10 +163,8 @@ namespace CK.AspNet.Auth
             Task<bool> HandleToken()
             {
                 var info = _authService.EnsureAuthenticationInfo(Context);
-                var text = info != null
-                            ? _typeSystem.AuthenticationInfo.ToJObject(info).ToString(Formatting.Indented)
-                            : "{}";
-                return WriteResponseAsync(text);
+                var text = _typeSystem.AuthenticationInfo.ToJObject(info)?.ToString(Formatting.Indented);
+                return WriteResponseAsync(text ?? "{}");
             }
 
             Task<bool> HandleLogout()
@@ -194,7 +209,6 @@ namespace CK.AspNet.Auth
                 if (req == null) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
             }
-
 
             #region Basic Authentication support
 
@@ -329,6 +343,10 @@ namespace CK.AspNet.Auth
 
         }
 
+        /// <summary>
+        /// Infrastructure.
+        /// </summary>
+        /// <returns>Returns a new handler.</returns>
         protected override AuthenticationHandler<WebFrontAuthMiddlewareOptions> CreateHandler()
         {
             return new Handler( this );
