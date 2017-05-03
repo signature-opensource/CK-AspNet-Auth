@@ -20,11 +20,11 @@ namespace CK.DB.AspNet.Auth.Tests
     [TestFixture]
     public class MiddlewareTests
     {
-        const string basicLoginUri = "/.webFront/c/basicLogin";
-        const string loginUri = "/.webFront/c/login";
-        const string refreshUri = "/.webFront/c/refresh";
-        const string logoutUri = "/.webFront/c/logout";
-        const string tokenExplainUri = "/.webFront/token";
+        const string basicLoginUri = "/.webfront/c/basicLogin";
+        const string loginUri = "/.webfront/c/login";
+        const string refreshUri = "/.webfront/c/refresh";
+        const string logoutUri = "/.webfront/c/logout";
+        const string tokenExplainUri = "/.webfront/token";
 
         class RefreshResponse
         {
