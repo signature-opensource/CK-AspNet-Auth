@@ -94,7 +94,7 @@ namespace CK.AspNet.Auth
                     Response.Headers[HeaderNames.Pragma] = HeaderValueNoCache;
                     Response.Headers[HeaderNames.Expires] = HeaderValueMinusOne;
                     Response.StatusCode = StatusCodes.Status404NotFound;
-                    if (remainder.StartsWithSegments(_cSegmentPath, out remainder))
+                    if (remainder.StartsWithSegments(_cSegmentPath, StringComparison.Ordinal, out remainder))
                     {
                         if (remainder.Value == "/refresh") return HandleRefresh();
                         else if (remainder.Value == "/basicLogin")
