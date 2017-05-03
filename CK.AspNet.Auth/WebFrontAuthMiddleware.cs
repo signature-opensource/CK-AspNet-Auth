@@ -28,8 +28,8 @@ namespace CK.AspNet.Auth
     {
         const string HeaderValueNoCache = "no-cache";
         const string HeaderValueMinusOne = "-1";
-        const string CookieName = ".frontWeb";
-        const string UnsafeCookieName = ".frontWebLT";
+        const string CookieName = ".webFront";
+        const string UnsafeCookieName = ".webFrontLT";
 
         readonly static PathString _cSegmentPath = "/c";
 

@@ -13,11 +13,11 @@ namespace CK.AspNet.Auth.Tests
     [TestFixture]
     public class MiddlewareTests
     {
-        const string basicLoginUri = "/.webFront/c/basicLogin";
-        const string loginProviderUri = "/.webFront/c/login";
-        const string refreshUri = "/.webFront/c/refresh";
-        const string logoutUri = "/.webFront/c/logout";
-        const string tokenExplainUri = "/.webFront/token";
+        const string basicLoginUri = "/.webfront/c/basicLogin";
+        const string loginProviderUri = "/.webfront/c/login";
+        const string refreshUri = "/.webfront/c/refresh";
+        const string logoutUri = "/.webfront/c/logout";
+        const string tokenExplainUri = "/.webfront/token";
 
         class RefreshResponse
         {
@@ -197,7 +197,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 HttpResponseMessage response = s.Client.Post(basicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}");
                 response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-                s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(0);
+                s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webfront/c/")).Should().HaveCount(0);
                 response = s.Client.Post(basicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}");
                 response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
                 response = s.Client.Post(basicLoginUri, "not a json");
@@ -230,19 +230,19 @@ namespace CK.AspNet.Auth.Tests
                 case AuthenticationCookieMode.WebFrontPath:
                     {
                         s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().BeEmpty();
-                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(2);
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webfront/c/")).Should().HaveCount(2);
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
                         s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().HaveCount(1);
-                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().HaveCount(2);
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webfront/c/")).Should().HaveCount(2);
                         break;
                     }
                 case AuthenticationCookieMode.None:
                     {
                         s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().BeEmpty();
-                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webFront/c/")).Should().BeEmpty();
+                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webfront/c/")).Should().BeEmpty();
                         break;
                     }
             }

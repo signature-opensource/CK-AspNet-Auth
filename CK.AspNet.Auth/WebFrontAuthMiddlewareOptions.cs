@@ -29,9 +29,9 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Gets or sets the entry point (defaults to "/.webFront").
+        /// Gets or sets the entry point (defaults to "/.webfront").
         /// </summary>
-        public PathString EntryPath { get; set; } = new PathString( "/.webFront" );
+        public PathString EntryPath { get; set; } = new PathString( "/.webfront" );
 
         /// <summary>
         /// Controls how much time the authentication will remain valid 
