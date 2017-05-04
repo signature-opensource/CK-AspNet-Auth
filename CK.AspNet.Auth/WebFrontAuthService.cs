@@ -1,6 +1,7 @@
 ﻿using CK.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,14 +36,14 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="tokenFormat">The formatter for tokens.</param>
         /// <param name="options">The middleware options.</param>
-        internal void Initialize(AuthenticationInfoSecureDataFormat tokenFormat, WebFrontAuthMiddlewareOptions options)
+        internal void Initialize(AuthenticationInfoSecureDataFormat cookieFormat, AuthenticationInfoSecureDataFormat tokenFormat, WebFrontAuthMiddlewareOptions options)
         {
             if (_tokenFormat != null) throw new InvalidOperationException("Only one WebFrontAuthMiddleware must be used.");
             Debug.Assert(tokenFormat != null);
             Debug.Assert(options != null);
             _tokenFormat = tokenFormat;
             _options = options;
-            if (_inner != null) _inner.Initialize(tokenFormat, options);
+            if (_inner != null) _inner.Initialize(cookieFormat, tokenFormat, options);
         }
 
         /// <summary>
@@ -80,6 +81,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert(!c.Items.ContainsKey(typeof(IAuthenticationInfo)));
             IAuthenticationInfo authInfo;
+            // First try from the bearer: this is always the preferred way.
             string authorization = c.Request.Headers[_options.BearerHeaderName];
             if (!string.IsNullOrEmpty(authorization)
                 && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -88,7 +90,21 @@ namespace CK.AspNet.Auth
                 string token = authorization.Substring(7).Trim();
                 authInfo = _tokenFormat.Unprotect(token, GetTlsTokenBinding(c));
             }
-            else authInfo = _typeSystem.AuthenticationInfo.None;
+            else
+            {
+                // Best case is when we have the authentication cookie, otherwise use the long term cookie.
+                string cookie;
+                if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(WebFrontAuthMiddleware.CookieName, out cookie))
+                {
+                    authInfo = _cookieFormat.Unprotect(cookie, WebFrontAuthService.GetTlsTokenBinding(c));
+                }
+                else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(WebFrontAuthMiddleware.UnsafeCookieName, out cookie))
+                {
+                    IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
+                    authInfo = _typeSystem.AuthenticationInfo.Create(info);
+                }
+                else authInfo = _typeSystem.AuthenticationInfo.None;
+            }
             c.Items.Add(typeof(IAuthenticationInfo), authInfo);
             return authInfo;
         }

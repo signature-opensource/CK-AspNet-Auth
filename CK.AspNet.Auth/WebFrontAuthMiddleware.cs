@@ -28,14 +28,14 @@ namespace CK.AspNet.Auth
     {
         const string HeaderValueNoCache = "no-cache";
         const string HeaderValueMinusOne = "-1";
-        const string CookieName = ".webFront";
-        const string UnsafeCookieName = ".webFrontLT";
+        internal const string CookieName = ".webFront";
+        internal const string UnsafeCookieName = ".webFrontLT";
 
         readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
-        readonly AuthenticationInfoSecureDataFormat _cookieFormat;
         readonly PathString _entryPath;
+        readonly AuthenticationInfoSecureDataFormat _cookieFormat;
         readonly string _cookiePath;
 
         /// <summary>
@@ -65,9 +65,9 @@ namespace CK.AspNet.Auth
             _authService = authService;
             var provider = Options.DataProtectionProvider ?? dataProtectionProvider;
             IDataProtector dataProtector = provider.CreateProtector(typeof(WebFrontAuthMiddleware).FullName);
-            var tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
-            _authService.Initialize(tokenFormat,Options);
             _cookieFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Cookie", "v1") );
+            var tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
+            _authService.Initialize(_cookieFormat, tokenFormat, Options);
             _entryPath = Options.EntryPath;
             _cookiePath = Options.EntryPath + "/c/";
         }
@@ -129,20 +129,6 @@ namespace CK.AspNet.Auth
                 // First try is from the bearer: we need to handle the "no cookie at all" case (AuthenticationCookieMode.None).
                 IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo(Context);
                 Debug.Assert(authInfo != null);
-                if( authInfo.Level == AuthLevel.None )
-                {
-                    // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                    string cookie;
-                    if (Options.CookieMode != AuthenticationCookieMode.None && Request.Cookies.TryGetValue(CookieName, out cookie))
-                    {
-                        authInfo = _middleware._cookieFormat.Unprotect(cookie, WebFrontAuthService.GetTlsTokenBinding(Context));
-                    }
-                    else if (Options.UseLongTermCookie && Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
-                    {
-                        IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
-                        authInfo = _typeSystem.AuthenticationInfo.Create(info);
-                    }
-                }
                 bool refreshable = false;
                 if (authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero)
                 {
@@ -183,7 +169,6 @@ namespace CK.AspNet.Auth
                 public string Provider { get; set; }
                 public object Payload { get; set; }
             }
-
 
             async Task<bool> ProviderLoginAsync()
             {
