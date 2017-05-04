@@ -50,12 +50,12 @@ namespace CK.AspNet.Auth
         public TimeSpan? UnsafeExpireTimeSpan { get; set; } = TimeSpan.FromDays( 366 );
 
         /// <summary>
-        /// Gets whether <see cref="UnsafeExpireTimeSpan"/> is not null and 
-        /// greater than <see cref="ExpireTimeSpan"/>.
-        /// When true a cookie (which <see cref="CookieOptions.Path"/> is "<see cref="EntryPath"/>/c/") 
-        /// is used to store the unsafe, but long term, authentication information.
+        /// Gets whether <see cref="UnsafeExpireTimeSpan"/> is not null, greater than <see cref="ExpireTimeSpan"/>,
+        /// and <see cref="CookieMode"/> is not <see cref="AuthenticationCookieMode.None"/>.
+        /// When true a long-lived cookie is used to store the unsafe, but long term, authentication information.
+        /// Its <see cref="CookieOptions.Path"/> depends on <see cref="CookieMode"/>.
         /// </summary>
-        public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue && UnsafeExpireTimeSpan > ExpireTimeSpan;
+        public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue && UnsafeExpireTimeSpan > ExpireTimeSpan && CookieMode != AuthenticationCookieMode.None;
 
         /// <summary>
         /// Gets whether the authentication cookie (see <see cref="CookieMode"/>) requires or not https.
@@ -66,8 +66,19 @@ namespace CK.AspNet.Auth
         public CookieSecurePolicy CookieSecurePolicy { get; set; }
 
         /// <summary>
-        /// Gets or sets if and how the cookie is managed to store the authentication information.
+        /// Gets or sets if and how cookies are managed to store the authentication information.
+        /// <para>
         /// Defaults to <see cref="AuthenticationCookieMode.WebFrontPath"/>.
+        /// </para>
+        /// <para>
+        /// Setting it to <see cref="AuthenticationCookieMode.RootPath"/> should NOT BE used for 
+        /// professional development: this mode, that is the same as the standard Cookie ASP.Net authentication,
+        /// works only for standard and classical Web application. 
+        /// </para>
+        /// <para>
+        /// Setting it to <see cref="AuthenticationCookieMode.None"/> disables all cookies: client apps
+        /// are no more "F5 resilient", this can be used for pure API implementations.
+        /// </para>
         /// </summary>
         public AuthenticationCookieMode CookieMode { get; set; }
 

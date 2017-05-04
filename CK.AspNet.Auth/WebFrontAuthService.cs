@@ -1,6 +1,8 @@
 ﻿using CK.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -14,10 +16,17 @@ namespace CK.AspNet.Auth
     /// </summary>
     public abstract class WebFrontAuthService
     {
+        const string AuthCookieName = ".webFront";
+        const string UnsafeCookieName = ".webFrontLT";
+
         readonly WebFrontAuthService _inner;
         readonly IAuthenticationTypeSystem _typeSystem;
+
         AuthenticationInfoSecureDataFormat _tokenFormat;
+        AuthenticationInfoSecureDataFormat _cookieFormat;
         WebFrontAuthMiddlewareOptions _options;
+        string _cookiePath;
+        TimeSpan _halfSlidingExpirationTime;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -34,6 +43,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// This is called by the WebFrontAuthMiddleware constructor.
         /// </summary>
+        /// <param name="cookieFormat">The formatter for cookies.</param>
         /// <param name="tokenFormat">The formatter for tokens.</param>
         /// <param name="options">The middleware options.</param>
         internal void Initialize(AuthenticationInfoSecureDataFormat cookieFormat, AuthenticationInfoSecureDataFormat tokenFormat, WebFrontAuthMiddlewareOptions options)
@@ -41,8 +51,11 @@ namespace CK.AspNet.Auth
             if (_tokenFormat != null) throw new InvalidOperationException("Only one WebFrontAuthMiddleware must be used.");
             Debug.Assert(tokenFormat != null);
             Debug.Assert(options != null);
+            _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _options = options;
+            _cookiePath = options.EntryPath + "/c/";
+            _halfSlidingExpirationTime = new TimeSpan(options.SlidingExpirationTime.Ticks / 2);
             if (_inner != null) _inner.Initialize(cookieFormat, tokenFormat, options);
         }
 
@@ -70,7 +83,8 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Reads authentication header and caches authentication in request items.
+        /// Reads authentication header if possible or uses authentication Cookie (and ultimately falls back to 
+        /// long terme cookie) and caches authentication in request items.
         /// </summary>
         /// <param name="c">The context.</param>
         /// <returns>
@@ -94,20 +108,91 @@ namespace CK.AspNet.Auth
             {
                 // Best case is when we have the authentication cookie, otherwise use the long term cookie.
                 string cookie;
-                if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(WebFrontAuthMiddleware.CookieName, out cookie))
+                if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(AuthCookieName, out cookie))
                 {
                     authInfo = _cookieFormat.Unprotect(cookie, WebFrontAuthService.GetTlsTokenBinding(c));
                 }
-                else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(WebFrontAuthMiddleware.UnsafeCookieName, out cookie))
+                else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
                 {
                     IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
                     authInfo = _typeSystem.AuthenticationInfo.Create(info);
                 }
                 else authInfo = _typeSystem.AuthenticationInfo.None;
             }
+            // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+            if( authInfo.Level >= AuthLevel.Normal
+                && Options.CookieMode == AuthenticationCookieMode.RootPath
+                && _halfSlidingExpirationTime > TimeSpan.Zero
+                && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime )
+            {
+                var authInfo2 = authInfo.SetExpires(DateTime.UtcNow + Options.SlidingExpirationTime);
+                SetCookies(c, authInfo = authInfo2);
+            }
             c.Items.Add(typeof(IAuthenticationInfo), authInfo);
             return authInfo;
         }
+
+        #region Cookie management
+
+        internal void Logout( HttpContext ctx )
+        {
+            ClearCookie(ctx, AuthCookieName);
+            if (ctx.Request.Query.ContainsKey("full")) ClearCookie(ctx, UnsafeCookieName);
+        }
+
+        internal void SetCookies(HttpContext ctx, IAuthenticationInfo authInfo)
+        {
+            if (authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0)
+            {
+                string value = _typeSystem.UserInfo.ToJObject(authInfo.UnsafeActualUser).ToString(Formatting.None);
+                ctx.Response.Cookies.Append(UnsafeCookieName, value, CreateUnsafeCookieOptions(DateTime.UtcNow + Options.UnsafeExpireTimeSpan));
+            }
+            else ClearCookie(ctx, UnsafeCookieName);
+            if (authInfo != null && Options.CookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal)
+            {
+                Debug.Assert(authInfo.Expires.HasValue);
+                string value = _cookieFormat.Protect(authInfo, WebFrontAuthService.GetTlsTokenBinding(ctx));
+                ctx.Response.Cookies.Append(AuthCookieName, value, CreateAuthCookieOptions(ctx, authInfo.Expires));
+            }
+            else ClearCookie(ctx, AuthCookieName);
+        }
+
+        CookieOptions CreateAuthCookieOptions(HttpContext ctx, DateTimeOffset? expires = null)
+        {
+            return new CookieOptions()
+            {
+                Path = Options.CookieMode == AuthenticationCookieMode.WebFrontPath
+                            ? _cookiePath
+                            : "/",
+                Expires = expires,
+                HttpOnly = true,
+                Secure = Options.CookieSecurePolicy == CookieSecurePolicy.SameAsRequest
+                                ? ctx.Request.IsHttps
+                                : Options.CookieSecurePolicy == CookieSecurePolicy.Always
+            };
+        }
+
+        CookieOptions CreateUnsafeCookieOptions(DateTimeOffset? expires = null)
+        {
+            return new CookieOptions()
+            {
+                Path = Options.CookieMode == AuthenticationCookieMode.WebFrontPath
+                            ? _cookiePath
+                            : "/",
+                Secure = false,
+                Expires = expires,
+                HttpOnly = true
+            };
+        }
+
+        void ClearCookie(HttpContext ctx, string cookieName)
+        {
+            ctx.Response.Cookies.Delete(cookieName, cookieName == AuthCookieName
+                                                ? CreateAuthCookieOptions(ctx)
+                                                : CreateUnsafeCookieOptions());
+        }
+
+        #endregion
 
         /// <summary>
         /// Returns the token (null if authInfo is null or none).

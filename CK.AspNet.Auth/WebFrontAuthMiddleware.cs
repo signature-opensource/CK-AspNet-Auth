@@ -28,15 +28,12 @@ namespace CK.AspNet.Auth
     {
         const string HeaderValueNoCache = "no-cache";
         const string HeaderValueMinusOne = "-1";
-        internal const string CookieName = ".webFront";
-        internal const string UnsafeCookieName = ".webFrontLT";
 
         readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
         readonly PathString _entryPath;
         readonly AuthenticationInfoSecureDataFormat _cookieFormat;
-        readonly string _cookiePath;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthMiddleware"/>.
@@ -69,7 +66,6 @@ namespace CK.AspNet.Auth
             var tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
             _authService.Initialize(_cookieFormat, tokenFormat, Options);
             _entryPath = Options.EntryPath;
-            _cookiePath = Options.EntryPath + "/c/";
         }
 
         class Handler : AuthenticationHandler<WebFrontAuthMiddlewareOptions>
@@ -144,7 +140,7 @@ namespace CK.AspNet.Auth
                 {
                     response.Add("providers", new JArray(_authService.Providers));
                 }
-                SetCookies(authInfo);
+                _authService.SetCookies(Context, authInfo);
                 await WriteResponseAsync(response.ToString(Formatting.None));
                 return true;
             }
@@ -158,11 +154,9 @@ namespace CK.AspNet.Auth
 
             Task<bool> HandleLogout()
             {
-                ClearCookie(CookieName);
-                if (Request.Query.ContainsKey("full")) ClearCookie(UnsafeCookieName);
+                _authService.Logout( Context );
                 return Task.FromResult(true);
             }
-
 
             class ProviderLoginRequest
             {
@@ -279,7 +273,7 @@ namespace CK.AspNet.Auth
                                                 ? _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow + Options.ExpireTimeSpan )
                                                 : null;
                 JObject response = CreateAuthResponse(authInfo, authInfo != null && Options.SlidingExpirationTime > TimeSpan.Zero);
-                SetCookies(authInfo);
+                _authService.SetCookies( Context, authInfo);
                 return WriteResponseAsync(response.ToString(Formatting.None), authInfo == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK);
             }
 
@@ -301,55 +295,6 @@ namespace CK.AspNet.Auth
                 return true;
             }
 
-            void SetCookies(IAuthenticationInfo authInfo)
-            {
-                if (authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
-                {
-                    string value = _typeSystem.UserInfo.ToJObject( authInfo.UnsafeActualUser ).ToString(Formatting.None);
-                    Response.Cookies.Append(UnsafeCookieName, value, CreateUnsafeCookieOptions(DateTime.UtcNow + Options.UnsafeExpireTimeSpan));
-                }
-                else ClearCookie(UnsafeCookieName);
-                if( authInfo != null && Options.CookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal)
-                {
-                    Debug.Assert(authInfo.Expires.HasValue);
-                    string value = _middleware._cookieFormat.Protect(authInfo, WebFrontAuthService.GetTlsTokenBinding(Context));
-                    Response.Cookies.Append(CookieName, value, CreateAuthCookieOptions(authInfo.Expires));
-                }
-                else ClearCookie(CookieName);
-            }
-
-            CookieOptions CreateAuthCookieOptions(DateTimeOffset? expires = null)
-            {
-                return new CookieOptions()
-                {
-                    Path = Options.CookieMode == AuthenticationCookieMode.WebFrontPath
-                                ? _middleware._cookiePath
-                                : "/",
-                    Expires = expires,
-                    HttpOnly = true,
-                    Secure = Options.CookieSecurePolicy == CookieSecurePolicy.SameAsRequest
-                                    ? Request.IsHttps
-                                    : Options.CookieSecurePolicy == CookieSecurePolicy.Always
-                };
-            }
-
-            CookieOptions CreateUnsafeCookieOptions(DateTimeOffset? expires = null)
-            {
-                return new CookieOptions()
-                {
-                    Path = _middleware._cookiePath,
-                    Secure = false,
-                    Expires = expires,
-                    HttpOnly = true
-                };
-            }
-
-            void ClearCookie(string cookieName)
-            {
-                Response.Cookies.Delete(cookieName, cookieName == CookieName
-                                                    ? CreateAuthCookieOptions()
-                                                    : CreateUnsafeCookieOptions());
-            }
 
         }
 

@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -108,7 +109,7 @@ namespace CK.AspNet.Auth.Tests
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = LoginAlbertViaBasicProvider(s,mode, useGenericWrapper);
+                var login = LoginAlbertViaBasicProvider(s, useGenericWrapper);
                 DateTime basicLoginTime = login.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
@@ -153,15 +154,13 @@ namespace CK.AspNet.Auth.Tests
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var firstLogin = LoginAlbertViaBasicProvider(s,mode);
+                var firstLogin = LoginAlbertViaBasicProvider(s);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
                 s.Client.Get(logoutUri);
                 // Refresh: we have the Unsafe Albert.
-                HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
-                tokenRefresh.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
+                RefreshResponse c = CallRefreshEndPoint(s);
                 c.Info.Level.Should().Be(AuthLevel.Unsafe);
                 c.Info.User.UserName.Should().Be("");
                 c.Info.UnsafeUser.UserName.Should().Be("Albert");
@@ -176,7 +175,7 @@ namespace CK.AspNet.Auth.Tests
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var firstLogin = LoginAlbertViaBasicProvider(s,mode);
+                var firstLogin = LoginAlbertViaBasicProvider(s);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
@@ -207,7 +206,7 @@ namespace CK.AspNet.Auth.Tests
 
         [TestCase(false, Description = "With cookies on the .webfront path.")]
         [TestCase(true, Description = "With cookies on the root path.")]
-        public void webfront_token_url_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication( bool rootCookiePath )
+        public void webfront_token_endpoint_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication( bool rootCookiePath )
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()
             {
@@ -242,13 +241,58 @@ namespace CK.AspNet.Auth.Tests
         }
 
 
-        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s, AuthenticationCookieMode mode, bool useGenericWrapper = false)
+        [Test]
+        public void SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint()
+        {
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()
+            {
+                ExpireTimeSpan = TimeSpan.FromSeconds(2.0),
+                SlidingExpirationTime = TimeSpan.FromSeconds(10)
+            }))
+            {
+                // This test is far from perfect but does the job without clock injection.
+                RefreshResponse auth = LoginAlbertViaBasicProvider(s);
+                DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds(1.7);
+                while (next > DateTime.UtcNow) ;
+                RefreshResponse refresh = CallRefreshEndPoint(s);
+                refresh.Info.Expires.Value.Should().BeAfter(auth.Info.Expires.Value, "Refresh increased the expiration time.");
+            }
+        }
+
+        [Test]
+        public void SlidingExpiration_works_as_expected_in_rooted_Cookie_mode_where_any_request_can_do_the_job()
+        {
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()
+            {
+                CookieMode = AuthenticationCookieMode.RootPath,
+                ExpireTimeSpan = TimeSpan.FromSeconds(2.0),
+                SlidingExpirationTime = TimeSpan.FromSeconds(10)
+            }))
+            {
+                // This test is far from perfect but does the job without clock injection.
+                RefreshResponse auth = LoginAlbertViaBasicProvider(s);
+                DateTime expCookie1 = s.Client.Cookies.GetCookies(s.Server.BaseAddress)[".webFront"].Expires.ToUniversalTime();
+                expCookie1.Should().BeCloseTo(auth.Info.Expires.Value, precision: 1000);
+                DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds(1.7);
+                while (next > DateTime.UtcNow) ;
+
+                // Calling token endpoint (like any other endpoint that sollicitates authentication) is enough.
+                HttpResponseMessage req = s.Client.Get(tokenExplainUri);
+                IAuthenticationInfo refresh = s.TypeSystem.AuthenticationInfo.FromJObject(JObject.Parse(req.Content.ReadAsStringAsync().Result));
+                refresh.Expires.Value.Should().BeAfter(auth.Info.Expires.Value, "Token life time has been increased.");
+
+                DateTime expCookie2 = s.Client.Cookies.GetCookies(s.Server.BaseAddress)[".webFront"].Expires.ToUniversalTime();
+                expCookie2.Should().BeCloseTo(refresh.Expires.Value, precision: 1000);
+            }
+        }
+
+        static RefreshResponse LoginAlbertViaBasicProvider(AuthServer s, bool useGenericWrapper = false)
         {
             HttpResponseMessage response = useGenericWrapper
                                             ? s.Client.Post(loginProviderUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }")
                                             : s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
             response.EnsureSuccessStatusCode();
-            switch(mode)
+            switch(s.Options.CookieMode)
             {
                 case AuthenticationCookieMode.WebFrontPath:
                     {
@@ -258,8 +302,7 @@ namespace CK.AspNet.Auth.Tests
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
-                        s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().HaveCount(1);
-                        s.Client.Cookies.GetCookies(new Uri(s.Server.BaseAddress, "/.webfront/c/")).Should().HaveCount(2);
+                        s.Client.Cookies.GetCookies(s.Server.BaseAddress).Should().HaveCount(2);
                         break;
                     }
                 case AuthenticationCookieMode.None:
@@ -274,5 +317,12 @@ namespace CK.AspNet.Auth.Tests
             c.Info.User.UserName.Should().Be("Albert");
             return c;
         }
+        private static RefreshResponse CallRefreshEndPoint(AuthServer s)
+        {
+            HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
+            tokenRefresh.EnsureSuccessStatusCode();
+            return RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
+        }
+
     }
 }
