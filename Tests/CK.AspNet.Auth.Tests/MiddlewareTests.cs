@@ -205,16 +205,39 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [Test]
-        public void simple_token_challenge()
+        [TestCase(false, Description = "With cookies on the .webfront path.")]
+        [TestCase(true, Description = "With cookies on the root path.")]
+        public void webfront_token_url_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication( bool rootCookiePath )
         {
-            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()))
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions()
+            {
+                CookieMode = rootCookiePath ? AuthenticationCookieMode.RootPath : AuthenticationCookieMode.WebFrontPath
+            }))
             {
                 HttpResponseMessage auth = s.Client.Post(basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}");
                 var c = RefreshResponse.Parse(s.TypeSystem, auth.Content.ReadAsStringAsync().Result);
-                s.Client.SetToken(c.Token);
-                HttpResponseMessage req = s.Client.Get(tokenExplainUri);
-                var tokenClear = auth.Content.ReadAsStringAsync().Result;
+                {
+                    // With token: it always works.
+                    s.Client.SetToken(c.Token);
+                    HttpResponseMessage req = s.Client.Get(tokenExplainUri);
+                    var tokenClear = req.Content.ReadAsStringAsync().Result;
+                    tokenClear.Should().Contain("Albert");
+                }
+                {
+                    // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
+                    s.Client.SetToken(null);
+                    HttpResponseMessage req = s.Client.Get(tokenExplainUri);
+                    var tokenClear = req.Content.ReadAsStringAsync().Result;
+                    if(rootCookiePath)
+                    {
+                        // Authentication Cookie has been used.
+                        tokenClear.Should().Contain("Albert");
+                    }
+                    else
+                    {
+                        tokenClear.Should().NotContain("Albert");
+                    }
+                }
             }
         }
 

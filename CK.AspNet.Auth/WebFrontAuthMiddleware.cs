@@ -94,10 +94,10 @@ namespace CK.AspNet.Auth
                     Response.Headers[HeaderNames.Pragma] = HeaderValueNoCache;
                     Response.Headers[HeaderNames.Expires] = HeaderValueMinusOne;
                     Response.StatusCode = StatusCodes.Status404NotFound;
-                    if (remainder.StartsWithSegments(_cSegmentPath, StringComparison.Ordinal, out remainder))
+                    if (remainder.StartsWithSegments(_cSegmentPath, StringComparison.Ordinal, out PathString cBased))
                     {
-                        if (remainder.Value == "/refresh") return HandleRefresh();
-                        else if (remainder.Value == "/basicLogin")
+                        if (cBased.Value == "/refresh") return HandleRefresh();
+                        else if (cBased.Value == "/basicLogin")
                         {
                             if (_authService.HasBasicLogin)
                             {
@@ -105,12 +105,12 @@ namespace CK.AspNet.Auth
                                 Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                             }
                         }
-                        else if (remainder.Value == "/login")
+                        else if (cBased.Value == "/login")
                         {
                             if (HttpMethods.IsPost(Request.Method)) return ProviderLoginAsync();
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
-                        else if (remainder.Value == "/logout")
+                        else if (cBased.Value == "/logout")
                         {
                             return HandleLogout();
                         }
