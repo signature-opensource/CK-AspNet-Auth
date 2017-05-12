@@ -12,6 +12,8 @@ namespace CK.AspNet.Auth
     /// </summary>
     public class WebFrontAuthMiddlewareOptions : AuthenticationOptions, IOptions<WebFrontAuthMiddlewareOptions>
     {
+        static readonly PathString _entryPath = new PathString( "/.webfront" );
+
         /// <summary>
         /// The <see cref="WebFrontAuthMiddleware"/> is not designed to be added multiple 
         /// times to an application, hence its name is unique.
@@ -29,9 +31,9 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Gets or sets the entry point (defaults to "/.webfront").
+        /// Gets the entry point: "/.webfront".
         /// </summary>
-        public PathString EntryPath { get; set; } = new PathString( "/.webfront" );
+        public PathString EntryPath => _entryPath;
 
         /// <summary>
         /// Controls how much time the authentication will remain valid 
