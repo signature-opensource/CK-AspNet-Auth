@@ -91,7 +91,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public void basic_login_is_404NotFound_when_no_BasicAutheticationProvider_exists()
+        public void basic_login_is_404NotFound_when_no_BasicAuthenticationProvider_exists()
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions(), services => services.Replace<WebFrontAuthService, NoAuthWebFrontService>()))
             {
@@ -132,7 +132,7 @@ namespace CK.AspNet.Auth.Tests
                     c.Info.User.UserName.Should().Be("Albert");
                     c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
                 }
-                // Request with token and ?providers query parametrers: we receinve the providers.
+                // Request with token and ?providers query parametrers: we receive the providers.
                 {
                     s.Client.SetToken(originalToken);
                     HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri+"?providers");
@@ -153,12 +153,13 @@ namespace CK.AspNet.Auth.Tests
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ))
             {
-                // Login: the 2 cookies are set on .webFront/c/ path.
+                // Login: the 2 cookies are set.
                 var firstLogin = LoginAlbertViaBasicProvider(s);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
-                s.Client.Get(logoutUri);
+                HttpResponseMessage logout = s.Client.Get(logoutUri);
+                logout.EnsureSuccessStatusCode();
                 // Refresh: we have the Unsafe Albert.
                 RefreshResponse c = CallRefreshEndPoint(s);
                 c.Info.Level.Should().Be(AuthLevel.Unsafe);
@@ -174,12 +175,13 @@ namespace CK.AspNet.Auth.Tests
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
-                // Login: the 2 cookies are set on .webFront/c/ path.
+                // Login: the 2 cookies are set.
                 var firstLogin = LoginAlbertViaBasicProvider(s);
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
-                s.Client.Get(logoutUri+"?full");
+                HttpResponseMessage logout = s.Client.Get(logoutUri+"?full");
+                logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
                 HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
                 tokenRefresh.EnsureSuccessStatusCode();

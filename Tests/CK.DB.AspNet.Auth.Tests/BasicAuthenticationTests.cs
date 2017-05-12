@@ -18,7 +18,7 @@ using System.Net.Http;
 namespace CK.DB.AspNet.Auth.Tests
 {
     [TestFixture]
-    public class MiddlewareTests
+    public class BasicAuthenticationTests
     {
         const string basicLoginUri = "/.webfront/c/basicLogin";
         const string loginUri = "/.webfront/c/login";
@@ -83,20 +83,21 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
-        [Test]
-        public void basic_authentication_on_a_created_user()
+        [TestCase("Albert", "pass")]
+        [TestCase("Paula", "pass")]
+        public void basic_authentication_on_user( string userName, string password )
         {
             var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
             using (var ctx = new SqlStandardCallContext())
             using (var server = new AuthServer(new WebFrontAuthMiddlewareOptions()))
             {
-                string userName = Guid.NewGuid().ToString();
                 int idUser = user.CreateUser(ctx, 1, userName);
-                basic.CreateOrUpdatePasswordUser(ctx, 1, idUser, "pass");
+                if (idUser == -1) idUser = user.FindByName(ctx, userName);
+                basic.CreateOrUpdatePasswordUser(ctx, 1, idUser, password);
 
                 {
-                    HttpResponseMessage authBasic = server.Client.Post(basicLoginUri, new JObject(new JProperty("userName", userName), new JProperty("password", "pass")).ToString());
+                    HttpResponseMessage authBasic = server.Client.Post(basicLoginUri, new JObject(new JProperty("userName", userName), new JProperty("password", password)).ToString());
                     var c = RefreshResponse.Parse(server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserId.Should().Be(idUser);
@@ -105,7 +106,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
 
                 {
-                    HttpResponseMessage authFailed = server.Client.Post(basicLoginUri, new JObject(new JProperty("userName", userName), new JProperty("password", "failed")).ToString());
+                    HttpResponseMessage authFailed = server.Client.Post(basicLoginUri, new JObject(new JProperty("userName", userName), new JProperty("password", "failed"+password)).ToString());
                     var c = RefreshResponse.Parse(server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result);
                     c.Info.Should().BeNull();
                     c.Token.Should().BeNull();

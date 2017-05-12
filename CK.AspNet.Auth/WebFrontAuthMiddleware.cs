@@ -122,7 +122,6 @@ namespace CK.AspNet.Auth
 
             async Task<bool> HandleRefresh()
             {
-                // First try is from the bearer: we need to handle the "no cookie at all" case (AuthenticationCookieMode.None).
                 IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo(Context);
                 Debug.Assert(authInfo != null);
                 bool refreshable = false;
@@ -155,6 +154,7 @@ namespace CK.AspNet.Auth
             Task<bool> HandleLogout()
             {
                 _authService.Logout( Context );
+                Context.Response.StatusCode = StatusCodes.Status200OK;
                 return Task.FromResult(true);
             }
 
@@ -281,9 +281,7 @@ namespace CK.AspNet.Auth
             {
                 return new JObject(
                     new JProperty("info", _typeSystem.AuthenticationInfo.ToJObject(authInfo)),
-                    new JProperty("token", authInfo.IsNullOrNone()
-                                            ? null
-                                            : _authService.CreateToken(Context,authInfo)),
+                    new JProperty("token", _authService.CreateToken(Context,authInfo)),
                     new JProperty("refreshable", refreshable) );
             }
 

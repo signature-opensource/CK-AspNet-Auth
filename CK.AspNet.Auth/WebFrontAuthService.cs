@@ -110,7 +110,7 @@ namespace CK.AspNet.Auth
                 string cookie;
                 if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(AuthCookieName, out cookie))
                 {
-                    authInfo = _cookieFormat.Unprotect(cookie, WebFrontAuthService.GetTlsTokenBinding(c));
+                    authInfo = _cookieFormat.Unprotect(cookie, GetTlsTokenBinding(c));
                 }
                 else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
                 {
