@@ -146,7 +146,8 @@ namespace CodeCake
                .Does(() =>
                {
                    var testDlls = projects
-                                    .Where(p => p.Name.EndsWith(".Tests"))
+                                    .Where(p => p.Name.EndsWith(".Tests") 
+                                                && !p.Path.Segments.Contains("IntegrationTests"))
                                     .Select(p => p.Path.GetDirectory().CombineWithFilePath("bin/" + configuration + "/net451/" + p.Name + ".dll"));
                    Cake.Information("Testing: {0}", string.Join(", ", testDlls.Select(p => p.GetFilename().ToString())));
                    Cake.NUnit(testDlls, new NUnitSettings() { Framework = "v4.5" });

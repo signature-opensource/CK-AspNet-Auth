@@ -208,7 +208,7 @@ namespace CK.AspNet.Auth
                 }
                 catch (Exception ex)
                 {
-                    Options.OnError?.Invoke(ex);
+                    Options.OnError?.Invoke(Context,ex);
                 }
                 if (req == null) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
@@ -246,7 +246,7 @@ namespace CK.AspNet.Auth
                 }
                 catch (Exception ex)
                 {
-                    Options.OnError?.Invoke(ex);
+                    Options.OnError?.Invoke(Context,ex);
                 }
                 if (req == null) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;

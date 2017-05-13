@@ -94,39 +94,47 @@ namespace CK.AspNet.Auth
         internal IAuthenticationInfo ReadAndCacheAuthenticationHeader(HttpContext c)
         {
             Debug.Assert(!c.Items.ContainsKey(typeof(IAuthenticationInfo)));
-            IAuthenticationInfo authInfo;
-            // First try from the bearer: this is always the preferred way.
-            string authorization = c.Request.Headers[_options.BearerHeaderName];
-            if (!string.IsNullOrEmpty(authorization)
-                && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            IAuthenticationInfo authInfo = null;
+            try
             {
-                Debug.Assert("Bearer ".Length == 7);
-                string token = authorization.Substring(7).Trim();
-                authInfo = _tokenFormat.Unprotect(token, GetTlsTokenBinding(c));
-            }
-            else
-            {
-                // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                string cookie;
-                if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(AuthCookieName, out cookie))
+                // First try from the bearer: this is always the preferred way.
+                string authorization = c.Request.Headers[_options.BearerHeaderName];
+                if (!string.IsNullOrEmpty(authorization)
+                    && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                 {
-                    authInfo = _cookieFormat.Unprotect(cookie, GetTlsTokenBinding(c));
+                    Debug.Assert("Bearer ".Length == 7);
+                    string token = authorization.Substring(7).Trim();
+                    authInfo = _tokenFormat.Unprotect(token, GetTlsTokenBinding(c));
                 }
-                else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
+                else
                 {
-                    IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
-                    authInfo = _typeSystem.AuthenticationInfo.Create(info);
+                    // Best case is when we have the authentication cookie, otherwise use the long term cookie.
+                    string cookie;
+                    if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(AuthCookieName, out cookie))
+                    {
+                        authInfo = _cookieFormat.Unprotect(cookie, GetTlsTokenBinding(c));
+                    }
+                    else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
+                    {
+                        IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
+                        authInfo = _typeSystem.AuthenticationInfo.Create(info);
+                    }
                 }
-                else authInfo = _typeSystem.AuthenticationInfo.None;
+                if (authInfo == null) authInfo = _typeSystem.AuthenticationInfo.None;
+                // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+                if (authInfo.Level >= AuthLevel.Normal
+                    && Options.CookieMode == AuthenticationCookieMode.RootPath
+                    && _halfSlidingExpirationTime > TimeSpan.Zero
+                    && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime)
+                {
+                    var authInfo2 = authInfo.SetExpires(DateTime.UtcNow + Options.SlidingExpirationTime);
+                    SetCookies(c, authInfo = authInfo2);
+                }
             }
-            // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-            if( authInfo.Level >= AuthLevel.Normal
-                && Options.CookieMode == AuthenticationCookieMode.RootPath
-                && _halfSlidingExpirationTime > TimeSpan.Zero
-                && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime )
+            catch( Exception ex )
             {
-                var authInfo2 = authInfo.SetExpires(DateTime.UtcNow + Options.SlidingExpirationTime);
-                SetCookies(c, authInfo = authInfo2);
+                _options.OnError(c,ex);
+                authInfo = _typeSystem.AuthenticationInfo.None;
             }
             c.Items.Add(typeof(IAuthenticationInfo), authInfo);
             return authInfo;

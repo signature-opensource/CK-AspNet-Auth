@@ -107,7 +107,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets or sets an error handler called whenever an exception occurs.
         /// </summary>
-        public Action<Exception> OnError { get; set; } = e => { };
+        public Action<HttpContext,Exception> OnError { get; set; } = (c,e) => { };
 
         WebFrontAuthMiddlewareOptions IOptions<WebFrontAuthMiddlewareOptions>.Value => this;
 

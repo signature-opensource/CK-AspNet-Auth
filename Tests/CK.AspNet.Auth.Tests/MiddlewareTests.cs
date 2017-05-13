@@ -146,10 +146,27 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-
         [TestCase(AuthenticationCookieMode.WebFrontPath)]
         [TestCase(AuthenticationCookieMode.RootPath)]
-        public void logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(AuthenticationCookieMode mode)
+        public void bad_tokens_are_ignored(AuthenticationCookieMode mode)
+        {
+            using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
+            {
+                var firstLogin = LoginAlbertViaBasicProvider(s);
+                string badToken = firstLogin.Token + 'B';
+                s.Client.SetToken(badToken);
+                RefreshResponse c = CallRefreshEndPoint(s);
+                c.Info.Should().BeNull();
+                HttpResponseMessage tokenRead = s.Client.Get(tokenExplainUri);
+                tokenRead.Content.ReadAsStringAsync().Result.Should().Be("{}");
+            }
+        }
+
+        [TestCase(AuthenticationCookieMode.WebFrontPath, true)]
+        [TestCase(AuthenticationCookieMode.RootPath, true)]
+        [TestCase(AuthenticationCookieMode.WebFrontPath, false)]
+        [TestCase(AuthenticationCookieMode.RootPath, false)]
+        public void logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(AuthenticationCookieMode mode, bool logoutWithToken)
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ))
             {
@@ -158,9 +175,11 @@ namespace CK.AspNet.Auth.Tests
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
+                if (logoutWithToken) s.Client.SetToken(originalToken);
                 HttpResponseMessage logout = s.Client.Get(logoutUri);
                 logout.EnsureSuccessStatusCode();
                 // Refresh: we have the Unsafe Albert.
+                s.Client.SetToken(null);
                 RefreshResponse c = CallRefreshEndPoint(s);
                 c.Info.Level.Should().Be(AuthLevel.Unsafe);
                 c.Info.User.UserName.Should().Be("");
@@ -169,9 +188,11 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [TestCase(AuthenticationCookieMode.WebFrontPath)]
-        [TestCase(AuthenticationCookieMode.RootPath)]
-        public void logout_with_full_query_parameter_removes_both_cookies(AuthenticationCookieMode mode)
+        [TestCase(AuthenticationCookieMode.WebFrontPath, true)]
+        [TestCase(AuthenticationCookieMode.RootPath, true)]
+        [TestCase(AuthenticationCookieMode.WebFrontPath, false)]
+        [TestCase(AuthenticationCookieMode.RootPath, false)]
+        public void logout_with_full_query_parameter_removes_both_cookies(AuthenticationCookieMode mode, bool logoutWithToken)
         {
             using (var s = new AuthServer(new WebFrontAuthMiddlewareOptions() { CookieMode = mode }))
             {
@@ -180,9 +201,11 @@ namespace CK.AspNet.Auth.Tests
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
+                if (logoutWithToken) s.Client.SetToken(originalToken);
                 HttpResponseMessage logout = s.Client.Get(logoutUri+"?full");
                 logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
+                s.Client.SetToken(null);
                 HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
