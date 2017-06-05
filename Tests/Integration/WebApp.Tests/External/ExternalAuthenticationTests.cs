@@ -24,17 +24,6 @@ namespace WebApp.Tests
         public void Initialize() => _client = WebAppHelper.GetRunningTestClient();
 
         [Test]
-        public void start_login_on_app()
-        {
-            HttpResponseMessage m = _client.Get( "/app/try" + "?provider=oidc" );
-            m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "bob", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage final = PostAcceptedResult( accepted );
-        }
-
-
-        [Test]
         public void start_login_on_webfront()
         {
             HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?provider=oidc" );

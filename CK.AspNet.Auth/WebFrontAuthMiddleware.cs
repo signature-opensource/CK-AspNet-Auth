@@ -106,7 +106,13 @@ namespace CK.AspNet.Auth
                         }
                         else if (cBased.Value == "/startLogin")
                         {
-                            return StartLoginAsync(); 
+                            // Rewrite path so that the helper is triggered
+                            // since we cannot Challenge middleware that are registered after 
+                            // this one... and this one must be registered before in order for
+                            // others to call its sign in method.
+                            _authService.EnsureAuthenticationInfo( Context );
+                            Context.Request.Path = "/.webfrontHelper/startLogin";
+                            return Task.FromResult( false );
                         }
                         else if (cBased.Value == "/login")
                         {
@@ -127,23 +133,7 @@ namespace CK.AspNet.Auth
                 return base.HandleRequestAsync();
             }
 
-            Task<bool> StartLoginAsync()
-            {
-                string provider = Request.Query["provider"];
-                IEnumerable<KeyValuePair<string, StringValues>> userData = HttpMethods.IsPost( Request.Method )
-                                                                            ? Request.Form
-                                                                            : Request.Query.Where( k => k.Key != "provider" );
-                var current = _authService.EnsureAuthenticationInfo( Context );
-
-                var q = QueryString.Create( "provider", provider );
-                if( !current.IsNullOrNone() ) q = q.Add( "c", _authService.ProtectAuthenticationInfo( Context, current ) );
-                if( userData.Any() ) q = q.Add( "d", _authService.ProtectExtraData( Context, userData ) );
-
-                Response.Redirect( "/.webfrontHelper/startLogin" + q.Value );
-                return Task.FromResult(true);
-            }
-
-            async Task<bool> HandleRefresh()
+            Task<bool> HandleRefresh()
             {
                 IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo(Context);
                 Debug.Assert(authInfo != null);
@@ -163,8 +153,7 @@ namespace CK.AspNet.Auth
                     response.Add("providers", new JArray(_authService.Providers));
                 }
                 _authService.SetCookies(Context, authInfo);
-                await WriteResponseAsync(response.ToString(Formatting.None));
-                return true;
+                return WriteResponseAsync(response.ToString(Formatting.None));
             }
 
             Task<bool> HandleToken()

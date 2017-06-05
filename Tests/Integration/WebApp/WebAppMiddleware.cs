@@ -52,13 +52,6 @@ namespace WebApp
                     c.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                     return Task.CompletedTask;
                 }
-                if( remainder.StartsWithSegments("/try") )
-                {
-                    string provider = c.Request.Query["provider"];
-                    AuthenticationProperties p = new AuthenticationProperties();
-                    p.Items.Add( "Test", "TestValues" );
-                    return c.Authentication.ChallengeAsync( provider, p );
-                }
                 // Default response for app/... paths.
                 c.Response.StatusCode = StatusCodes.Status200OK;
                 return c.Response.WriteAsync( "UserName: " + c.WebFrontAuthenticate().User.UserName );

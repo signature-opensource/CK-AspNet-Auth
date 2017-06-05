@@ -40,21 +40,25 @@ namespace CK.AspNet.Auth
                 c.Response.StatusCode = StatusCodes.Status404NotFound;
                 if( remainder.StartsWithSegments("/startLogin") )
                 {
-                    //string provider = c.Request.Query["provider"];
-                    //string current = c.Request.Query["c"];
-                    //string extraData = c.Request.Query["d"];
-                    //AuthenticationProperties p = new AuthenticationProperties();
-                    //if( current != null ) p.Items.Add( "WFACurrent", current );
-                    //if( extraData != null ) p.Items.Add( "WFAExtra", extraData );
-                    //return c.Authentication.ChallengeAsync( provider, p );
-
                     string provider = c.Request.Query["provider"];
-                    AuthenticationProperties p = new AuthenticationProperties();
-                    p.Items.Add( "Test", "TestValues" );
-                    return c.Authentication.ChallengeAsync( provider, p );
+                    if( provider == null )
+                    {
+                        c.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        return Task.CompletedTask;
+                    }
+                    IEnumerable<KeyValuePair<string, StringValues>> userData = HttpMethods.IsPost( c.Request.Method )
+                                                                                ? c.Request.Form
+                                                                                : c.Request.Query.Where( k => k.Key != "provider" );
+                    var current = _authService.EnsureAuthenticationInfo( c );
 
+                    AuthenticationProperties p = new AuthenticationProperties();
+                    p.Items.Add( "WFA-P", provider );
+                    if( !current.IsNullOrNone() ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( c, current ) );
+                    if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( c, userData ) );
+
+                    return c.Authentication.ChallengeAsync( provider, p );
                 }
-                return Task.FromResult(true);
+                return Task.CompletedTask;
             }
             return _next.Invoke( c );
         }
