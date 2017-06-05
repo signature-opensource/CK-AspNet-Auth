@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -24,6 +25,7 @@ namespace CK.AspNet.Auth
 
         AuthenticationInfoSecureDataFormat _tokenFormat;
         AuthenticationInfoSecureDataFormat _cookieFormat;
+        ExtraDataSecureDataFormat _extraDataFormat;
         WebFrontAuthMiddlewareOptions _options;
         string _cookiePath;
         TimeSpan _halfSlidingExpirationTime;
@@ -46,17 +48,57 @@ namespace CK.AspNet.Auth
         /// <param name="cookieFormat">The formatter for cookies.</param>
         /// <param name="tokenFormat">The formatter for tokens.</param>
         /// <param name="options">The middleware options.</param>
-        internal void Initialize(AuthenticationInfoSecureDataFormat cookieFormat, AuthenticationInfoSecureDataFormat tokenFormat, WebFrontAuthMiddlewareOptions options)
+        internal void Initialize(
+            AuthenticationInfoSecureDataFormat cookieFormat,
+            AuthenticationInfoSecureDataFormat tokenFormat,
+             ExtraDataSecureDataFormat extraDataFormat,
+           WebFrontAuthMiddlewareOptions options )
         {
-            if (_tokenFormat != null) throw new InvalidOperationException("Only one WebFrontAuthMiddleware must be used.");
-            Debug.Assert(tokenFormat != null);
-            Debug.Assert(options != null);
+            if( _tokenFormat != null ) throw new InvalidOperationException( "Only one WebFrontAuthMiddleware must be used." );
+            Debug.Assert( tokenFormat != null );
+            Debug.Assert( options != null );
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
+            _extraDataFormat = extraDataFormat;
             _options = options;
             _cookiePath = options.EntryPath + "/c/";
-            _halfSlidingExpirationTime = new TimeSpan(options.SlidingExpirationTime.Ticks / 2);
-            if (_inner != null) _inner.Initialize(cookieFormat, tokenFormat, options);
+            _halfSlidingExpirationTime = new TimeSpan( options.SlidingExpirationTime.Ticks / 2 );
+            if( _inner != null ) _inner.Initialize( cookieFormat, tokenFormat, extraDataFormat, options );
+        }
+
+        /// <summary>
+        /// Protects the given AuthenticationInfo.
+        /// </summary>
+        /// <param name="c">The context.</param>
+        /// <param name="info">The authentication to protect.</param>
+        /// <returns>The protected data.</returns>
+        internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
+        {
+            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            return _tokenFormat.Protect( info, GetTlsTokenBinding( c ) );
+        }
+
+        /// <summary>
+        /// Unprotects a AuthenticationInfo.
+        /// </summary>
+        /// <param name="c">The context.</param>
+        /// <param name="data">The data to unprotect.</param>
+        internal IAuthenticationInfo UnprotectAuthenticationInfo( HttpContext c, string data )
+        {
+            if( data == null ) throw new ArgumentNullException( nameof( data ) );
+            return _tokenFormat.Unprotect( data, GetTlsTokenBinding( c ) );
+        }
+
+        internal string ProtectExtraData( HttpContext c, IEnumerable<KeyValuePair<string,StringValues>> info )
+        {
+            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            return _extraDataFormat.Protect( info, GetTlsTokenBinding( c ) );
+        }
+
+        internal IEnumerable<KeyValuePair<string, StringValues>> UnprotectExtraData( HttpContext c, string data )
+        {
+            if( data == null ) throw new ArgumentNullException( nameof( data ) );
+            return _extraDataFormat.Unprotect( data, GetTlsTokenBinding( c ) );
         }
 
         /// <summary>

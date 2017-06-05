@@ -20,5 +20,16 @@ namespace CK.AspNet.Auth
             return app.UseMiddleware<WebFrontAuthMiddleware>( options );
         }
 
+        /// <summary>
+        /// Configures the pipe line with the <see cref="WebFrontAuthMiddlewareHelper"/>.
+        /// This must be added after external authentication middleware providers.
+        /// </summary>
+        /// <param name="app">The application builder.</param>
+        /// <returns>The application builder.</returns>
+        public static IApplicationBuilder UseWebFrontAuthHelper( this IApplicationBuilder app )
+        {
+            return app.UseMiddleware<WebFrontAuthMiddlewareHelper>();
+        }
+
     }
 }

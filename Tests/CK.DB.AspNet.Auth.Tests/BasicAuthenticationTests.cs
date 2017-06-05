@@ -92,6 +92,7 @@ namespace CK.DB.AspNet.Auth.Tests
             using (var ctx = new SqlStandardCallContext())
             using (var server = new AuthServer(new WebFrontAuthMiddlewareOptions()))
             {
+                user.FindByName( ctx, "MKLJHZDJKH" );
                 int idUser = user.CreateUser(ctx, 1, userName);
                 if (idUser == -1) idUser = user.FindByName(ctx, userName);
                 basic.CreateOrUpdatePasswordUser(ctx, 1, idUser, password);

@@ -16,9 +16,9 @@
 
     <PropertyGroup>
       <!-- Centralized dependencies versions. -->
-      <CKDatabaseVersion>5.0.0-a49</CKDatabaseVersion>
-      <CKDBVersion>1.0.0-d20</CKDBVersion>
-      <CKAspNetVersion>0.1.0-a05</CKAspNetVersion>
+      <CKDatabaseVersion>5.0.0-a53</CKDatabaseVersion>
+      <CKDBVersion>1.0.0-d22</CKDBVersion>
+      <CKAspNetVersion>0.1.0-a06</CKAspNetVersion>
       <CKAuthAbstractionsVersion>0.3.0</CKAuthAbstractionsVersion>
     </PropertyGroup>
   

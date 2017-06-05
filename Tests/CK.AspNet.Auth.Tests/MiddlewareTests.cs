@@ -114,7 +114,7 @@ namespace CK.AspNet.Auth.Tests
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
                 {
-                    s.Client.SetToken(originalToken);
+                    s.Client.Token = originalToken;
                     HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
@@ -124,7 +124,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 // Token less request: the authentication is restored from the cookie.
                 {
-                    s.Client.SetToken(null);
+                    s.Client.Token = null;
                     HttpResponseMessage tokenLessRefresh = s.Client.Get(refreshUri);
                     tokenLessRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenLessRefresh.Content.ReadAsStringAsync().Result);
@@ -134,7 +134,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 // Request with token and ?providers query parametrers: we receive the providers.
                 {
-                    s.Client.SetToken(originalToken);
+                    s.Client.Token = originalToken;
                     HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri+"?providers");
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
@@ -154,7 +154,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 var firstLogin = LoginAlbertViaBasicProvider(s);
                 string badToken = firstLogin.Token + 'B';
-                s.Client.SetToken(badToken);
+                s.Client.Token = badToken;
                 RefreshResponse c = CallRefreshEndPoint(s);
                 c.Info.Should().BeNull();
                 HttpResponseMessage tokenRead = s.Client.Get(tokenExplainUri);
@@ -175,11 +175,11 @@ namespace CK.AspNet.Auth.Tests
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
-                if (logoutWithToken) s.Client.SetToken(originalToken);
+                if (logoutWithToken) s.Client.Token = originalToken;
                 HttpResponseMessage logout = s.Client.Get(logoutUri);
                 logout.EnsureSuccessStatusCode();
                 // Refresh: we have the Unsafe Albert.
-                s.Client.SetToken(null);
+                s.Client.Token = null;
                 RefreshResponse c = CallRefreshEndPoint(s);
                 c.Info.Level.Should().Be(AuthLevel.Unsafe);
                 c.Info.User.UserName.Should().Be("");
@@ -201,11 +201,11 @@ namespace CK.AspNet.Auth.Tests
                 DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
-                if (logoutWithToken) s.Client.SetToken(originalToken);
+                if (logoutWithToken) s.Client.Token = originalToken;
                 HttpResponseMessage logout = s.Client.Get(logoutUri+"?full");
                 logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
-                s.Client.SetToken(null);
+                s.Client.Token = null;
                 HttpResponseMessage tokenRefresh = s.Client.Get(refreshUri);
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
@@ -242,14 +242,14 @@ namespace CK.AspNet.Auth.Tests
                 var c = RefreshResponse.Parse(s.TypeSystem, auth.Content.ReadAsStringAsync().Result);
                 {
                     // With token: it always works.
-                    s.Client.SetToken(c.Token);
+                    s.Client.Token = c.Token;
                     HttpResponseMessage req = s.Client.Get(tokenExplainUri);
                     var tokenClear = req.Content.ReadAsStringAsync().Result;
                     tokenClear.Should().Contain("Albert");
                 }
                 {
                     // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
-                    s.Client.SetToken(null);
+                    s.Client.Token = null;
                     HttpResponseMessage req = s.Client.Get(tokenExplainUri);
                     var tokenClear = req.Content.ReadAsStringAsync().Result;
                     if(rootCookiePath)

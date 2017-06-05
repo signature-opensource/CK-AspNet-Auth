@@ -17,6 +17,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http.Features.Authentication;
+using Microsoft.Extensions.Primitives;
 
 namespace CK.AspNet.Auth
 {
@@ -64,7 +66,8 @@ namespace CK.AspNet.Auth
             IDataProtector dataProtector = provider.CreateProtector(typeof(WebFrontAuthMiddleware).FullName);
             _cookieFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Cookie", "v1") );
             var tokenFormat = new AuthenticationInfoSecureDataFormat(_authService.AuthenticationTypeSystem, dataProtector.CreateProtector("Token", "v1") );
-            _authService.Initialize(_cookieFormat, tokenFormat, Options);
+            var extraDataFormat = new ExtraDataSecureDataFormat(dataProtector.CreateProtector("Extra", "v1") );
+            _authService.Initialize(_cookieFormat, tokenFormat, extraDataFormat, Options);
             _entryPath = Options.EntryPath;
         }
 
@@ -97,13 +100,17 @@ namespace CK.AspNet.Auth
                         {
                             if (_authService.HasBasicLogin)
                             {
-                                if (HttpMethods.IsPost(Request.Method)) return BasicLoginAsync();
+                                if (HttpMethods.IsPost(Request.Method)) return DirectBasicLoginAsync();
                                 Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                             }
                         }
+                        else if (cBased.Value == "/startLogin")
+                        {
+                            return StartLoginAsync(); 
+                        }
                         else if (cBased.Value == "/login")
                         {
-                            if (HttpMethods.IsPost(Request.Method)) return ProviderLoginAsync();
+                            if (HttpMethods.IsPost(Request.Method)) return DirectProviderLoginAsync();
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                         else if (cBased.Value == "/logout")
@@ -118,6 +125,22 @@ namespace CK.AspNet.Auth
                     return Task.FromResult(true);
                 }
                 return base.HandleRequestAsync();
+            }
+
+            Task<bool> StartLoginAsync()
+            {
+                string provider = Request.Query["provider"];
+                IEnumerable<KeyValuePair<string, StringValues>> userData = HttpMethods.IsPost( Request.Method )
+                                                                            ? Request.Form
+                                                                            : Request.Query.Where( k => k.Key != "provider" );
+                var current = _authService.EnsureAuthenticationInfo( Context );
+
+                var q = QueryString.Create( "provider", provider );
+                if( !current.IsNullOrNone() ) q = q.Add( "c", _authService.ProtectAuthenticationInfo( Context, current ) );
+                if( userData.Any() ) q = q.Add( "d", _authService.ProtectExtraData( Context, userData ) );
+
+                Response.Redirect( "/.webfrontHelper/startLogin" + q.Value );
+                return Task.FromResult(true);
             }
 
             async Task<bool> HandleRefresh()
@@ -158,13 +181,14 @@ namespace CK.AspNet.Auth
                 return Task.FromResult(true);
             }
 
+            #region Direct Provider Login
             class ProviderLoginRequest
             {
                 public string Provider { get; set; }
                 public object Payload { get; set; }
             }
 
-            async Task<bool> ProviderLoginAsync()
+            async Task<bool> DirectProviderLoginAsync()
             {
                 ProviderLoginRequest req = await ReadProviderLoginRequest();
                 if (req != null)
@@ -213,6 +237,7 @@ namespace CK.AspNet.Auth
                 if (req == null) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
             }
+            #endregion
 
             #region Basic Authentication support
 
@@ -222,7 +247,7 @@ namespace CK.AspNet.Auth
                 public string Password { get; set; }
             }
 
-            async Task<bool> BasicLoginAsync()
+            async Task<bool> DirectBasicLoginAsync()
             {
                 Debug.Assert(_authService.HasBasicLogin);
                 BasicLoginRequest req = await ReadBasicLoginRequest();
@@ -230,7 +255,6 @@ namespace CK.AspNet.Auth
                 {
                     IUserInfo u = await _authService.BasicLoginAsync(Context, req.UserName, req.Password);
                     await DoLogin(u);
-
                 }
                 return true;
             }
@@ -263,6 +287,11 @@ namespace CK.AspNet.Auth
                 principal.AddIdentity(_typeSystem.AuthenticationInfo.ToClaimsIdentity(authInfo, userInfoOnly:false));
                 var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), Options.AuthenticationScheme);
                 return Task.FromResult(AuthenticateResult.Success(ticket));
+            }
+
+            protected override Task HandleSignInAsync( SignInContext context )
+            {
+                return base.HandleSignInAsync( context );
             }
 
             #endregion
