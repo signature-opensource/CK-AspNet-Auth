@@ -40,6 +40,11 @@ namespace CK.AspNet.Auth
                 c.Response.StatusCode = StatusCodes.Status404NotFound;
                 if( remainder.StartsWithSegments("/startLogin") )
                 {
+                    var featureRequest = c.Features[typeof( Microsoft.AspNetCore.Http.Features.IHttpRequestFeature )] as Microsoft.AspNetCore.Http.Features.IHttpRequestFeature;
+                    if( featureRequest != null && !featureRequest.RawTarget.StartsWith("/.webfront/c/startLogin?"))
+                    {
+                        throw new InvalidOperationException( "Must be called only from /.webfront/c/startLogin." );
+                    }
                     string provider = c.Request.Query["provider"];
                     if( provider == null )
                     {

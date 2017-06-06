@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -29,6 +30,7 @@ namespace CK.AspNet.Auth
         WebFrontAuthMiddlewareOptions _options;
         string _cookiePath;
         TimeSpan _halfSlidingExpirationTime;
+
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -307,6 +309,42 @@ namespace CK.AspNet.Auth
         /// <param name="payload">The provider dependent login payload.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
         public abstract Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload);
+
+
+        public Task HandleRemoteAuthentication( TicketReceivedContext context )
+        {
+            // Consider only SignIn that comes from our helper.
+            string provider;
+            if( !context.Properties.Items.TryGetValue( "WFA-P", out provider ) )
+            {
+                throw new InvalidOperationException();
+            }
+            string c, d;
+            context.Properties.Items.TryGetValue( "WFA-C", out c );
+            context.Properties.Items.TryGetValue( "WFA-D", out d );
+            IAuthenticationInfo auth = c == null ? _typeSystem.AuthenticationInfo.None : UnprotectAuthenticationInfo( context.HttpContext, c );
+            List<KeyValuePair<string, StringValues>> userData = d == null
+                                                                ? new List<KeyValuePair<string, StringValues>>()
+                                                                : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, d );
+            var wfaSC = new WebFrontAuthSignInContext( 
+                                context.HttpContext, 
+                                this, 
+                                context.Options.AuthenticationScheme, 
+                                context.Properties, 
+                                context.Principal, 
+                                provider, 
+                                auth, 
+                                userData );
+            // We always handle the response (we skip the final standard SignIn process).
+            context.HandleResponse();
+
+            var error = new JObject(
+               new JProperty( "error", "WebFrontAuthSignInHandler not found." ),
+               new JProperty( "provider", wfaSC.InitialProvider ),
+               new JProperty( "callingScheme", wfaSC.CallingScheme ) );
+            return context.HttpContext.Response.WriteAsync( error, StatusCodes.Status404NotFound );
+        }
+
     }
 
 }

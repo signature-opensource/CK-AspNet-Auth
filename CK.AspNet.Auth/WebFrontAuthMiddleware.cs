@@ -153,14 +153,14 @@ namespace CK.AspNet.Auth
                     response.Add("providers", new JArray(_authService.Providers));
                 }
                 _authService.SetCookies(Context, authInfo);
-                return WriteResponseAsync(response.ToString(Formatting.None));
+                return WriteResponseAsync(response);
             }
 
             Task<bool> HandleToken()
             {
                 var info = _authService.EnsureAuthenticationInfo(Context);
-                var text = _typeSystem.AuthenticationInfo.ToJObject(info)?.ToString(Formatting.Indented);
-                return WriteResponseAsync(text ?? "{}");
+                var o = _typeSystem.AuthenticationInfo.ToJObject(info);
+                return WriteResponseAsync( o );
             }
 
             Task<bool> HandleLogout()
@@ -278,11 +278,6 @@ namespace CK.AspNet.Auth
                 return Task.FromResult(AuthenticateResult.Success(ticket));
             }
 
-            protected override Task HandleSignInAsync( SignInContext context )
-            {
-                return base.HandleSignInAsync( context );
-            }
-
             #endregion
 
             Task<bool> DoLogin(IUserInfo u)
@@ -292,7 +287,7 @@ namespace CK.AspNet.Auth
                                                 : null;
                 JObject response = CreateAuthResponse(authInfo, authInfo != null && Options.SlidingExpirationTime > TimeSpan.Zero);
                 _authService.SetCookies( Context, authInfo);
-                return WriteResponseAsync(response.ToString(Formatting.None), authInfo == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK);
+                return WriteResponseAsync(response, authInfo == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK);
             }
 
             JObject CreateAuthResponse( IAuthenticationInfo authInfo, bool refreshable )
@@ -303,11 +298,9 @@ namespace CK.AspNet.Auth
                     new JProperty("refreshable", refreshable) );
             }
 
-            async Task<bool> WriteResponseAsync(string json, int code = StatusCodes.Status200OK)
+            async Task<bool> WriteResponseAsync(JObject o, int code = StatusCodes.Status200OK)
             {
-                Response.StatusCode = code;
-                Response.ContentType = "application/json";
-                await Response.WriteAsync(json);
+                await Response.WriteAsync( o, code );
                 return true;
             }
 

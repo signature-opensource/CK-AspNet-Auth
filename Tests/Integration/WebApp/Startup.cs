@@ -12,6 +12,8 @@ using CK.AspNet.Auth;
 using CK.DB.AspNet.Auth;
 using CK.AspNet;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication;
 
 namespace WebApp
 {
@@ -25,16 +27,21 @@ namespace WebApp
             services.AddSingleton<WebFrontAuthService, SqlWebFrontAuthService>();
         }
 
+        class OidcEventHandler : OpenIdConnectEvents
+        {
+            public override Task TicketReceived( TicketReceivedContext context )
+            {
+                var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
+                return authService.HandleRemoteAuthentication( context );
+            }
+        }
+
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole();
 
             app.UseDeveloperExceptionPage();
             app.UseRequestMonitor( new RequestMonitorMiddlewareOptions() );
-            //app.UseCookieAuthentication( new CookieAuthenticationOptions
-            //{
-            //    AuthenticationScheme = "Cookies"
-            //} );
 
             app.UseWebFrontAuth(new WebFrontAuthMiddlewareOptions()
             {
@@ -50,7 +57,7 @@ namespace WebApp
                 AutomaticChallenge = false,
                 Authority = "http://localhost:5000",
                 RequireHttpsMetadata = false,
-
+                Events = new OidcEventHandler(),
                 ClientId = "WebApp",
                 ClientSecret = "WebApp.Secret",
                 SaveTokens = true
