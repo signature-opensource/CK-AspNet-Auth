@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
@@ -23,7 +25,7 @@ namespace CK.AspNet.Auth
             string callingScheme,
             AuthenticationProperties authProps,
             ClaimsPrincipal principal,
-            string provider, 
+            string initialScheme, 
             IAuthenticationInfo auth, 
             List<KeyValuePair<string, StringValues>> userData )
         {
@@ -31,7 +33,7 @@ namespace CK.AspNet.Auth
             _authService = authService;
             CallingScheme = callingScheme;
             AuthenticationProperties = authProps;
-            InitialProvider = provider;
+            InitialScheme = initialScheme;
             InitialAuthentication = auth;
             UserData = userData;
         }
@@ -54,7 +56,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
         /// </summary>
-        public string InitialProvider { get; }
+        public string InitialScheme { get; }
 
         /// <summary>
         /// Gets the calling authentication scheme.
@@ -71,6 +73,16 @@ namespace CK.AspNet.Auth
         /// initial .webfront/c/starLogin call as a mutable list.
         /// </summary>
         public List<KeyValuePair<string, StringValues>> UserData { get; }
+
+        public Task SendError( string errorMessage, int code = StatusCodes.Status400BadRequest )
+        {
+            var error = new JObject(
+                            new JProperty( "error", errorMessage ),
+                            new JProperty( "initialScheme", InitialScheme ),
+                            new JProperty( "callingScheme", CallingScheme ) );
+            return HttpContext.Response.WriteAsync( error, code );
+
+        }
 
     }
 

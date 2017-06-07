@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System;
+using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
@@ -108,6 +109,9 @@ namespace CK.AspNet.Auth
         /// Gets or sets an error handler called whenever an exception occurs.
         /// </summary>
         public Action<HttpContext,Exception> OnError { get; set; } = (c,e) => { };
+
+
+        public Func<WebFrontAuthSignInContext, IWebFrontAuthSignInService, Task> SignInHandlerHook { get; set; }
 
         WebFrontAuthMiddlewareOptions IOptions<WebFrontAuthMiddlewareOptions>.Value => this;
 

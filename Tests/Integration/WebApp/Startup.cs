@@ -14,6 +14,7 @@ using CK.AspNet;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
 
 namespace WebApp
 {
@@ -36,18 +37,21 @@ namespace WebApp
             }
         }
 
+        class OAuthEventHandler : OAuthEvents
+        {
+            public override Task TicketReceived( TicketReceivedContext context )
+            {
+                var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
+                return authService.HandleRemoteAuthentication( context );
+            }
+        }
+
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole();
 
             app.UseDeveloperExceptionPage();
             app.UseRequestMonitor( new RequestMonitorMiddlewareOptions() );
-
-            app.UseWebFrontAuth(new WebFrontAuthMiddlewareOptions()
-            {
-                // WebFrontAuth is the only AuthenticationScheme that is allowed.
-                AuthenticationScheme = "WebFrontAuth"
-            });
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             var oidcOptions = new OpenIdConnectOptions
@@ -59,12 +63,26 @@ namespace WebApp
                 RequireHttpsMetadata = false,
                 Events = new OidcEventHandler(),
                 ClientId = "WebApp",
-                ClientSecret = "WebApp.Secret",
-                SaveTokens = true
+                ClientSecret = "WebApp.Secret"
             };
             app.UseOpenIdConnectAuthentication( oidcOptions );
 
-            app.UseWebFrontAuthHelper();
+            app.UseGoogleAuthentication( new GoogleOptions
+            {
+                AuthenticationScheme = "Google",
+                SignInScheme = "WebFrontAuth",
+                ClientId = "1012618945754-fi8rm641pdegaler2paqgto94gkpp9du.apps.googleusercontent.com",
+                ClientSecret = "vRALhloGWbPs7PJ5LzrTZwkH",
+                Events = new OAuthEventHandler()
+            } );
+
+            app.UseWebFrontAuth( new WebFrontAuthMiddlewareOptions()
+            {
+                // WebFrontAuth is the only AuthenticationScheme that is allowed.
+                AuthenticationScheme = "WebFrontAuth"
+            } );
+
+            //app.UseWebFrontAuthHelper();
 
             app.UseMiddleware<WebAppMiddleware>();
         }

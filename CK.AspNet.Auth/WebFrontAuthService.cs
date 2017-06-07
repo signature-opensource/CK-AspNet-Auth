@@ -23,7 +23,9 @@ namespace CK.AspNet.Auth
 
         readonly WebFrontAuthService _inner;
         readonly IAuthenticationTypeSystem _typeSystem;
+        readonly IWebFrontAuthSignInService _signInService;
 
+        Func<WebFrontAuthSignInContext, IWebFrontAuthSignInService, Task> _signInHandlerHook;
         AuthenticationInfoSecureDataFormat _tokenFormat;
         AuthenticationInfoSecureDataFormat _cookieFormat;
         ExtraDataSecureDataFormat _extraDataFormat;
@@ -36,11 +38,13 @@ namespace CK.AspNet.Auth
         /// Initializes a new <see cref="WebFrontAuthService"/>.
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
+        /// <param name="signInService">Optional <see cref="IWebFrontAuthSignInService"/>.</param>
         /// <param name="inner">Optional decorated service.</param>
-        protected WebFrontAuthService(IAuthenticationTypeSystem typeSystem, WebFrontAuthService inner = null)
+        protected WebFrontAuthService(IAuthenticationTypeSystem typeSystem, IWebFrontAuthSignInService signInService = null, WebFrontAuthService inner = null)
         {
             if (typeSystem == null) throw new ArgumentNullException(nameof(typeSystem));
             _typeSystem = typeSystem;
+            _signInService = signInService;
             _inner = inner;
         }
 
@@ -59,6 +63,7 @@ namespace CK.AspNet.Auth
             if( _tokenFormat != null ) throw new InvalidOperationException( "Only one WebFrontAuthMiddleware must be used." );
             Debug.Assert( tokenFormat != null );
             Debug.Assert( options != null );
+            _signInHandlerHook = options.SignInHandlerHook;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
@@ -314,8 +319,8 @@ namespace CK.AspNet.Auth
         public Task HandleRemoteAuthentication( TicketReceivedContext context )
         {
             // Consider only SignIn that comes from our helper.
-            string provider;
-            if( !context.Properties.Items.TryGetValue( "WFA-P", out provider ) )
+            string scheme;
+            if( !context.Properties.Items.TryGetValue( "WFA-S", out scheme ) )
             {
                 throw new InvalidOperationException();
             }
@@ -332,19 +337,23 @@ namespace CK.AspNet.Auth
                                 context.Options.AuthenticationScheme, 
                                 context.Properties, 
                                 context.Principal, 
-                                provider, 
+                                scheme, 
                                 auth, 
                                 userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
-
-            var error = new JObject(
-               new JProperty( "error", "WebFrontAuthSignInHandler not found." ),
-               new JProperty( "provider", wfaSC.InitialProvider ),
-               new JProperty( "callingScheme", wfaSC.CallingScheme ) );
-            return context.HttpContext.Response.WriteAsync( error, StatusCodes.Status404NotFound );
+            if( _signInHandlerHook != null )
+            {
+                return _signInHandlerHook( wfaSC, _signInService );
+            }
+            if( _signInService != null )
+            {
+                return _signInService.SignIn( wfaSC );
+            }
+            return wfaSC.SendError( "No SignInHandler found.", StatusCodes.Status404NotFound );
         }
 
     }
+
 
 }

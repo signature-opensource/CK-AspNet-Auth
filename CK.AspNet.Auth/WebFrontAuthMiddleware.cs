@@ -28,9 +28,6 @@ namespace CK.AspNet.Auth
     /// </summary>
     public sealed class WebFrontAuthMiddleware : AuthenticationMiddleware<WebFrontAuthMiddlewareOptions>
     {
-        const string HeaderValueNoCache = "no-cache";
-        const string HeaderValueMinusOne = "-1";
-
         readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
@@ -89,10 +86,7 @@ namespace CK.AspNet.Auth
                 PathString remainder;
                 if(Request.Path.StartsWithSegments(_middleware._entryPath, out remainder))
                 {
-                    Response.Headers[HeaderNames.CacheControl] = HeaderValueNoCache;
-                    Response.Headers[HeaderNames.Pragma] = HeaderValueNoCache;
-                    Response.Headers[HeaderNames.Expires] = HeaderValueMinusOne;
-                    Response.StatusCode = StatusCodes.Status404NotFound;
+                    Response.SetNoCache();
                     if (remainder.StartsWithSegments(_cSegmentPath, StringComparison.Ordinal, out PathString cBased))
                     {
                         if (cBased.Value == "/refresh") return HandleRefresh();
@@ -106,13 +100,7 @@ namespace CK.AspNet.Auth
                         }
                         else if (cBased.Value == "/startLogin")
                         {
-                            // Rewrite path so that the helper is triggered
-                            // since we cannot Challenge middleware that are registered after 
-                            // this one... and this one must be registered before in order for
-                            // others to call its sign in method.
-                            _authService.EnsureAuthenticationInfo( Context );
-                            Context.Request.Path = "/.webfrontHelper/startLogin";
-                            return Task.FromResult( false );
+                            return StartLogin();
                         }
                         else if (cBased.Value == "/login")
                         {
@@ -169,6 +157,29 @@ namespace CK.AspNet.Auth
                 Context.Response.StatusCode = StatusCodes.Status200OK;
                 return Task.FromResult(true);
             }
+
+            async Task<bool> StartLogin()
+            {
+                string scheme = Request.Query["scheme"];
+                if( scheme == null )
+                {
+                    Response.StatusCode = StatusCodes.Status400BadRequest;
+                    return true;
+                }
+                IEnumerable<KeyValuePair<string, StringValues>> userData = HttpMethods.IsPost( Request.Method )
+                                                                            ? Request.Form
+                                                                            : Request.Query.Where( k => k.Key != "scheme" );
+                var current = _authService.EnsureAuthenticationInfo( Context );
+
+                AuthenticationProperties p = new AuthenticationProperties();
+                p.Items.Add( "WFA-S", scheme );
+                if( !current.IsNullOrNone() ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
+                if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, userData ) );
+
+                await Context.Authentication.ChallengeAsync( scheme, p );
+                return true;
+            }
+
 
             #region Direct Provider Login
             class ProviderLoginRequest

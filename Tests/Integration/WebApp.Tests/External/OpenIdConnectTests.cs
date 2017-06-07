@@ -16,7 +16,7 @@ using CK.Text;
 namespace WebApp.Tests
 {
     [TestFixture]
-    public class ExternalAuthenticationTests
+    public class OpenIdConnectTests
     {
         TestClient _client;
 
@@ -26,7 +26,7 @@ namespace WebApp.Tests
         [Test]
         public void start_login_on_webfront()
         {
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?provider=oidc" );
+            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
             m.EnsureSuccessStatusCode();
             HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "bob", "password", true );
             HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
