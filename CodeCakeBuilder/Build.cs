@@ -45,7 +45,8 @@ namespace CodeCake
 
             // We do not publish .Tests projects for this solution.
             var projectsToPublish = projects
-                                        .Where(p => !p.Path.Segments.Contains("Tests"));
+                                        .Where( p => !p.Path.Segments.Contains( "Tests" )
+                                                     && !p.Path.Segments.Contains( "IntegrationTests" ) );
 
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
 
