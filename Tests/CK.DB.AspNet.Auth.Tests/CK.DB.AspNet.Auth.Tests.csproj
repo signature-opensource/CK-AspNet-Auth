@@ -4,6 +4,9 @@
 
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
+    <!-- Required for Microsoft.AspNetCore.Testing (see: https://github.com/aspnet/Hosting/issues/926) -->
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
