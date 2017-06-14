@@ -27,7 +27,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 UserId = 2,
                 UserName = "Albert"
             };
-            albertIsRegisteredInBasic.Providers.Add( new UserAuthProviderInfo("Basic", Util.UtcMinValue) );
+            albertIsRegisteredInBasic.Schemes.Add( new UserAuthSchemeInfo("Basic", Util.UtcMinValue) );
             _users.Add(albertIsRegisteredInBasic);
             _users.Add(new MockAuthUser() { UserId = 3, UserName = "Robert" });
             _users.Add(new MockAuthUser() { UserId = 4, UserName = "Hubert" });
@@ -78,17 +78,17 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             MockAuthUser user = _users.FirstOrDefault(u => u.UserId == userId);
             if (user == null) throw new Exception("Invalid user identifier.");
-            int idx = user.Providers.IndexOf(p => p.Name == providerName);
+            int idx = user.Schemes.IndexOf(p => p.Name == providerName);
             bool actualLogin = (mode & CreateOrUpdateMode.WithLogin) != 0;
             var loginTime = Util.UtcMinValue;
             if (idx < 0)
             {
                 if ((mode & CreateOrUpdateMode.UpdateOnly) == 0) return CreateOrUpdateResult.None;
-                user.Providers.Add(new UserAuthProviderInfo(providerName, actualLogin ? DateTime.UtcNow : Util.UtcMinValue));
+                user.Schemes.Add(new UserAuthSchemeInfo( providerName, actualLogin ? DateTime.UtcNow : Util.UtcMinValue));
                 return CreateOrUpdateResult.Created;
             }
             if ((mode & CreateOrUpdateMode.CreateOnly) == 0) return CreateOrUpdateResult.None;
-            user.Providers[idx] = new UserAuthProviderInfo(providerName, actualLogin ? DateTime.UtcNow : user.Providers[idx].LastUsed);
+            user.Schemes[idx] = new UserAuthSchemeInfo( providerName, actualLogin ? DateTime.UtcNow : user.Schemes[idx].LastUsed);
             return CreateOrUpdateResult.Updated;
         }
 
@@ -102,8 +102,8 @@ namespace CK.DB.AspNet.Auth.Tests
             MockAuthUser user = _users.FirstOrDefault(u => u.UserId == userId);
             if (user != null)
             {
-                int idx = user.Providers.IndexOf(p => p.Name == providerName);
-                if (idx >= 0) user.Providers.RemoveAt(idx);
+                int idx = user.Schemes.IndexOf(p => p.Name == providerName);
+                if (idx >= 0) user.Schemes.RemoveAt(idx);
             }
         }
 
@@ -121,9 +121,9 @@ namespace CK.DB.AspNet.Auth.Tests
             if (password == "failed") return 0;
             MockAuthUser user = _users.FirstOrDefault(u => u.UserName == userName);
             if (user == null) return 0;
-            int idx = user.Providers.IndexOf(p => p.Name == providerName);
+            int idx = user.Schemes.IndexOf(p => p.Name == providerName);
             if (idx < 0) return 0;
-            if (actualLogin) user.Providers[idx] = new UserAuthProviderInfo(user.Providers[idx].Name, DateTime.UtcNow);
+            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo( user.Schemes[idx].Name, DateTime.UtcNow);
             return user.UserId;
         }
         /// <summary>
@@ -140,9 +140,9 @@ namespace CK.DB.AspNet.Auth.Tests
             if (password == "failed") return 0;
             MockAuthUser user = _users.FirstOrDefault(u => u.UserId == userId);
             if (user == null) return 0;
-            int idx = user.Providers.IndexOf(p => p.Name == providerName);
+            int idx = user.Schemes.IndexOf(p => p.Name == providerName);
             if (idx < 0) return 0;
-            if (actualLogin) user.Providers[idx] = new UserAuthProviderInfo(user.Providers[idx].Name, DateTime.UtcNow);
+            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo( user.Schemes[idx].Name, DateTime.UtcNow);
             return user.UserId;
         }
 

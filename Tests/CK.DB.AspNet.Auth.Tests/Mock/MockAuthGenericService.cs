@@ -31,12 +31,12 @@ namespace CK.DB.AspNet.Auth.Tests
             return Task.FromResult(CreateOrUpdateUser(ctx,actorId,userId,null,mode));
         }
 
-        public void DestroyUser(ISqlCallContext ctx, int actorId, int userId)
+        public void DestroyUser(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix = null )
         {
             _db.DestroyUser(userId, ProviderName);
         }
 
-        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             DestroyUser(ctx,actorId,userId);
             return Task.FromResult(0);
