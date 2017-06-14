@@ -34,7 +34,7 @@ namespace CK.AspNet.Auth.Tests
                     configureApplication?.Invoke(app);
                 });
             Server = new TestServer(b);
-            Client = new TestClient(Server);
+            Client = new TestServerClient(Server);
         }
 
         public WebFrontAuthService AuthService => _authService;
@@ -45,7 +45,7 @@ namespace CK.AspNet.Auth.Tests
 
         public TestServer Server { get; }
 
-        public TestClient Client { get; }
+        public TestServerClient Client { get; }
 
         public void Dispose()
         {

@@ -19,10 +19,10 @@ namespace CK.AspNet.Auth.Tests
             _users = new List<IUserInfo>();
             // Albert is registered in Basic.
             _users.Add(typeSystem.UserInfo.Create(1, "System"));
-            _users.Add(typeSystem.UserInfo.Create(2, "Albert", new[] { new StdUserProviderInfo("Basic", DateTime.MinValue) }));
+            _users.Add(typeSystem.UserInfo.Create(2, "Albert", new[] { new StdUserSchemeInfo("Basic", DateTime.MinValue) }));
             _users.Add(typeSystem.UserInfo.Create(3, "Robert"));
             // Hubert is registered in Google.
-            _users.Add(typeSystem.UserInfo.Create(3, "Hubert", new[] { new StdUserProviderInfo("Google", DateTime.MinValue) }));
+            _users.Add(typeSystem.UserInfo.Create(3, "Hubert", new[] { new StdUserSchemeInfo("Google", DateTime.MinValue) }));
         }
 
         public override bool HasBasicLogin => true;
@@ -35,10 +35,10 @@ namespace CK.AspNet.Auth.Tests
             if (password == "success")
             {
                 u = _users.FirstOrDefault(i => i.UserName == userName);
-                if( u != null && u.Providers.Any( p => p.Name == "Basic" ))
+                if( u != null && u.Schemes.Any( p => p.Name == "Basic" ))
                 {
                     _users.Remove(u);
-                    u = AuthenticationTypeSystem.UserInfo.Create(u.UserId, u.UserName, new[] { new StdUserProviderInfo("Basic", DateTime.UtcNow) });
+                    u = AuthenticationTypeSystem.UserInfo.Create(u.UserId, u.UserName, new[] { new StdUserSchemeInfo("Basic", DateTime.UtcNow) });
                     _users.Add(u);
                 }
             }

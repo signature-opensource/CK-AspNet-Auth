@@ -21,34 +21,7 @@ using CK.Text;
 using Cake.Common.Tools.NUnit;
 
 namespace CodeCake
-{
-    public static class DotNetCoreRestoreSettingsExtension
-    {
-        public const string versionWhenInvalid = "0.0.0-AbsolutelyInvalid";
-
-        public static T AddVersionArguments<T>(this T @this, SimpleRepositoryInfo info, Action<T> conf = null) where T : DotNetCoreSettings
-        {
-            string version = versionWhenInvalid, assemblyVersion = "0.0", fileVersion = "0.0.0.0", informationalVersion = "";
-            if (info.IsValid)
-            {
-                version = info.NuGetVersion;
-                assemblyVersion = info.MajorMinor;
-                fileVersion = info.FileVersion;
-                informationalVersion = $"{info.SemVer} ({info.NuGetVersion}) - SHA1: {info.CommitSha} - CommitDate: {info.CommitDateUtc.ToString("u")}";
-            }
-            var prev2 = @this.ArgumentCustomization;
-            @this.ArgumentCustomization = args => (prev2?.Invoke(args) ?? args)
-                    .Append($@"/p:CakeBuild=""true""")
-                    .Append($@"/p:Version=""{version}""")
-                    .Append($@"/p:AssemblyVersion=""{assemblyVersion}.0""")
-                    .Append($@"/p:FileVersion=""{fileVersion}""")
-                    .Append($@"/p:InformationalVersion=""{informationalVersion}""");
-
-            conf?.Invoke(@this);
-            return @this;
-        }
-    }
-
+{ 
     /// <summary>
     /// Standard build "script".
     /// </summary>
@@ -148,7 +121,7 @@ namespace CodeCake
                    var testDlls = projects
                                     .Where(p => p.Name.EndsWith(".Tests") 
                                                 && !p.Path.Segments.Contains("IntegrationTests"))
-                                    .Select(p => p.Path.GetDirectory().CombineWithFilePath("bin/" + configuration + "/net451/" + p.Name + ".dll"));
+                                    .Select(p => p.Path.GetDirectory().CombineWithFilePath("bin/" + configuration + "/net461/" + p.Name + ".dll"));
                    Cake.Information("Testing: {0}", string.Join(", ", testDlls.Select(p => p.GetFilename().ToString())));
                    Cake.NUnit(testDlls, new NUnitSettings() { Framework = "v4.5" });
                });

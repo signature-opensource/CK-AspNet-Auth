@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7C9F751D-25CD-4A19-838B-B69E7B897468}"
 	ProjectSection(SolutionItems) = preProject
@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth", "CK.DB.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth.Tests", "Tests\CK.DB.AspNet.Auth.Tests\CK.DB.AspNet.Auth.Tests.csproj", "{835B0321-7841-4F9E-8536-FCAFF69F0B6D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IntergrationTests", "IntergrationTests", "{6DA9ACD5-56C1-47AE-ADD1-7EF6E5B9C148}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IntegrationTests", "IntegrationTests", "{6DA9ACD5-56C1-47AE-ADD1-7EF6E5B9C148}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp", "IntegrationTests\WebApp\WebApp.csproj", "{5876363B-169E-46BD-B989-94FBD98BDA17}"
 EndProject

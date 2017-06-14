@@ -14,13 +14,13 @@
   </PropertyGroup>
 
 
-    <PropertyGroup>
-      <!-- Centralized dependencies versions. -->
-      <CKDatabaseVersion>5.0.0-a49</CKDatabaseVersion>
-      <CKDBVersion>1.0.0-d20</CKDBVersion>
-      <CKAspNetVersion>0.1.0-a05</CKAspNetVersion>
-      <CKAuthAbstractionsVersion>0.3.0</CKAuthAbstractionsVersion>
-    </PropertyGroup>
+  <PropertyGroup>
+    <!-- Centralized dependencies versions. -->
+    <CKDatabaseVersion>5.0.0-a54</CKDatabaseVersion>
+    <CKDBVersion>1.0.0-d23</CKDBVersion>
+    <CKAspNetVersion>0.1.0-a07</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.4.0</CKAuthAbstractionsVersion>
+  </PropertyGroup>
   
   <!-- 
     When building from the CI (ie. from Cake, hence directly with the msbuild tool, SolutionDir is not defined),

@@ -13,9 +13,9 @@ namespace CK.DB.AspNet.Auth.Tests
 
         public string UserName { get; set; }
 
-        IReadOnlyList<UserAuthProviderInfo> IUserAuthInfo.Providers => Providers;
+        IReadOnlyList<UserAuthSchemeInfo> IUserAuthInfo.Schemes => Schemes;
 
-        public List<UserAuthProviderInfo> Providers { get; } = new List<UserAuthProviderInfo>();
+        public List<UserAuthSchemeInfo> Schemes { get; } = new List<UserAuthSchemeInfo>();
     }
 
 }

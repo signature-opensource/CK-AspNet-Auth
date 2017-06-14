@@ -13,7 +13,7 @@ namespace CK.DB.AspNet.Auth.Tests
     {
         readonly MockAuthDatabaseService _db;
 
-        public MockAuthGenericService( MockAuthDatabaseService db, string providerName )
+        public MockAuthGenericService(MockAuthDatabaseService db, string providerName)
         {
             _db = db;
             ProviderName = providerName;
@@ -28,17 +28,17 @@ namespace CK.DB.AspNet.Auth.Tests
 
         public Task<CreateOrUpdateResult> CreateOrUpdateUserAsync(ISqlCallContext ctx, int actorId, int userId, object payload, CreateOrUpdateMode mode = CreateOrUpdateMode.CreateOrUpdate, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return Task.FromResult(CreateOrUpdateUser(ctx,actorId,userId,null,mode));
+            return Task.FromResult(CreateOrUpdateUser(ctx, actorId, userId, null, mode));
         }
 
-        public void DestroyUser(ISqlCallContext ctx, int actorId, int userId)
+        public void DestroyUser(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix)
         {
             _db.DestroyUser(userId, ProviderName);
         }
 
-        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix, CancellationToken cancellationToken = default(CancellationToken))
         {
-            DestroyUser(ctx,actorId,userId);
+            DestroyUser(ctx, actorId, userId, schemeSuffix);
             return Task.FromResult(0);
         }
 
@@ -46,13 +46,13 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             Tuple<string, string> byName = payload as Tuple<string, string>;
             if (byName != null) return _db.LoginUser(byName.Item1, byName.Item2, actualLogin, ProviderName);
-            Tuple<int, string> byId = (Tuple<int,string>)payload;
+            Tuple<int, string> byId = (Tuple<int, string>)payload;
             return _db.LoginUser(byId.Item1, byId.Item2, actualLogin, ProviderName);
         }
 
         public Task<int> LoginUserAsync(ISqlCallContext ctx, object payload, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return Task.FromResult( LoginUser(ctx, payload, actualLogin ));
+            return Task.FromResult(LoginUser(ctx, payload, actualLogin));
         }
     }
 }

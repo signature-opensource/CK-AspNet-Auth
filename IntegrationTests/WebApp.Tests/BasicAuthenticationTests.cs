@@ -75,7 +75,7 @@ namespace WebApp.Tests
             var c = RefreshResponse.Parse(_typeSytem, authBasic.Content.ReadAsStringAsync().Result);
             c.Info.Level.Should().Be(AuthLevel.Normal);
             c.Info.User.UserId.Should().BeGreaterThan(1);
-            c.Info.User.Providers.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
+            c.Info.User.Schemes.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
             c.Token.Should().NotBeNullOrWhiteSpace();
             _userToken.Add(userName,c.Token);
             return c.Token;
