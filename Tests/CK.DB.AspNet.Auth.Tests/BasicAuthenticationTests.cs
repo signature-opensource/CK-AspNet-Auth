@@ -68,7 +68,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var c = RefreshResponse.Parse(server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserId.Should().Be(idUser);
-                    c.Info.User.Providers.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
+                    c.Info.User.Schemes.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
                     c.Token.Should().NotBeNullOrWhiteSpace();
                 }
 
@@ -102,7 +102,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var c = RefreshResponse.Parse(server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserId.Should().Be(idUser);
-                    c.Info.User.Providers.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
+                    c.Info.User.Schemes.Select(p => p.Name).ShouldBeEquivalentTo(new[] { "Basic" });
                     c.Token.Should().NotBeNullOrWhiteSpace();
                 }
 

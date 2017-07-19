@@ -79,9 +79,9 @@ namespace CK.AspNet.Auth.Tests
                 var c = RefreshResponse.Parse(s.TypeSystem, response.Content.ReadAsStringAsync().Result);
                 c.Info.User.UserId.Should().Be(2);
                 c.Info.User.UserName.Should().Be("Albert");
-                c.Info.User.Providers.Should().HaveCount(1);
-                c.Info.User.Providers[0].Name.Should().Be("Basic");
-                c.Info.User.Providers[0].LastUsed.Should().BeCloseTo( DateTime.UtcNow, 1500 );
+                c.Info.User.Schemes.Should().HaveCount(1);
+                c.Info.User.Schemes[0].Name.Should().Be("Basic");
+                c.Info.User.Schemes[0].LastUsed.Should().BeCloseTo( DateTime.UtcNow, 1500 );
                 c.Info.ActualUser.Should().BeSameAs(c.Info.User);
                 c.Info.Level.Should().Be(AuthLevel.Normal);
                 c.Info.IsImpersonated.Should().BeFalse();
@@ -110,7 +110,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
                 var login = LoginAlbertViaBasicProvider(s, useGenericWrapper);
-                DateTime basicLoginTime = login.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
+                DateTime basicLoginTime = login.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
                 {
@@ -120,7 +120,7 @@ namespace CK.AspNet.Auth.Tests
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserName.Should().Be("Albert");
-                    c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                    c.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
                 }
                 // Token less request: the authentication is restored from the cookie.
                 {
@@ -130,7 +130,7 @@ namespace CK.AspNet.Auth.Tests
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenLessRefresh.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserName.Should().Be("Albert");
-                    c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                    c.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
                 }
                 // Request with token and ?providers query parametrers: we receive the providers.
                 {
@@ -140,7 +140,7 @@ namespace CK.AspNet.Auth.Tests
                     var c = RefreshResponse.Parse(s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result);
                     c.Info.Level.Should().Be(AuthLevel.Normal);
                     c.Info.User.UserName.Should().Be("Albert");
-                    c.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                    c.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
                     c.Providers.Should().ContainSingle( "Basic" );
                 }
             }
@@ -172,7 +172,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 // Login: the 2 cookies are set.
                 var firstLogin = LoginAlbertViaBasicProvider(s);
-                DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
+                DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
                 if (logoutWithToken) s.Client.Token = originalToken;
@@ -184,7 +184,7 @@ namespace CK.AspNet.Auth.Tests
                 c.Info.Level.Should().Be(AuthLevel.Unsafe);
                 c.Info.User.UserName.Should().Be("");
                 c.Info.UnsafeUser.UserName.Should().Be("Albert");
-                c.Info.UnsafeUser.Providers.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
+                c.Info.UnsafeUser.Schemes.Single(p => p.Name == "Basic").LastUsed.Should().Be(basicLoginTime);
             }
         }
 
@@ -198,7 +198,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 // Login: the 2 cookies are set.
                 var firstLogin = LoginAlbertViaBasicProvider(s);
-                DateTime basicLoginTime = firstLogin.Info.User.Providers.Single(p => p.Name == "Basic").LastUsed;
+                DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single(p => p.Name == "Basic").LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
                 if (logoutWithToken) s.Client.Token = originalToken;

@@ -89,7 +89,7 @@ namespace CK.DB.AspNet.Auth
             return AuthenticationTypeSystem.UserInfo.Create( 
                 p.UserId, 
                 p.UserName, 
-                p.Schemes.Select( x => new StdUserProviderInfo( x.Name, x.LastUsed)).ToArray() );
+                p.Schemes.Select( x => new StdUserSchemeInfo( x.Name, x.LastUsed)).ToArray() );
         }
     }
 

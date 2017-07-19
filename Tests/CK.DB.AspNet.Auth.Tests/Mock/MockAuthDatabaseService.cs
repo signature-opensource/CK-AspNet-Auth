@@ -84,11 +84,11 @@ namespace CK.DB.AspNet.Auth.Tests
             if (idx < 0)
             {
                 if ((mode & CreateOrUpdateMode.UpdateOnly) == 0) return CreateOrUpdateResult.None;
-                user.Schemes.Add(new UserAuthSchemeInfo( providerName, actualLogin ? DateTime.UtcNow : Util.UtcMinValue));
+                user.Schemes.Add(new UserAuthSchemeInfo(providerName, actualLogin ? DateTime.UtcNow : Util.UtcMinValue));
                 return CreateOrUpdateResult.Created;
             }
             if ((mode & CreateOrUpdateMode.CreateOnly) == 0) return CreateOrUpdateResult.None;
-            user.Schemes[idx] = new UserAuthSchemeInfo( providerName, actualLogin ? DateTime.UtcNow : user.Schemes[idx].LastUsed);
+            user.Schemes[idx] = new UserAuthSchemeInfo(providerName, actualLogin ? DateTime.UtcNow : user.Schemes[idx].LastUsed);
             return CreateOrUpdateResult.Updated;
         }
 
@@ -123,7 +123,7 @@ namespace CK.DB.AspNet.Auth.Tests
             if (user == null) return 0;
             int idx = user.Schemes.IndexOf(p => p.Name == providerName);
             if (idx < 0) return 0;
-            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo( user.Schemes[idx].Name, DateTime.UtcNow);
+            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo(user.Schemes[idx].Name, DateTime.UtcNow);
             return user.UserId;
         }
         /// <summary>
@@ -142,7 +142,7 @@ namespace CK.DB.AspNet.Auth.Tests
             if (user == null) return 0;
             int idx = user.Schemes.IndexOf(p => p.Name == providerName);
             if (idx < 0) return 0;
-            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo( user.Schemes[idx].Name, DateTime.UtcNow);
+            if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo(user.Schemes[idx].Name, DateTime.UtcNow);
             return user.UserId;
         }
 
