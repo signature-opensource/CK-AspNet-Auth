@@ -156,6 +156,7 @@ namespace CK.AspNet.Auth
         internal IAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c )
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( IAuthenticationInfo ) ) );
+            var monitor = c.GetRequestMonitor();
             IAuthenticationInfo authInfo = null;
             try
             {
@@ -195,7 +196,7 @@ namespace CK.AspNet.Auth
             }
             catch( Exception ex )
             {
-                _options.OnError( c, ex );
+                monitor.Error( ex );
                 authInfo = _typeSystem.AuthenticationInfo.None;
             }
             c.Items.Add( typeof( IAuthenticationInfo ), authInfo );

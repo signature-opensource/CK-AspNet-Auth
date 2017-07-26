@@ -59,7 +59,9 @@ namespace CK.AspNet.Auth
         /// When true a long-lived cookie is used to store the unsafe, but long term, authentication information.
         /// Its <see cref="CookieOptions.Path"/> depends on <see cref="CookieMode"/>.
         /// </summary>
-        public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue && UnsafeExpireTimeSpan > ExpireTimeSpan && CookieMode != AuthenticationCookieMode.None;
+        public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue 
+                                            && UnsafeExpireTimeSpan > ExpireTimeSpan 
+                                            && CookieMode != AuthenticationCookieMode.None;
 
         /// <summary>
         /// Gets whether the authentication cookie (see <see cref="CookieMode"/>) requires or not https.
@@ -123,11 +125,6 @@ namespace CK.AspNet.Auth
         /// Gets or sets the http header name. Defaults to "Authorization".
         /// </summary>
         public string BearerHeaderName { get; set; } = "Authorization";
-
-        /// <summary>
-        /// Gets or sets an error handler called whenever an exception occurs.
-        /// </summary>
-        public Action<HttpContext,Exception> OnError { get; set; } = (c,e) => { };
 
         /// <summary>
         /// If set this will be used by the middleware for data protection (bearer token as well

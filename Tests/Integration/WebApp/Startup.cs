@@ -62,7 +62,7 @@ namespace WebApp
             loggerFactory.AddConsole();
 
             app.UseDeveloperExceptionPage();
-            app.UseRequestMonitor( new RequestMonitorMiddlewareOptions() );
+            app.UseRequestMonitor();
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             var oidcOptions = new OpenIdConnectOptions

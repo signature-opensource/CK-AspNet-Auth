@@ -107,7 +107,7 @@ namespace CK.AspNet.Auth
                         {
                             if( _loginService.HasBasicLogin )
                             {
-                                if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin();
+                                if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( Context.GetRequestMonitor() );
                                 Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                             }
                         }
@@ -122,7 +122,7 @@ namespace CK.AspNet.Auth
                         }
                         else if( cBased.Value == "/unsafeDirectLogin" )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return UnsafeDirectLogin();
+                            if( HttpMethods.IsPost( Request.Method ) ) return UnsafeDirectLogin( Context.GetRequestMonitor() );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                         else if( cBased.Value == "/logout" )
@@ -269,12 +269,12 @@ namespace CK.AspNet.Auth
                 public object Payload { get; set; }
             }
 
-            async Task<bool> UnsafeDirectLogin()
+            async Task<bool> UnsafeDirectLogin( IActivityMonitor monitor )
             {
                 Response.StatusCode = StatusCodes.Status403Forbidden;
                 if( Options.UnsafeDirectLoginAllower != null )
                 {
-                    ProviderLoginRequest req = await ReadProviderLoginRequest();
+                    ProviderLoginRequest req = await ReadProviderLoginRequest( monitor );
                     if( req != null && Options.UnsafeDirectLoginAllower( Context, req.Scheme ) )
                     {
                         IUserInfo u = await _loginService.LoginAsync( Context, req.Scheme, req.Payload );
@@ -284,7 +284,7 @@ namespace CK.AspNet.Auth
                 return true;
             }
 
-            async Task<ProviderLoginRequest> ReadProviderLoginRequest()
+            async Task<ProviderLoginRequest> ReadProviderLoginRequest( IActivityMonitor monitor )
             {
                 ProviderLoginRequest req = null;
                 try
@@ -317,7 +317,7 @@ namespace CK.AspNet.Auth
                 }
                 catch( Exception ex )
                 {
-                    Options.OnError?.Invoke( Context, ex );
+                    monitor.Error( "Invalid payload.", ex );
                 }
                 if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
@@ -332,10 +332,10 @@ namespace CK.AspNet.Auth
                 public string Password { get; set; }
             }
 
-            async Task<bool> DirectBasicLogin()
+            async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
             {
                 Debug.Assert( _loginService.HasBasicLogin );
-                BasicLoginRequest req = await ReadBasicLoginRequest();
+                BasicLoginRequest req = await ReadBasicLoginRequest( monitor );
                 if( req != null )
                 {
                     IUserInfo u = await _loginService.BasicLoginAsync( Context, req.UserName, req.Password );
@@ -344,7 +344,7 @@ namespace CK.AspNet.Auth
                 return true;
             }
 
-            async Task<BasicLoginRequest> ReadBasicLoginRequest()
+            async Task<BasicLoginRequest> ReadBasicLoginRequest( IActivityMonitor monitor )
             {
                 BasicLoginRequest req = null;
                 try
@@ -355,7 +355,7 @@ namespace CK.AspNet.Auth
                 }
                 catch( Exception ex )
                 {
-                    Options.OnError?.Invoke( Context, ex );
+                    monitor.Error( ex );
                 }
                 if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
