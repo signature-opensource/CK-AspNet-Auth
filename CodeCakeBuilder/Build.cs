@@ -45,8 +45,7 @@ namespace CodeCake
 
             // We do not publish .Tests projects for this solution.
             var projectsToPublish = projects
-                                        .Where( p => !p.Path.Segments.Contains( "Tests" )
-                                                     && !p.Path.Segments.Contains( "IntegrationTests" ) );
+                                        .Where( p => !p.Path.Segments.Contains( "Tests" ) );
 
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
 
@@ -63,7 +62,7 @@ namespace CodeCake
                          {
                              Cake.Warning( "GitInfo is not valid, but you choose to continue..." );
                          }
-                         else throw new Exception( "Repository is not ready to be published." );
+                        else if(!Cake.AppVeyor().IsRunningOnAppVeyor) throw new Exception("Repository is not ready to be published.");
                      }
 
                      if( gitInfo.IsValidRelease
@@ -121,7 +120,7 @@ namespace CodeCake
                 {
                     var testDlls = projects
                                      .Where( p => p.Name.EndsWith( ".Tests" )
-                                                 && !p.Path.Segments.Contains( "IntegrationTests" ) )
+                                                 && !p.Path.Segments.Contains( "Integration" ) )
                                      .Select( p => p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/" + p.Name + ".dll" ) );
                     Cake.Information( "Testing: {0}", string.Join( ", ", testDlls.Select( p => p.GetFilename().ToString() ) ) );
                     Cake.NUnit( testDlls, new NUnitSettings() { Framework = "v4.5" } );
@@ -202,7 +201,7 @@ namespace CodeCake
             var apiKey = Cake.InteractiveEnvironmentVariable( apiKeyName );
             if( string.IsNullOrEmpty( apiKey ) )
             {
-                Cake.Information( "Could not resolve {0}. Push to {1} is skipped.", apiKeyName, pushUrl );
+                Cake.Information( $"Could not resolve {apiKeyName}. Push to {pushUrl} is skipped." );
             }
             else
             {

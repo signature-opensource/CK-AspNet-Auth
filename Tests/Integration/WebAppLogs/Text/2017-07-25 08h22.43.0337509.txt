@@ -1,0 +1,90 @@
+0~~~~                            ~~ Monitor: 50d1c8dd-347a-4ab9-93cc-83345505e4de
+   2017-07-25 08h22.43.0097339 i Topic: CK.Core.StObjContextRoot.Load
+                   +00.0215154 i > Loading dynamic 'WebApp.Tests.Generated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+                   +00.0575410 i | > Loading 15 types.
+                   +00.0795562 i | | > Initializing CK.DB.Auth.Package : IAuthenticationDatabaseService
+                   +00.0830592 i | | <  | 1 conclusion:
+                                 | |    | 3 providers: Google, Oidc, Basic
+                   +00.0865614 i | < 
+                   +00.0865614 i < 
+                   +00.0870616 i Done.
+1~~~~                            ~~ Monitor: 93461f1d-27de-49d8-8698-84f7c6f1240e
+                   +01.0366392 i > Request Started: /app
+                   +01.1432157 i < 
+                   +01.1432157 i Done.
+2~~~~                            ~~ Monitor: 99203d76-cbf2-4f45-8ae3-d2be77fe3493
+                   +02.1581708 i > Request Started: /.webfront/c/basicLogin
+                   +02.5327916 i < 
+                   +02.5327916 i Done.
+3~~~~                            ~~ Monitor: 2566fa19-0075-4804-b7fc-ab4491bd814f
+                   +02.8911998 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +03.7802139 i < 
+                   +03.7802139 i Done.
+4~~~~                            ~~ Monitor: c031a24b-74f5-424c-9566-8b5b9132ca3f
+                   +08.0041148 i > Request Started: /signin-oidc
+                   +08.1452122 i < 
+                   +08.1452122 i Done.
+5~~~~                            ~~ Monitor: 01f32a6d-1db6-465c-bc87-92b0d8a488b3
+                   +16.9369616 i > Request Started: /.webfront/c/basicLogin
+                   +16.9499260 i < 
+                   +16.9499260 i Done.
+6~~~~                            ~~ Monitor: a144c343-d2d5-4242-a8d2-3af136113132
+                   +16.9911830 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +16.9931840 i < 
+                   +16.9931840 i Done.
+7~~~~                            ~~ Monitor: 4e80f6ae-5e6d-4c33-92f1-309557e1623c
+                   +17.0438925 i > Request Started: /signin-oidc
+                   +17.0464084 i < 
+                   +17.0464084 i Done.
+8~~~~                            ~~ Monitor: 2864d22e-05c4-4684-8bea-3b26032ff79a
+                   +28.9247384 i > Request Started: /.webfront/c/basicLogin
+                   +28.9382473 i < 
+                   +28.9382473 i Done.
+9~~~~                            ~~ Monitor: 6eb238f1-16db-4a1d-970b-076fe9930f00
+                   +28.9805431 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +28.9826316 i < 
+                   +28.9826316 i Done.
+A~~~~                            ~~ Monitor: a61fce17-a35a-4f58-aaf5-686c6624ba80
+                   +29.0180739 i > Request Started: /signin-oidc
+                   +29.0205600 i < 
+                   +29.0205600 i Done.
+B~~~~                            ~~ Monitor: de4f7ff6-757f-470e-bff8-33ce39508fb4
+                   +34.4032217 i > Request Started: /.webfront/c/basicLogin
+                   +34.4166033 i < 
+                   +34.4166033 i Done.
+C~~~~                            ~~ Monitor: cc3fb9bb-717e-4e68-b8cb-6184a2678d95
+                   +34.4610113 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +34.4615106 i < 
+                   +34.4615106 i Done.
+D~~~~                            ~~ Monitor: 2e5c32ea-bc50-4667-82ea-6351d83765e8
+                   +34.4940796 i > Request Started: /signin-oidc
+                   +34.4960837 i < 
+                   +34.4960837 i Done.
+E~~~~                            ~~ Monitor: 5cfac986-3c1c-4568-a719-685c0c2b391e
+                   +34.5601270 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +34.5616277 i < 
+                   +34.5616277 i Done.
+F~~~~                            ~~ Monitor: f198816f-a739-4128-a92b-c2d1b19cf8c0
+                   +34.6055354 i > Request Started: /signin-oidc
+                   +34.6080380 i < 
+                   +34.6080380 i Done.
+10~~~~                            ~~ Monitor: 3e354646-03f9-4fe4-9f2a-940f58f24486
+                    +34.9270830 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                    +34.9284762 i < 
+                    +34.9284762 i Done.
+11~~~~                            ~~ Monitor: 3d4df167-3b7c-42ca-9872-fb5268d5d042
+                    +34.9640859 i > Request Started: /signin-oidc
+                    +34.9720934 i < 
+                    +34.9720934 i Done.
+12~~~~                            ~~ Monitor: 4d332a1c-3502-4431-b86a-b64f2398835f
+    2017-07-25 08h31.58.5055066 i > Request Started: /app
+                    +00.0004984 i < 
+                    +00.0004984 i Done.
+13~~~~                            ~~ Monitor: dae10b8d-fb16-4dbe-b706-b144d7beb474
+                    +01.1157911 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                    +01.1167934 i < 
+                    +01.1167934 i Done.
+14~~~~                            ~~ Monitor: 49b0f904-be57-48a5-a28a-6010f8cb1488
+                    +02.2535996 i > Request Started: /signin-oidc
+                    +02.2696115 i < 
+                    +02.2696115 i Done.

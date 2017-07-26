@@ -3,7 +3,7 @@
   <ItemGroup>
     <CoreProj Include="..\**\*.csproj" />
     <CoreProj Remove="..\CodeCakeBuilder\CodeCakeBuilder.csproj" />
-    <CoreProj Remove="..\IntegrationTests\**" />
+    <CoreProj Remove="..\Tests\Integration\**" />
   </ItemGroup>
 
   <Target Name="Build">

@@ -1,0 +1,112 @@
+0~~~~                            ~~ Monitor: 781fb413-20be-4cb6-a701-1e07e4323426
+   2017-07-25 09h05.02.8677667 i Topic: CK.Core.StObjContextRoot.Load
+                   +00.0190133 i > Loading dynamic 'WebApp.Tests.Generated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+                   +00.0450318 i | > Loading 15 types.
+                   +00.0665472 i | | > Initializing CK.DB.Auth.Package : IAuthenticationDatabaseService
+                   +00.0695496 i | | <  | 1 conclusion:
+                                 | |    | 3 providers: Google, Oidc, Basic
+                   +00.0730522 i | < 
+                   +00.0735520 i < 
+                   +00.0740527 i Done.
+1~~~~                            ~~ Monitor: 5687700e-8ff3-4e2a-800f-bbb36aaa4cce
+                   +00.9389069 i > Request Started: /app
+                   +01.0209630 i < 
+                   +01.0209630 i Done.
+2~~~~                            ~~ Monitor: 2f6240a2-0bcc-49b8-8c59-20369c55a2cc
+                   +02.0553522 i > Request Started: /.webfront/c/basicLogin
+                   +02.3890141 i < 
+                   +02.3890141 i Done.
+3~~~~                            ~~ Monitor: 9223c936-a711-44dc-a388-ffab444ca815
+                   +02.7394336 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +02.9459902 i < 
+                   +02.9459902 i Done.
+4~~~~                            ~~ Monitor: 6d70798d-e2f5-47c6-8f1c-e7a7846904c3
+                   +03.7321146 i > Request Started: /signin-oidc
+                   +03.8657128 i < 
+                   +03.8657128 i Done.
+5~~~~                            ~~ Monitor: e4d61f85-a300-49fd-a9ec-787b7cb90e19
+                   +03.9610738 i > Request Started: /.webfront/c/basicLogin
+                   +03.9735683 i < 
+                   +03.9735683 i Done.
+6~~~~                            ~~ Monitor: 0780cc5e-eb0f-443a-8c21-f61e3bb6b75c
+                   +04.0174198 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +04.0191004 i < 
+                   +04.0191004 i Done.
+7~~~~                            ~~ Monitor: a1aa61e4-ff03-4dd6-809b-ff0e2ea03cab
+                   +04.0982674 i > Request Started: /signin-oidc
+                   +04.1002689 i < 
+                   +04.1002689 i Done.
+8~~~~                            ~~ Monitor: b85db69a-aa64-4db5-a56a-90f0894054d6
+                   +05.9276177 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +05.9291229 i < 
+                   +05.9291229 i Done.
+9~~~~                            ~~ Monitor: ebd04b26-9ca7-4e9f-a607-ee2a0c9e6a3a
+                   +06.0041961 i > Request Started: /signin-oidc
+                   +06.0062011 i < 
+                   +06.0062011 i Done.
+A~~~~                            ~~ Monitor: c93f7565-5296-4c48-bab9-734ab599f3c3
+                   +08.2462063 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +08.2487057 i < 
+                   +08.2487057 i Done.
+B~~~~                            ~~ Monitor: 6b618ff9-9918-487c-8255-22430960a787
+                   +08.3912904 i > Request Started: /signin-oidc
+                   +08.3997968 F | La référence d'objet n'est pas définie à une instance d'un objet.
+                                 |    ┌──────────────────────────■ Exception: NullReferenceException ■──────────────────────────
+                                 |    | Message:    La référence d'objet n'est pas définie à une instance d'un objet.
+                                 |    | Stack:         à CK.AspNet.Auth.WebFrontAuthSignInContext.SendSuccess()
+                                 |    |                à CK.AspNet.Auth.WebFrontAuthSignInContext.SendResponse()
+                                 |    |                à CK.AspNet.Auth.WebFrontAuthService.<HandleRemoteAuthentication>d__30`1.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRemoteCallbackAsync>d__6.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRequestAsync>d__5.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectHandler.<HandleRequestAsync>d__15.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    └─────────────────────────────────────────────────────────────────────────
+                   +08.4033177 i < 
+                   +08.4033177 i Done.
+C~~~~                            ~~ Monitor: c853fcdf-6503-4aa0-9df4-5ec5e08799d0
+                   +37.5226578 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +37.5236588 i < 
+                   +37.5236588 i Done.
+D~~~~                            ~~ Monitor: 65cabbdb-6822-4592-85d4-8a0de42b467b
+                   +39.7732395 i > Request Started: /signin-oidc
+                   +39.7852485 F | La référence d'objet n'est pas définie à une instance d'un objet.
+                                 |    ┌──────────────────────────■ Exception: NullReferenceException ■──────────────────────────
+                                 |    | Message:    La référence d'objet n'est pas définie à une instance d'un objet.
+                                 |    | Stack:         à CK.AspNet.Auth.WebFrontAuthSignInContext.SendSuccess()
+                                 |    |                à CK.AspNet.Auth.WebFrontAuthSignInContext.SendResponse()
+                                 |    |                à CK.AspNet.Auth.WebFrontAuthService.<HandleRemoteAuthentication>d__30`1.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRemoteCallbackAsync>d__6.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRequestAsync>d__5.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectHandler.<HandleRequestAsync>d__15.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    └─────────────────────────────────────────────────────────────────────────
+                   +39.7857501 i < 
+                   +39.7857501 i Done.

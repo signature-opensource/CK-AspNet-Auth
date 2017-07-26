@@ -36,7 +36,7 @@ namespace CK.DB.AspNet.Auth.Tests
             _db.DestroyUser(userId, ProviderName);
         }
 
-        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DestroyUserAsync(ISqlCallContext ctx, int actorId, int userId, string schemeSuffix = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             DestroyUser(ctx, actorId, userId, schemeSuffix);
             return Task.FromResult(0);
