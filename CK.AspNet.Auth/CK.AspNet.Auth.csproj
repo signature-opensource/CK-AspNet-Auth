@@ -9,8 +9,10 @@
 
   <ItemGroup>
     <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="$(CKActivityMonitorVersion)" />
     <PackageReference Include="CK.AspNet" Version="$(CKAspNetVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="1.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="1.1.2" />
   </ItemGroup>
   
 </Project>

@@ -19,6 +19,7 @@
 
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
   </ItemGroup>
 
   <ItemGroup>

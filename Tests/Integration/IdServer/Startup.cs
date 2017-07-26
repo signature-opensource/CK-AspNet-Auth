@@ -66,21 +66,26 @@ namespace IdServer
                 {
                     new TestUser
                     {
-                        SubjectId = "1",
+                        SubjectId = "Alice_has_only_basic_authentication",
                         Username = "alice",
                         Password = "password"
                     },
                     new TestUser
                     {
-                        SubjectId = "2",
+                        SubjectId = "Bob_is_totally_unknown",
                         Username = "bob",
                         Password = "password"
+                    },
+                    new TestUser
+                    {
+                        SubjectId = "Carol_is_Basic_and_Oidc_registered",
+                        Username = "carol",
+                        Password = "password"
                     }
-                });
+                } );
             services.AddMvc();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole();

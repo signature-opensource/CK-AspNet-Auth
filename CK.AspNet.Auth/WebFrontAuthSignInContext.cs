@@ -6,6 +6,7 @@ using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,36 +18,57 @@ namespace CK.AspNet.Auth
     /// </summary>
     public class WebFrontAuthSignInContext
     {
-        readonly WebFrontAuthService _authService;
+        string _errorId;
+        string _errorMessage;
+        IUserInfo _successfulLogin;
 
         internal WebFrontAuthSignInContext( 
             HttpContext ctx, 
-            WebFrontAuthService authService, 
+            WebFrontAuthService authService,
+            IAuthenticationTypeSystem typeSystem,
             string callingScheme,
             AuthenticationProperties authProps,
             ClaimsPrincipal principal,
             string initialScheme, 
-            IAuthenticationInfo auth, 
+            IAuthenticationInfo initialAuth, 
+            string returnUrl,
             List<KeyValuePair<string, StringValues>> userData )
         {
             HttpContext = ctx;
-            _authService = authService;
+            AuthenticationService = authService;
+            AuthenticationTypeSystem = typeSystem;
             CallingScheme = callingScheme;
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
-            InitialAuthentication = auth;
+            InitialAuthentication = initialAuth;
+            ReturnUrl = returnUrl;
             UserData = userData;
         }
 
         /// <summary>
-        /// Internally used by WebFrontAuthService to handle the final response.
+        /// Gets the authentication service.
         /// </summary>
-        internal readonly HttpContext HttpContext;
+        public WebFrontAuthService AuthenticationService { get; }
+
+        /// <summary>
+        /// Gets the authentication type system.
+        /// </summary>
+        public IAuthenticationTypeSystem AuthenticationTypeSystem { get; }
+
+        /// <summary>
+        /// Gets the current http context.
+        /// </summary>
+        public HttpContext HttpContext { get; }
 
         /// <summary>
         /// Gets the Authentication properties.
         /// </summary>
         public AuthenticationProperties AuthenticationProperties { get; }
+
+        /// <summary>
+        /// Gets the return url if '/c/startLogin' has been called with a 'returnUrl' parameter.
+        /// </summary>
+        public string ReturnUrl { get; }
 
         /// <summary>
         /// Gets the ClaimsPrincipal.
@@ -70,20 +92,86 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the query (fer GET) or form (when POST was used) data of the 
-        /// initial .webfront/c/starLogin call as a mutable list.
+        /// initial .webfront/c/starLogin call as a readonly list.
         /// </summary>
-        public List<KeyValuePair<string, StringValues>> UserData { get; }
+        public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
 
-        public Task SendError( string errorMessage, int code = StatusCodes.Status400BadRequest )
+        /// <summary>
+        /// Gets whether <see cref="SetError"/> or <see cref="SetSuccessfulLogin"/> have been called.
+        /// </summary>
+        public bool IsHandled => _errorMessage != null || _successfulLogin != null;
+
+        /// <summary>
+        /// Sets an error message.
+        /// The returned error contains the <paramref name="errorId"/> and <paramref name="errorMessage"/>, the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>
+        /// and <see cref="UserData"/>.
+        /// </summary>
+        /// <param name="errorId">Error identifier (a dotted identifier string).</param>
+        /// <param name="errorMessage">The error message in clear text.</param>
+        public void SetError( string errorId, string errorMessage )
         {
-            var error = new JObject(
-                            new JProperty( "error", errorMessage ),
-                            new JProperty( "initialScheme", InitialScheme ),
-                            new JProperty( "callingScheme", CallingScheme ) );
-            return HttpContext.Response.WriteAsync( error, code );
-
+            _errorId = errorId;
+            _errorMessage = errorMessage;
         }
 
+        /// <summary>
+        /// Sets a successful login.
+        /// </summary>
+        /// <param name="user">The logged in user.</param>
+        public void SetSuccessfulLogin( IUserInfo user )
+        {
+            if( _errorMessage != null ) throw new InvalidOperationException();
+            _successfulLogin = user;
+        }
+
+        public Task SendResponse()
+        {
+            if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
+            if( _errorMessage != null )
+            {
+                return SendError();
+            }
+            return SendSuccess();
+        }
+
+        Task SendSuccess()
+        {
+            var data = new JObject(
+                            new JProperty( "u", AuthenticationTypeSystem.UserInfo.ToJObject( _successfulLogin ) ),
+                            new JProperty( "initialScheme", InitialScheme ),
+                            new JProperty( "callingScheme", CallingScheme ) );
+            if( ReturnUrl == null )
+            {
+                data.Add( UserDataToJProperty() );
+            }
+            string secure = AuthenticationService.ProtectString( 
+                                    HttpContext, 
+                                    data.ToString( Newtonsoft.Json.Formatting.None ), 
+                                    TimeSpan.FromSeconds( 3 ) );
+            return HttpContext.Response.WritePostRedirectEndLoginAsync( secure, ReturnUrl );
+        }
+
+        Task SendError()
+        {
+            if( ReturnUrl != null )
+            {
+                HttpContext.Response.RedirectToReturnUrlWithError( ReturnUrl, _errorId, _errorMessage, InitialScheme, CallingScheme );
+                return Task.CompletedTask;
+            }
+            else
+            {
+                return HttpContext.Response.WritePostMessageWithErrorAsync( _errorId, _errorMessage, InitialScheme, CallingScheme, UserDataToJProperty() );
+            }
+        }
+
+        JProperty UserDataToJProperty()
+        {
+            return new JProperty( "userData",
+                            new JObject( UserData.Select( d => new JProperty( d.Key,
+                                                                              d.Value.Count == 1
+                                                                                ? (JToken)d.Value.ToString()
+                                                                                : new JArray( d.Value ) ) ) ) );
+        }
     }
 
 }

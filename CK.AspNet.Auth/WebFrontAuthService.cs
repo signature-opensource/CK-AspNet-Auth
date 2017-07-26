@@ -1,5 +1,7 @@
 ﻿using CK.Auth;
+using CK.Core;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
@@ -14,18 +16,24 @@ using System.Threading.Tasks;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Base class for an actual, final, authentication service as well as a decorator of an existing service.
+    /// Default implementation of an authentication service.
     /// </summary>
-    public abstract class WebFrontAuthService
+    public class WebFrontAuthService
     {
-        const string AuthCookieName = ".webFront";
-        const string UnsafeCookieName = ".webFrontLT";
+        /// <summary>
+        /// Name of the authentication cookie.
+        /// </summary>
+        public const string AuthCookieName = ".webFront";
 
-        readonly WebFrontAuthService _inner;
+        /// <summary>
+        /// Name of the long term authentication cookie.
+        /// </summary>
+        public const string UnsafeCookieName = ".webFrontLT";
+
         readonly IAuthenticationTypeSystem _typeSystem;
-        readonly IWebFrontAuthSignInService _signInService;
+        readonly IWebFrontAuthLoginService _loginService;
 
-        Func<WebFrontAuthSignInContext, IWebFrontAuthSignInService, Task> _signInHandlerHook;
+        IDataProtector _genericProtector;
         AuthenticationInfoSecureDataFormat _tokenFormat;
         AuthenticationInfoSecureDataFormat _cookieFormat;
         ExtraDataSecureDataFormat _extraDataFormat;
@@ -33,19 +41,15 @@ namespace CK.AspNet.Auth
         string _cookiePath;
         TimeSpan _halfSlidingExpirationTime;
 
-
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
-        /// <param name="signInService">Optional <see cref="IWebFrontAuthSignInService"/>.</param>
-        /// <param name="inner">Optional decorated service.</param>
-        protected WebFrontAuthService(IAuthenticationTypeSystem typeSystem, IWebFrontAuthSignInService signInService = null, WebFrontAuthService inner = null)
+        /// <param name="loginService">Login service.</param>
+        public WebFrontAuthService( IAuthenticationTypeSystem typeSystem, IWebFrontAuthLoginService loginService )
         {
-            if (typeSystem == null) throw new ArgumentNullException(nameof(typeSystem));
             _typeSystem = typeSystem;
-            _signInService = signInService;
-            _inner = inner;
+            _loginService = loginService;
         }
 
         /// <summary>
@@ -55,57 +59,66 @@ namespace CK.AspNet.Auth
         /// <param name="tokenFormat">The formatter for tokens.</param>
         /// <param name="options">The middleware options.</param>
         internal void Initialize(
+            IDataProtector genericProtector,
             AuthenticationInfoSecureDataFormat cookieFormat,
             AuthenticationInfoSecureDataFormat tokenFormat,
-             ExtraDataSecureDataFormat extraDataFormat,
-           WebFrontAuthMiddlewareOptions options )
+            ExtraDataSecureDataFormat extraDataFormat,
+            WebFrontAuthMiddlewareOptions options )
         {
             if( _tokenFormat != null ) throw new InvalidOperationException( "Only one WebFrontAuthMiddleware must be used." );
+            Debug.Assert( genericProtector != null );
+            Debug.Assert( cookieFormat != null );
             Debug.Assert( tokenFormat != null );
             Debug.Assert( options != null );
-            _signInHandlerHook = options.SignInHandlerHook;
+            _genericProtector = genericProtector;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
             _options = options;
             _cookiePath = options.EntryPath + "/c/";
             _halfSlidingExpirationTime = new TimeSpan( options.SlidingExpirationTime.Ticks / 2 );
-            if( _inner != null ) _inner.Initialize( cookieFormat, tokenFormat, extraDataFormat, options );
         }
 
-        /// <summary>
-        /// Protects the given AuthenticationInfo.
-        /// </summary>
-        /// <param name="c">The context.</param>
-        /// <param name="info">The authentication to protect.</param>
-        /// <returns>The protected data.</returns>
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
         {
-            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            Debug.Assert( info != null );
             return _tokenFormat.Protect( info, GetTlsTokenBinding( c ) );
         }
 
-        /// <summary>
-        /// Unprotects a AuthenticationInfo.
-        /// </summary>
-        /// <param name="c">The context.</param>
-        /// <param name="data">The data to unprotect.</param>
         internal IAuthenticationInfo UnprotectAuthenticationInfo( HttpContext c, string data )
         {
-            if( data == null ) throw new ArgumentNullException( nameof( data ) );
+            Debug.Assert( data != null );
             return _tokenFormat.Unprotect( data, GetTlsTokenBinding( c ) );
         }
 
-        internal string ProtectExtraData( HttpContext c, IEnumerable<KeyValuePair<string,StringValues>> info )
+        internal string ProtectExtraData( HttpContext c, IEnumerable<KeyValuePair<string, StringValues>> info )
         {
-            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            Debug.Assert( info != null );
             return _extraDataFormat.Protect( info, GetTlsTokenBinding( c ) );
         }
 
         internal IEnumerable<KeyValuePair<string, StringValues>> UnprotectExtraData( HttpContext c, string data )
         {
-            if( data == null ) throw new ArgumentNullException( nameof( data ) );
+            Debug.Assert( data != null );
             return _extraDataFormat.Unprotect( data, GetTlsTokenBinding( c ) );
+        }
+
+        internal string ProtectString( HttpContext c, string data, TimeSpan duration )
+        {
+            Debug.Assert( data != null );
+            return _genericProtector
+                        .CreateProtector( GetTlsTokenBinding( c ) ?? "" )
+                        .ToTimeLimitedDataProtector()
+                        .Protect( data, duration );
+        }
+
+        internal string UnprotectString( HttpContext c, string data )
+        {
+            Debug.Assert( data != null );
+            return _genericProtector
+                        .CreateProtector( GetTlsTokenBinding( c ) ?? "" )
+                        .ToTimeLimitedDataProtector()
+                        .Unprotect( data );
         }
 
         /// <summary>
@@ -120,13 +133,13 @@ namespace CK.AspNet.Auth
         {
             IAuthenticationInfo authInfo = null;
             object o;
-            if (c.Items.TryGetValue(typeof(IAuthenticationInfo), out o))
+            if( c.Items.TryGetValue( typeof( IAuthenticationInfo ), out o ) )
             {
                 authInfo = (IAuthenticationInfo)o;
             }
             else
             {
-                authInfo = ReadAndCacheAuthenticationHeader(c);
+                authInfo = ReadAndCacheAuthenticationHeader( c );
             }
             return authInfo;
         }
@@ -140,52 +153,52 @@ namespace CK.AspNet.Auth
         /// The cached or resolved authentication info. 
         /// Never null, can be <see cref="IAuthenticationInfoType.None"/>.
         /// </returns>
-        internal IAuthenticationInfo ReadAndCacheAuthenticationHeader(HttpContext c)
+        internal IAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c )
         {
-            Debug.Assert(!c.Items.ContainsKey(typeof(IAuthenticationInfo)));
+            Debug.Assert( !c.Items.ContainsKey( typeof( IAuthenticationInfo ) ) );
             IAuthenticationInfo authInfo = null;
             try
             {
                 // First try from the bearer: this is always the preferred way.
                 string authorization = c.Request.Headers[_options.BearerHeaderName];
-                if (!string.IsNullOrEmpty(authorization)
-                    && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                if( !string.IsNullOrEmpty( authorization )
+                    && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase ) )
                 {
-                    Debug.Assert("Bearer ".Length == 7);
-                    string token = authorization.Substring(7).Trim();
-                    authInfo = _tokenFormat.Unprotect(token, GetTlsTokenBinding(c));
+                    Debug.Assert( "Bearer ".Length == 7 );
+                    string token = authorization.Substring( 7 ).Trim();
+                    authInfo = _tokenFormat.Unprotect( token, GetTlsTokenBinding( c ) );
                 }
                 else
                 {
                     // Best case is when we have the authentication cookie, otherwise use the long term cookie.
                     string cookie;
-                    if (Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue(AuthCookieName, out cookie))
+                    if( Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out cookie ) )
                     {
-                        authInfo = _cookieFormat.Unprotect(cookie, GetTlsTokenBinding(c));
+                        authInfo = _cookieFormat.Unprotect( cookie, GetTlsTokenBinding( c ) );
                     }
-                    else if (Options.UseLongTermCookie && c.Request.Cookies.TryGetValue(UnsafeCookieName, out cookie))
+                    else if( Options.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
                     {
-                        IUserInfo info = _typeSystem.UserInfo.FromJObject(JObject.Parse(cookie));
-                        authInfo = _typeSystem.AuthenticationInfo.Create(info);
+                        IUserInfo info = _typeSystem.UserInfo.FromJObject( JObject.Parse( cookie ) );
+                        authInfo = _typeSystem.AuthenticationInfo.Create( info );
                     }
                 }
-                if (authInfo == null) authInfo = _typeSystem.AuthenticationInfo.None;
+                if( authInfo == null ) authInfo = _typeSystem.AuthenticationInfo.None;
                 // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                if (authInfo.Level >= AuthLevel.Normal
+                if( authInfo.Level >= AuthLevel.Normal
                     && Options.CookieMode == AuthenticationCookieMode.RootPath
                     && _halfSlidingExpirationTime > TimeSpan.Zero
-                    && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime)
+                    && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime )
                 {
-                    var authInfo2 = authInfo.SetExpires(DateTime.UtcNow + Options.SlidingExpirationTime);
-                    SetCookies(c, authInfo = authInfo2);
+                    var authInfo2 = authInfo.SetExpires( DateTime.UtcNow + Options.SlidingExpirationTime );
+                    SetCookies( c, authInfo = authInfo2 );
                 }
             }
             catch( Exception ex )
             {
-                _options.OnError(c,ex);
+                _options.OnError( c, ex );
                 authInfo = _typeSystem.AuthenticationInfo.None;
             }
-            c.Items.Add(typeof(IAuthenticationInfo), authInfo);
+            c.Items.Add( typeof( IAuthenticationInfo ), authInfo );
             return authInfo;
         }
 
@@ -193,28 +206,28 @@ namespace CK.AspNet.Auth
 
         internal void Logout( HttpContext ctx )
         {
-            ClearCookie(ctx, AuthCookieName);
-            if (ctx.Request.Query.ContainsKey("full")) ClearCookie(ctx, UnsafeCookieName);
+            ClearCookie( ctx, AuthCookieName );
+            if( ctx.Request.Query.ContainsKey( "full" ) ) ClearCookie( ctx, UnsafeCookieName );
         }
 
-        internal void SetCookies(HttpContext ctx, IAuthenticationInfo authInfo)
+        internal void SetCookies( HttpContext ctx, IAuthenticationInfo authInfo )
         {
-            if (authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0)
+            if( authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
             {
-                string value = _typeSystem.UserInfo.ToJObject(authInfo.UnsafeActualUser).ToString(Formatting.None);
-                ctx.Response.Cookies.Append(UnsafeCookieName, value, CreateUnsafeCookieOptions(DateTime.UtcNow + Options.UnsafeExpireTimeSpan));
+                string value = _typeSystem.UserInfo.ToJObject( authInfo.UnsafeActualUser ).ToString( Formatting.None );
+                ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + Options.UnsafeExpireTimeSpan ) );
             }
-            else ClearCookie(ctx, UnsafeCookieName);
-            if (authInfo != null && Options.CookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal)
+            else ClearCookie( ctx, UnsafeCookieName );
+            if( authInfo != null && Options.CookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal )
             {
-                Debug.Assert(authInfo.Expires.HasValue);
-                string value = _cookieFormat.Protect(authInfo, WebFrontAuthService.GetTlsTokenBinding(ctx));
-                ctx.Response.Cookies.Append(AuthCookieName, value, CreateAuthCookieOptions(ctx, authInfo.Expires));
+                Debug.Assert( authInfo.Expires.HasValue );
+                string value = _cookieFormat.Protect( authInfo, WebFrontAuthService.GetTlsTokenBinding( ctx ) );
+                ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, authInfo.Expires ) );
             }
-            else ClearCookie(ctx, AuthCookieName);
+            else ClearCookie( ctx, AuthCookieName );
         }
 
-        CookieOptions CreateAuthCookieOptions(HttpContext ctx, DateTimeOffset? expires = null)
+        CookieOptions CreateAuthCookieOptions( HttpContext ctx, DateTimeOffset? expires = null )
         {
             return new CookieOptions()
             {
@@ -229,7 +242,7 @@ namespace CK.AspNet.Auth
             };
         }
 
-        CookieOptions CreateUnsafeCookieOptions(DateTimeOffset? expires = null)
+        CookieOptions CreateUnsafeCookieOptions( DateTimeOffset? expires = null )
         {
             return new CookieOptions()
             {
@@ -242,11 +255,11 @@ namespace CK.AspNet.Auth
             };
         }
 
-        void ClearCookie(HttpContext ctx, string cookieName)
+        void ClearCookie( HttpContext ctx, string cookieName )
         {
-            ctx.Response.Cookies.Delete(cookieName, cookieName == AuthCookieName
-                                                ? CreateAuthCookieOptions(ctx)
-                                                : CreateUnsafeCookieOptions());
+            ctx.Response.Cookies.Delete( cookieName, cookieName == AuthCookieName
+                                                ? CreateAuthCookieOptions( ctx )
+                                                : CreateUnsafeCookieOptions() );
         }
 
         #endregion
@@ -257,15 +270,15 @@ namespace CK.AspNet.Auth
         /// <param name="c">The context.</param>
         /// <param name="authInfo">The authentication info. Can be null.</param>
         /// <returns>The token (can be null).</returns>
-        internal string CreateToken(HttpContext c, IAuthenticationInfo authInfo)
+        internal string CreateToken( HttpContext c, IAuthenticationInfo authInfo )
         {
-            return authInfo.IsNullOrNone() ? null : _tokenFormat.Protect(authInfo, GetTlsTokenBinding(c));
+            return authInfo.IsNullOrNone() ? null : _tokenFormat.Protect( authInfo, GetTlsTokenBinding( c ) );
         }
 
-        internal static string GetTlsTokenBinding( HttpContext c )
+        static string GetTlsTokenBinding( HttpContext c )
         {
             var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
-            return binding == null ? null : Convert.ToBase64String(binding);
+            return binding == null ? null : Convert.ToBase64String( binding );
         }
 
         /// <summary>
@@ -274,86 +287,81 @@ namespace CK.AspNet.Auth
         protected WebFrontAuthMiddlewareOptions Options => _options;
 
         /// <summary>
-        /// Gets the inner service or null if this is no a decorator.
+        /// This method fully handles the request.
         /// </summary>
-        protected WebFrontAuthService InnerService => _inner;
-
-        /// <summary>
-        /// Exposes the <see cref="IAuthenticationTypeSystem"/> used to handle authentication info 
-        /// conversions.
-        /// </summary>
-        public IAuthenticationTypeSystem AuthenticationTypeSystem => _typeSystem;
-
-        /// <summary>
-        /// Gets whether <see cref="BasicLoginAsync"/> is supported.
-        /// </summary>
-        public abstract bool HasBasicLogin { get; }
-
-        /// <summary>
-        /// Attempts to login. If it fails, null is returned. <see cref="HasBasicLogin"/> must be true for this
-        /// to be called otherwise an <see cref="InvalidOperationException"/> is thrown.
-        /// </summary>
-        /// <param name="ctx">Current http context.</param>
-        /// <param name="userName">The user name.</param>
-        /// <param name="password">The password.</param>
-        /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public abstract Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password );
-
-        /// <summary>
-        /// Gets the existing providers's name.
-        /// </summary>
-        public abstract IReadOnlyList<string> Providers { get; }
-
-        /// <summary>
-        /// Attempts to login a user using an existing provider.
-        /// The provider must exist and the payload must be compatible otherwise an <see cref="ArgumentException"/>
-        /// is thrown.
-        /// </summary>
-        /// <param name="ctx">Current http context.</param>
-        /// <param name="providerName">The provider name to use.</param>
-        /// <param name="payload">The provider dependent login payload.</param>
-        /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public abstract Task<IUserInfo> LoginAsync(HttpContext ctx, string providerName, object payload);
-
-
-        public Task HandleRemoteAuthentication( TicketReceivedContext context )
+        /// <typeparam name="T">Type of a payload object that is scheme dependent.</typeparam>
+        /// <param name="context">The remote authentication ticket.</param>
+        /// <param name="payloadConfigurator">
+        /// Configurator for the payload object: this action typically populates properties 
+        /// from the <see cref="TicketReceivedContext"/> principal claims.
+        /// </param>
+        /// <returns>The awaitable.</returns>
+        public async Task HandleRemoteAuthentication<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
         {
-            // Consider only SignIn that comes from our helper.
-            string scheme;
-            if( !context.Properties.Items.TryGetValue( "WFA-S", out scheme ) )
-            {
-                throw new InvalidOperationException();
-            }
-            string c, d;
+            if( context == null ) throw new ArgumentNullException( nameof( context ) );
+            if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
+            var monitor = context.HttpContext.GetRequestMonitor();
+            string initialScheme, c, d, r;
+            context.Properties.Items.TryGetValue( "WFA-S", out initialScheme );
             context.Properties.Items.TryGetValue( "WFA-C", out c );
             context.Properties.Items.TryGetValue( "WFA-D", out d );
-            IAuthenticationInfo auth = c == null ? _typeSystem.AuthenticationInfo.None : UnprotectAuthenticationInfo( context.HttpContext, c );
+            context.Properties.Items.TryGetValue( "WFA-R", out r );
+
+            IAuthenticationInfo initialAuth = c == null
+                                        ? _typeSystem.AuthenticationInfo.None
+                                        : UnprotectAuthenticationInfo( context.HttpContext, c );
             List<KeyValuePair<string, StringValues>> userData = d == null
                                                                 ? new List<KeyValuePair<string, StringValues>>()
                                                                 : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, d );
-            var wfaSC = new WebFrontAuthSignInContext( 
-                                context.HttpContext, 
-                                this, 
-                                context.Options.AuthenticationScheme, 
-                                context.Properties, 
-                                context.Principal, 
-                                scheme, 
-                                auth, 
+            var wfaSC = new WebFrontAuthSignInContext(
+                                context.HttpContext,
+                                this,
+                                _typeSystem,
+                                context.Options.AuthenticationScheme,
+                                context.Properties,
+                                context.Principal,
+                                initialScheme,
+                                initialAuth,
+                                r,
                                 userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
-            if( _signInHandlerHook != null )
+
+            if( wfaSC.InitialAuthentication.IsImpersonated )
             {
-                return _signInHandlerHook( wfaSC, _signInService );
+                wfaSC.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
             }
-            if( _signInService != null )
+            else
             {
-                return _signInService.SignIn( wfaSC );
+                object payload = _loginService.CreatePayload( context.HttpContext, wfaSC.CallingScheme );
+                payloadConfigurator( (T)payload );
+                IUserInfo u = await _loginService.LoginAsync( context.HttpContext, wfaSC.CallingScheme, payload );
+                int currentlyLoggedIn = wfaSC.InitialAuthentication.User.UserId;
+                if( u == null || u.UserId == 0 )
+                {
+                    if( currentlyLoggedIn != 0 )
+                    {
+                        wfaSC.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                    }
+                    else
+                    {
+                        wfaSC.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
+                    }
+                }
+                else
+                {
+                    if( currentlyLoggedIn != 0 && u.UserId != currentlyLoggedIn )
+                    {
+                        wfaSC.SetError( "Account.Conflict", "Conflicting existing login association." );
+                    }
+                    else
+                    {
+                        wfaSC.SetSuccessfulLogin( u );
+                    }
+                }
             }
-            return wfaSC.SendError( "No SignInHandler found.", StatusCodes.Status404NotFound );
+            await wfaSC.SendResponse();
         }
-
     }
-
 
 }

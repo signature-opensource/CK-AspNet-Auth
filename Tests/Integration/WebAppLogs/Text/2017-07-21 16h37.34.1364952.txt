@@ -1,0 +1,75 @@
+0~~~~                            ~~ Monitor: f18171fd-7ca9-417f-b1ee-136a030cd6f8
+   2017-07-21 16h37.34.1169817 i Topic: CK.Core.StObjContextRoot.Load
+                   +00.0185130 i > Loading dynamic 'WebApp.Tests.Generated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+                   +00.0450318 i | > Loading 15 types.
+                   +00.0750531 i | | > Initializing CK.DB.Auth.Package : IAuthenticationDatabaseService
+                   +00.0800569 i | | <  | 1 conclusion:
+                                 | |    | 3 providers: Google, Oidc, Basic
+                   +00.0835595 i | < 
+                   +00.0835595 i < 
+                   +00.0840597 i Done.
+1~~~~                            ~~ Monitor: 081a2499-dd8a-4e5b-a38a-653b9d367a56
+                   +00.9324760 i > Request Started: /app
+                   +01.0045258 i < 
+                   +01.0045258 i Done.
+2~~~~                            ~~ Monitor: 6e8eb08b-f454-4046-ae33-5ef8ceab41d9
+                   +01.1201077 i > Request Started: /.webfront/c/startLogin?scheme=oidc
+                   +02.1333113 i < 
+                   +02.1333113 i Done.
+3~~~~                            ~~ Monitor: 292bb7c5-9700-42f1-854a-b70ffc850aca
+                   +06.2850128 i > Request Started: /signin-oidc
+                   +06.4665207 F | exec CK.sUserOidcCreateOrUpdate <= @ActorId=1, @UserId=0 output, @SchemeSuffix=null, @Sub=N'2', @Mode=UpdateOnly, WithLogin, @Result=null output
+                                 |    ┌──────────────────────────■ Exception: SqlDetailedException ■──────────────────────────
+                                 |    | Message:    exec CK.sUserOidcCreateOrUpdate <= @ActorId=1, @UserId=0 output, @SchemeSuffix=null, @Sub=N'2', @Mode=UpdateOnly, WithLogin, @Result=null output
+                                 |    | Stack:         à CK.SqlServer.SqlStandardCallContext.<ExecAsync>d__19`1.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à System.Runtime.CompilerServices.ConfiguredTaskAwaitable`1.ConfiguredTaskAwaiter.GetResult()
+                                 |    |                à CK.DB.User.UserOidc.UserOidcTable.<LoginUserAsync>d__7.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+                                 |    |                à CK.DB.AspNet.Auth.SqlWebFrontAuthSignInService.<DoSignIn>d__3.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRemoteCallbackAsync>d__6.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.RemoteAuthenticationHandler`1.<HandleRequestAsync>d__5.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectHandler.<HandleRequestAsync>d__15.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |                à Microsoft.AspNetCore.Authentication.AuthenticationMiddleware`1.<Invoke>d__18.MoveNext()
+                                 |    |  ┌──────────────────────────■ [Inner Exception] ■──────────────────────────
+                                 |    |  |  ┌──────────────────────────■ Exception: SqlException ■──────────────────────────
+                                 |    |  |  | Message:    Argument.NullSchemeSuffix
+                                 |    |  |  | Stack:         à System.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+                                 |    |  |  |                à System.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+                                 |    |  |  |                à System.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean callerHasConnectionLock, Boolean asyncClose)
+                                 |    |  |  |                à System.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+                                 |    |  |  |                à System.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption)
+                                 |    |  |  |                à System.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+                                 |    |  |  |                à System.Data.SqlClient.SqlCommand.InternalEndExecuteNonQuery(IAsyncResult asyncResult, String endMethod, Boolean isInternal)
+                                 |    |  |  |                à System.Data.SqlClient.SqlCommand.EndExecuteNonQueryInternal(IAsyncResult asyncResult)
+                                 |    |  |  |                à System.Data.SqlClient.SqlCommand.EndExecuteNonQueryAsync(IAsyncResult asyncResult)
+                                 |    |  |  |                à System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+                                 |    |  |  |             --- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+                                 |    |  |  |                à System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+                                 |    |  |  |                à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+                                 |    |  |  |                à System.Runtime.CompilerServices.ConfiguredTaskAwaitable`1.ConfiguredTaskAwaiter.GetResult()
+                                 |    |  |  |                à CK.SqlServer.SqlStandardCallContext.<ExecAsync>d__19`1.MoveNext()
+                                 |    |  |  └─────────────────────────────────────────────────────────────────────────
+                                 |    |  └─────────────────────────────────────────────────────────────────────────
+                                 |    └─────────────────────────────────────────────────────────────────────────
+                   +06.4725406 i < 
+                   +06.4725406 i Done.

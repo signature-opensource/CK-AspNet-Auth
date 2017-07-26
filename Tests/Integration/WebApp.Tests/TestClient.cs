@@ -25,14 +25,14 @@ namespace WebApp.Tests
         /// </summary>
         public TestClient( string baseAdress )
         {
-            _baseAddress = new Uri(baseAdress);
+            _baseAddress = new Uri( baseAdress );
             _handler = new HttpClientHandler()
             {
                 CookieContainer = new CookieContainer(),
                 AllowAutoRedirect = false
             };
             _maxAutomaticRedirections = 50;
-            _httpClient = new HttpClient(_handler)
+            _httpClient = new HttpClient( _handler )
             {
                 BaseAddress = _baseAddress,
             };
@@ -60,9 +60,9 @@ namespace WebApp.Tests
             {
                 if( _token != value )
                 {
-                    if (_token != null) _httpClient.DefaultRequestHeaders.Remove("Authorization");
+                    if( _token != null ) _httpClient.DefaultRequestHeaders.Remove( "Authorization" );
                     _token = value;
-                    if (_token != null) _httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + _token);
+                    if( _token != null ) _httpClient.DefaultRequestHeaders.Add( "Authorization", "Bearer " + _token );
                 }
             }
         }
@@ -73,13 +73,50 @@ namespace WebApp.Tests
         public CookieContainer Cookies => _handler.CookieContainer;
 
         /// <summary>
+        /// Clears cookies from <see cref="BaseAddress"/> and optional sub paths.
+        /// </summary>
+        public void ClearCookies( params string[] subPath ) => ClearCookies( _baseAddress, subPath );
+
+        /// <summary>
+        /// Clears cookies from a base path and optional sub paths.
+        /// </summary>
+        /// <param name="basePath">The base url. Should not be null.</param>
+        /// <param name="subPaths">Sub paths for which cookies must be cleared.</param>
+        public void ClearCookies( Uri basePath, IEnumerable<string> subPaths )
+        {
+            foreach( Cookie c in _handler.CookieContainer.GetCookies( basePath ) )
+            {
+                c.Expired = true;
+            }
+            if( subPaths != null )
+            {
+                foreach( string u in subPaths )
+                {
+                    if( string.IsNullOrWhiteSpace( u ) ) continue;
+                    Uri normalized = new Uri( basePath, u[u.Length - 1] != '/' ? u + '/' : u );
+                    foreach( Cookie c in _handler.CookieContainer.GetCookies( normalized ) )
+                    {
+                        c.Expired = true;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears cookies from a base path and sub paths.
+        /// </summary>
+        /// <param name="basePath">The base url. Should not be null.</param>
+        /// <param name="subPaths">Optional sub paths for which cookies must be cleared.</param>
+        public void ClearCookies( Uri basePath, params string[] subPath ) => ClearCookies( basePath, (IEnumerable<string>)subPath );
+
+        /// <summary>
         /// Issues a GET request to the relative url on <see cref="TestServer.BaseAddress"/> or to an absolute url.
         /// </summary>
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Get(string relativeUrl)
+        public HttpResponseMessage Get( string relativeUrl )
         {
-            return Get(new Uri(relativeUrl, UriKind.Relative));
+            return Get( new Uri( relativeUrl, UriKind.RelativeOrAbsolute ) );
         }
 
         /// <summary>
@@ -87,10 +124,10 @@ namespace WebApp.Tests
         /// </summary>
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Get(Uri relativeUrl)
+        public HttpResponseMessage Get( Uri relativeUrl )
         {
-            var absoluteUrl = new Uri(_baseAddress, relativeUrl);
-            return AutoFollowRedirect( _httpClient.GetAsync(absoluteUrl).Result );
+            var absoluteUrl = new Uri( _baseAddress, relativeUrl );
+            return AutoFollowRedirect( _httpClient.GetAsync( absoluteUrl ).Result );
         }
 
         /// <summary>
@@ -100,9 +137,9 @@ namespace WebApp.Tests
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <param name="formValues">The form values.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Post(string relativeUrl, IEnumerable<KeyValuePair<string, string>> formValues )
+        public HttpResponseMessage Post( string relativeUrl, IEnumerable<KeyValuePair<string, string>> formValues )
         {
-            return Post( new Uri(relativeUrl), formValues);
+            return Post( new Uri( relativeUrl, UriKind.RelativeOrAbsolute ), formValues );
         }
 
         /// <summary>
@@ -112,9 +149,9 @@ namespace WebApp.Tests
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <param name="formValues">The form values.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Post(Uri relativeUrl, IEnumerable<KeyValuePair<string, string>> formValues )
+        public HttpResponseMessage Post( Uri relativeUrl, IEnumerable<KeyValuePair<string, string>> formValues )
         {
-            return Post(relativeUrl, new FormUrlEncodedContent(formValues));
+            return Post( relativeUrl, new FormUrlEncodedContent( formValues ) );
         }
 
         /// <summary>
@@ -125,11 +162,11 @@ namespace WebApp.Tests
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <param name="json">The json content.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Post(string relativeUrl, string json)
+        public HttpResponseMessage Post( string relativeUrl, string json )
         {
-            var c = new StringContent(json);
-            c.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-            return Post(new Uri(relativeUrl, UriKind.Relative), c);
+            var c = new StringContent( json );
+            c.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse( "application/json" );
+            return Post( new Uri( relativeUrl, UriKind.RelativeOrAbsolute ), c );
         }
 
         /// <summary>
@@ -139,10 +176,10 @@ namespace WebApp.Tests
         /// <param name="relativeUrl">The BaseAddress relative url or an absolute url.</param>
         /// <param name="content">The content.</param>
         /// <returns>The response.</returns>
-        public HttpResponseMessage Post(Uri relativeUrl, HttpContent content)
+        public HttpResponseMessage Post( Uri relativeUrl, HttpContent content )
         {
-            var absoluteUrl = new Uri(_baseAddress, relativeUrl);
-            return AutoFollowRedirect( _httpClient.PostAsync(absoluteUrl, content).Result );
+            var absoluteUrl = new Uri( _baseAddress, relativeUrl );
+            return AutoFollowRedirect( _httpClient.PostAsync( absoluteUrl, content ).Result );
         }
 
         HttpResponseMessage AutoFollowRedirect( HttpResponseMessage m )
@@ -180,17 +217,17 @@ namespace WebApp.Tests
         /// and this is true, this method throws an exception. When this parameter is false, the <paramref name="response"/>
         /// is returned (since it is the final redirected response).</param>
         /// <returns>The redirected response.</returns>
-        public HttpResponseMessage FollowRedirect(HttpResponseMessage response, bool throwIfNotRedirect = false )
+        public HttpResponseMessage FollowRedirect( HttpResponseMessage response, bool throwIfNotRedirect = false )
         {
-            if (response.StatusCode != HttpStatusCode.Moved && response.StatusCode != HttpStatusCode.Found)
+            if( response.StatusCode != HttpStatusCode.Moved && response.StatusCode != HttpStatusCode.Found )
             {
                 if( throwIfNotRedirect ) throw new Exception( "Response must be a 301 Moved or a 302 Found." );
                 return response;
             }
             var redirectUrl = response.Headers.Location;
-            if (!redirectUrl.IsAbsoluteUri)
+            if( !redirectUrl.IsAbsoluteUri )
             {
-                redirectUrl = new Uri( response.RequestMessage.RequestUri, redirectUrl);
+                redirectUrl = new Uri( response.RequestMessage.RequestUri, redirectUrl );
             }
             return _httpClient.GetAsync( redirectUrl ).Result;
         }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
@@ -86,10 +87,28 @@ namespace CK.AspNet.Auth
         public AuthenticationCookieMode CookieMode { get; set; }
 
         /// <summary>
-        /// If set this will be used by the middleware for data protection (bearer token as well
-        /// as authentication cookie).
+        /// Gets or sets a list of available schemes returned for information from '/c/refresh' endpoint 
+        /// when 'schemes' appears in the query string.
+        /// <para>
+        /// Defaults to null: schemes are the same as <see cref="IWebFrontAuthLoginService.Providers"/>
+        /// when this is null or empty.
+        /// </para>
+        /// <para>
+        /// When not null (or empty), this list takes precedence over the login service's providers: all supported 
+        /// schemes must be declared here (and unwanted ones must not appear).
+        /// </para>
+        /// <para>
+        /// This list does not forbid user login to non listed schemes, this is intended only for applications
+        /// to communicate with the user..
+        /// </para>
         /// </summary>
-        public IDataProtectionProvider DataProtectionProvider { get; set; }
+        public List<string> AvailableSchemes { get; set; }
+
+        /// <summary>
+        /// Gets or sets a function that may allow calls to '/c/unsafeDirectLogin' for schemes.
+        /// Enabling calls to to this endpoint must be explicit: no configuration means "403 - Forbidden".
+        /// </summary>
+        public Func<HttpContext, string, bool> UnsafeDirectLoginAllower { get; set; }
 
         /// <summary>
         /// Gets or sets the refresh validation time. 
@@ -110,8 +129,12 @@ namespace CK.AspNet.Auth
         /// </summary>
         public Action<HttpContext,Exception> OnError { get; set; } = (c,e) => { };
 
+        /// <summary>
+        /// If set this will be used by the middleware for data protection (bearer token as well
+        /// as authentication cookie).
+        /// </summary>
+        public IDataProtectionProvider DataProtectionProvider { get; set; }
 
-        public Func<WebFrontAuthSignInContext, IWebFrontAuthSignInService, Task> SignInHandlerHook { get; set; }
 
         WebFrontAuthMiddlewareOptions IOptions<WebFrontAuthMiddlewareOptions>.Value => this;
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace WebApp.Tests
 {
-    class RefreshResponse
+    public class RefreshResponse
     {
         public IAuthenticationInfo Info { get; set; }
 
@@ -16,18 +16,19 @@ namespace WebApp.Tests
 
         public bool Refreshable { get; set; }
 
-        public static RefreshResponse Parse(IAuthenticationTypeSystem t, string json)
+        public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
         {
-            JObject o = JObject.Parse(json);
+            JObject o = JObject.Parse( json );
             var r = new RefreshResponse();
-            if (o["info"].Type == JTokenType.Object)
+            if( o["info"].Type == JTokenType.Object )
             {
-                r.Info = t.AuthenticationInfo.FromJObject((JObject)o["info"]);
+                r.Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"] );
             }
             r.Token = (string)o["token"];
             r.Refreshable = (bool)o["refreshable"];
             return r;
         }
+
     }
 
 

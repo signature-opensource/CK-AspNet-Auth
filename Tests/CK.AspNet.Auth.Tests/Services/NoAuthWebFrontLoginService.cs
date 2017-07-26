@@ -1,0 +1,36 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using CK.Auth;
+using Microsoft.AspNetCore.Http;
+
+namespace CK.AspNet.Auth.Tests
+{
+    class NoAuthWebFrontLoginService : IWebFrontAuthLoginService
+    {
+        public NoAuthWebFrontLoginService( IAuthenticationTypeSystem typeSystem )
+        {
+        }
+
+        public bool HasBasicLogin => false;
+
+        public IReadOnlyList<string> Providers => new string[0];
+
+        public Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password )
+        {
+            throw new NotSupportedException();
+        }
+
+        public object CreatePayload( HttpContext ctx, string scheme )
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IUserInfo> LoginAsync( HttpContext ctx, string providerName, object payload )
+        {
+            throw new NotSupportedException();
+        }
+    }
+}

@@ -1,4 +1,5 @@
-﻿using CK.Auth;
+﻿using CK.AspNet.Auth;
+using CK.Auth;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -20,7 +21,7 @@ namespace WebApp.Tests
         public void Initialize() => _client = WebAppHelper.GetRunningTestClient();
 
         [TestCase( "Albert", "pass" )]
-        public void login_basic_for_known_user( string userName, string password )
+        public void login_basic_for_known_user_with_invalid_password( string userName, string password )
         {
             EnsureTokenFor( userName, password );
             HttpResponseMessage authFailed = _client.Post( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
@@ -44,7 +45,7 @@ namespace WebApp.Tests
                 _client.Token = null;
                 HttpResponseMessage req = _client.Get( WebAppUrl.TokenExplainUri );
                 var tokenClear = req.Content.ReadAsStringAsync().Result;
-                if( _client.Cookies.GetCookies( _client.BaseAddress ).Count > 0 )
+                if( _client.Cookies.GetCookies( _client.BaseAddress )[WebFrontAuthService.AuthCookieName] != null )
                 {
                     // Authentication Cookie has been used.
                     tokenClear.Should().Contain( "Albert" );
@@ -65,14 +66,20 @@ namespace WebApp.Tests
             HttpResponseMessage ensure = _client.Post( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
             ensure.EnsureSuccessStatusCode();
 
-            HttpResponseMessage authBasic = _client.Post( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
+            RefreshResponse c = BasicLogin( _client, userName, password );
+            _userToken.Add( userName, c.Token );
+            return c.Token;
+        }
+
+        static public RefreshResponse BasicLogin( TestClient client, string userName, string password )
+        {
+            HttpResponseMessage authBasic = client.Post( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
             var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, authBasic.Content.ReadAsStringAsync().Result );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserId.Should().BeGreaterThan( 1 );
-            c.Info.User.Providers.Select( p => p.Name ).ShouldBeEquivalentTo( new[] { "Basic" } );
+            c.Info.User.Schemes.Select( p => p.Name ).ShouldBeEquivalentTo( new[] { "Basic" } );
             c.Token.Should().NotBeNullOrWhiteSpace();
-            _userToken.Add( userName, c.Token );
-            return c.Token;
+            return c;
         }
     }
 }

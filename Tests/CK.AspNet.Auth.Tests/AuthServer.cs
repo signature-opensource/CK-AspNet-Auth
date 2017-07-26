@@ -13,28 +13,29 @@ namespace CK.AspNet.Auth.Tests
         WebFrontAuthService _authService;
 
         public AuthServer(
-            WebFrontAuthMiddlewareOptions options, 
+            WebFrontAuthMiddlewareOptions options,
             Action<IServiceCollection> configureServices = null,
             Action<IApplicationBuilder> configureApplication = null )
         {
             Options = options;
-            var b = WebHostBuilderFactory.Create(null, null, 
+            var b = WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
                     services.AddAuthentication();
-                    services.AddSingleton<IAuthenticationTypeSystem,StdAuthenticationTypeSystem>();
-                    services.AddSingleton<WebFrontAuthService,FakeWebFrontService>();
-                    configureServices?.Invoke(services);
+                    services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
+                    services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();
+                    services.AddSingleton<WebFrontAuthService>();
+                    configureServices?.Invoke( services );
                 },
                 app =>
                 {
-                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService(typeof(IAuthenticationTypeSystem));
-                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService(typeof(WebFrontAuthService));
-                    app.UseWebFrontAuth(options);
-                    configureApplication?.Invoke(app);
-                });
-            Server = new TestServer(b);
-            Client = new TestServerClient(Server);
+                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
+                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
+                    app.UseWebFrontAuth( options );
+                    configureApplication?.Invoke( app );
+                } );
+            Server = new TestServer( b );
+            Client = new TestServerClient( Server );
         }
 
         public WebFrontAuthService AuthService => _authService;

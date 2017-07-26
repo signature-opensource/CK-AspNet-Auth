@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using System.Threading;
+using CK.Monitoring;
+using CK.Core;
 
 namespace WebApp
 {
@@ -17,6 +19,11 @@ namespace WebApp
             {
                 if( createdNew )
                 {
+                    SystemActivityMonitor.RootLogPath = Directory.GetCurrentDirectory() + "Logs";
+                    var config = new GrandOutputConfiguration();
+                    config.AddHandler( new CK.Monitoring.Handlers.TextFileConfiguration() { Path = "Text" } );
+                    GrandOutput.EnsureActiveDefault( config );
+                    
                     var host = new WebHostBuilder()
                         .UseUrls( "http://localhost:4324" )
                         .UseKestrel()
@@ -26,6 +33,8 @@ namespace WebApp
                         .Build();
 
                     host.Run();
+
+                    GrandOutput.Default.Dispose();
                 }
             }
         }

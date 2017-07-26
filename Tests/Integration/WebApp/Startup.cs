@@ -15,6 +15,9 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using CK.Core;
+using CK.DB.User.UserOidc;
+using CK.DB.User.UserGoogle;
 
 namespace WebApp
 {
@@ -25,7 +28,8 @@ namespace WebApp
             services.AddAuthentication();
             services.AddDefaultStObjMap("WebApp.Tests.Generated");
             services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
-            services.AddSingleton<WebFrontAuthService, SqlWebFrontAuthService>();
+            services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
+            services.AddSingleton<WebFrontAuthService>();
         }
 
         class OidcEventHandler : OpenIdConnectEvents
@@ -33,7 +37,11 @@ namespace WebApp
             public override Task TicketReceived( TicketReceivedContext context )
             {
                 var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-                return authService.HandleRemoteAuthentication( context );
+                return authService.HandleRemoteAuthentication<IUserOidcInfo>( context, payload =>
+                {
+                    payload.SchemeSuffix = "";
+                    payload.Sub = context.Principal.FindFirst( "sub" ).Value;
+                } );
             }
         }
 
@@ -42,7 +50,10 @@ namespace WebApp
             public override Task TicketReceived( TicketReceivedContext context )
             {
                 var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-                return authService.HandleRemoteAuthentication( context );
+                return authService.HandleRemoteAuthentication<IUserGoogleInfo>( context, payload =>
+                {
+                    payload.GoogleAccountId = context.Principal.FindFirst( "AccountId" ).Value;
+                } );
             }
         }
 
@@ -79,10 +90,10 @@ namespace WebApp
             app.UseWebFrontAuth( new WebFrontAuthMiddlewareOptions()
             {
                 // WebFrontAuth is the only AuthenticationScheme that is allowed.
-                AuthenticationScheme = "WebFrontAuth"
+                AuthenticationScheme = "WebFrontAuth",
+                
             } );
 
-            //app.UseWebFrontAuthHelper();
 
             app.UseMiddleware<WebAppMiddleware>();
         }
