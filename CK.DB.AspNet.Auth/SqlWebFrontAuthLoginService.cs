@@ -9,10 +9,14 @@ using CK.DB.Auth;
 using System.Linq;
 using CK.AspNet;
 using CK.Text;
+using CK.Core;
 
 namespace CK.DB.AspNet.Auth
 {
 
+    /// <summary>
+    /// Implements <see cref="IWebFrontAuthLoginService"/> bond to a <see cref="IAuthenticationDatabaseService"/>.
+    /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
     {
         readonly IAuthenticationDatabaseService _authPackage;
@@ -20,7 +24,7 @@ namespace CK.DB.AspNet.Auth
         readonly IReadOnlyList<string> _providers;
 
         /// <summary>
-        /// Initializes a new <see cref="SqlWebFrontAuthService"/>.
+        /// Initializes a new <see cref="SqlWebFrontAuthLoginService"/>.
         /// </summary>
         /// <param name="authPackage">The database service to use.</param>
         /// <param name="typeSystem">The authentication type sytem to use.</param>
@@ -47,12 +51,13 @@ namespace CK.DB.AspNet.Auth
         /// to be called.
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
+        /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password )
+        public async Task<IUserInfo> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
         {
-            var c = ctx.GetSqlCallContext();
+            var c = ctx.GetSqlCallContext( monitor );
             int userId = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password );
             return userId > 0
                     ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( c, 1, userId ) )
@@ -61,12 +66,13 @@ namespace CK.DB.AspNet.Auth
 
         /// <summary>
         /// Creates a payload object for a given scheme that can be used to 
-        /// call <see cref="LoginAsync(HttpContext, string, object)"/>.
+        /// call <see cref="LoginAsync"/>.
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
+        /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The login scheme (either the provider name to use or starts with the provider name and a dot).</param>
         /// <returns>A new, empty, provider dependent login payload.</returns>
-        public object CreatePayload( HttpContext ctx, string scheme )
+        public object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
         {
             return FindProvider( scheme, mustHavePayload: true ).CreatePayload();
         }
@@ -77,13 +83,14 @@ namespace CK.DB.AspNet.Auth
         /// is thrown.
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
+        /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The scheme to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<IUserInfo> LoginAsync( HttpContext ctx, string scheme, object payload )
+        public async Task<IUserInfo> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
         {
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
-            var c = ctx.GetSqlCallContext();
+            var c = ctx.GetSqlCallContext( monitor );
             int userId = await p.LoginUserAsync( c, payload );
             return userId > 0
                     ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( c, 1, userId ) )

@@ -55,8 +55,10 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// This is called by the WebFrontAuthMiddleware constructor.
         /// </summary>
+        /// <param name="genericProtector">Base protector.</param>
         /// <param name="cookieFormat">The formatter for cookies.</param>
         /// <param name="tokenFormat">The formatter for tokens.</param>
+        /// <param name="extraDataFormat">The formatter for extra data.</param>
         /// <param name="options">The middleware options.</param>
         internal void Initialize(
             IDataProtector genericProtector,
@@ -314,7 +316,7 @@ namespace CK.AspNet.Auth
             List<KeyValuePair<string, StringValues>> userData = d == null
                                                                 ? new List<KeyValuePair<string, StringValues>>()
                                                                 : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, d );
-            var wfaSC = new WebFrontAuthSignInContext(
+            var wfaSC = new WebFrontAuthLoginContext(
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
@@ -334,9 +336,9 @@ namespace CK.AspNet.Auth
             }
             else
             {
-                object payload = _loginService.CreatePayload( context.HttpContext, wfaSC.CallingScheme );
+                object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
                 payloadConfigurator( (T)payload );
-                IUserInfo u = await _loginService.LoginAsync( context.HttpContext, wfaSC.CallingScheme, payload );
+                IUserInfo u = await _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
                 int currentlyLoggedIn = wfaSC.InitialAuthentication.User.UserId;
                 if( u == null || u.UserId == 0 )
                 {

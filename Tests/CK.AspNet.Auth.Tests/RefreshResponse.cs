@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WebApp.Tests
+namespace CK.AspNet.Auth.Tests
 {
-    public class RefreshResponse
+    class RefreshResponse
     {
         public IAuthenticationInfo Info { get; set; }
 

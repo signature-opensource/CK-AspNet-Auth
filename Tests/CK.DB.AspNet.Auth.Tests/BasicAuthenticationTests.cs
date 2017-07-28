@@ -48,6 +48,51 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
+        [Test]
+        public void unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
+        {
+            var opt = new WebFrontAuthMiddlewareOptions()
+            {
+                UnsafeDirectLoginAllower = ( httpCtx, scheme ) => scheme == "Basic"
+            };
+            using( var server = new AuthServer( opt ) )
+            {
+                // Missing userName or userId.
+                {
+                    var payload = new JObject( new JProperty( "password", "pass" ) );
+                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
+                    HttpResponseMessage m = server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode = HttpStatusCode.BadRequest;
+                    string content = m.Content.ReadAsStringAsync().Result;
+                    JObject r = JObject.Parse( content );
+                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
+                    ((string)r["errorText"]).Should().Contain( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string" );
+                }
+                // Missing password.
+                {
+                    var payload = new JObject( new JProperty( "userId", "3712" ) );
+                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
+                    HttpResponseMessage m = server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode = HttpStatusCode.BadRequest;
+                    string content = m.Content.ReadAsStringAsync().Result;
+                    JObject r = JObject.Parse( content );
+                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
+                    ((string)r["errorText"]).Should().Contain( "Invalid payload. Missing 'Password' -> string entry." );
+                }
+                // Totally invalid payload.
+                {
+                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", null ) );
+                    HttpResponseMessage m = server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode = HttpStatusCode.BadRequest;
+                    string content = m.Content.ReadAsStringAsync().Result;
+                    JObject r = JObject.Parse( content );
+                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
+                    ((string)r["errorText"]).Should().Contain( "Invalid payload. It must be either a Tuple<int,string>, a Tuple<string,string> or a IDictionary<string,object> or IEnumerable<KeyValuePair<string,object>> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
+                }
+
+            }
+        }
+
         [TestCase( true )]
         [TestCase( false )]
         public void basic_authentication_via_generic_wrapper_on_a_created_user( bool allowed )
@@ -70,7 +115,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "pass" ) );
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage authBasic = server.Client.Post( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage authBasic = server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     if( allowed )
                     {
                         authBasic.EnsureSuccessStatusCode();
@@ -89,7 +134,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" ) );
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage authFailed = server.Client.Post( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage authFailed = server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
                     var c = RefreshResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
                     c.Info.Should().BeNull();
@@ -113,7 +158,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 basic.CreateOrUpdatePasswordUser( ctx, 1, idUser, password );
 
                 {
-                    HttpResponseMessage authBasic = server.Client.Post( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
+                    HttpResponseMessage authBasic = server.Client.PostJSON( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
                     var c = RefreshResponse.Parse( server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
@@ -122,7 +167,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
 
                 {
-                    HttpResponseMessage authFailed = server.Client.Post( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
+                    HttpResponseMessage authFailed = server.Client.PostJSON( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
                     var c = RefreshResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
                     c.Info.Should().BeNull();
                     c.Token.Should().BeNull();

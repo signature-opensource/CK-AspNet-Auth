@@ -61,11 +61,9 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Initialize a new AuthenticationInfoSecureDataFormat.
         /// </summary>
-        /// <param name="t">Type system to use.</param>
         /// <param name="p">Data protector to use.</param>
         public ExtraDataSecureDataFormat( IDataProtector p )
             : base( new Serializer(), p )
-
         {
         }
     }

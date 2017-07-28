@@ -23,10 +23,10 @@ namespace WebApp
 {
     public class Startup
     {
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices( IServiceCollection services )
         {
             services.AddAuthentication();
-            services.AddDefaultStObjMap("WebApp.Tests.Generated");
+            services.AddDefaultStObjMap( "WebApp.Tests.Generated" );
             services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
             services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
             services.AddSingleton<WebFrontAuthService>();
@@ -34,25 +34,25 @@ namespace WebApp
 
         class OidcEventHandler : OpenIdConnectEvents
         {
-            public override Task TicketReceived( TicketReceivedContext context )
+            public override Task TicketReceived( TicketReceivedContext c )
             {
-                var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-                return authService.HandleRemoteAuthentication<IUserOidcInfo>( context, payload =>
+                var authService = c.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
+                return authService.HandleRemoteAuthentication<IUserOidcInfo>( c, payload =>
                 {
                     payload.SchemeSuffix = "";
-                    payload.Sub = context.Principal.FindFirst( "sub" ).Value;
+                    payload.Sub = c.Principal.FindFirst( "sub" ).Value;
                 } );
             }
         }
 
         class OAuthEventHandler : OAuthEvents
         {
-            public override Task TicketReceived( TicketReceivedContext context )
+            public override Task TicketReceived( TicketReceivedContext c )
             {
-                var authService = context.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-                return authService.HandleRemoteAuthentication<IUserGoogleInfo>( context, payload =>
+                var authService = c.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
+                return authService.HandleRemoteAuthentication<IUserGoogleInfo>( c, payload =>
                 {
-                    payload.GoogleAccountId = context.Principal.FindFirst( "AccountId" ).Value;
+                    payload.GoogleAccountId = c.Principal.FindFirst( "AccountId" ).Value;
                 } );
             }
         }
@@ -61,8 +61,15 @@ namespace WebApp
         {
             loggerFactory.AddConsole();
 
-            app.UseDeveloperExceptionPage();
-            app.UseRequestMonitor();
+            if( env.IsDevelopment() )
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            app.UseRequestMonitor( new RequestMonitorMiddlewareOptions()
+            {
+                // In release, we silently catch and log any error.
+                SwallowErrors = !env.IsDevelopment()
+            } );
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             var oidcOptions = new OpenIdConnectOptions

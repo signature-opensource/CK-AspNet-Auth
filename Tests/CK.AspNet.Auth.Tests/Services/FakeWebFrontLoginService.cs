@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CK.Auth;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
+using CK.Core;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -26,16 +27,18 @@ namespace CK.AspNet.Auth.Tests
             _users.Add( typeSystem.UserInfo.Create( 3, "Hubert", new[] { new StdUserSchemeInfo( "Google", DateTime.MinValue ) } ) );
         }
 
+        public IReadOnlyList<IUserInfo> AllUsers => _users;
+
         public bool HasBasicLogin => true;
 
         public IReadOnlyList<string> Providers => new string[] { "Basic" };
 
-        public object CreatePayload( HttpContext ctx, string scheme )
+        public object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
         {
             throw new NotSupportedException();
         }
 
-        public Task<IUserInfo> BasicLoginAsync( HttpContext ctx, string userName, string password )
+        public Task<IUserInfo> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
         {
             IUserInfo u = null;
             if( password == "success" )
@@ -51,11 +54,12 @@ namespace CK.AspNet.Auth.Tests
             return Task.FromResult( u );
         }
 
-        public Task<IUserInfo> LoginAsync( HttpContext ctx, string providerName, object payload )
+        public Task<IUserInfo> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload )
         {
             if( providerName != "Basic" ) throw new ArgumentException( "Unknown provider.", nameof( providerName ) );
-            var o = (List<KeyValuePair<string, object>>)payload;
-            return BasicLoginAsync( ctx, (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value, (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value );
+            var o = payload as List<KeyValuePair<string, object>>;
+            if( o == null ) throw new ArgumentException( "Invalid payload." );
+            return BasicLoginAsync( ctx, monitor, (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value, (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value );
         }
     }
 }

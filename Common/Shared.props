@@ -19,7 +19,7 @@
     <CKDBVersion>1.0.0-d25</CKDBVersion>
     <CKActivityMonitorVersion>8.0.0</CKActivityMonitorVersion>
     <CKMonitoringVersion>7.0.0</CKMonitoringVersion>
-    <CKAspNetVersion>0.1.0-a09</CKAspNetVersion>
+    <CKAspNetVersion>0.1.0-a11</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.4.0</CKAuthAbstractionsVersion>
   </PropertyGroup>
   

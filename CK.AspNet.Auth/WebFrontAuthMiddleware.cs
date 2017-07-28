@@ -1,4 +1,5 @@
 ﻿using CK.Auth;
+using CK.Core;
 using CK.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -6,20 +7,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.Extensions.Primitives;
-using CK.Core;
 
 namespace CK.AspNet.Auth
 {
@@ -34,6 +31,7 @@ namespace CK.AspNet.Auth
         readonly WebFrontAuthService _authService;
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
+        readonly IWebFrontAuthImpersonationService _impersonationService;
         readonly PathString _entryPath;
 
         /// <summary>
@@ -43,9 +41,10 @@ namespace CK.AspNet.Auth
         /// <param name="dataProtectionProvider">The data protecion provider.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="urlEncoder">The url encoder.</param>
-        /// <param name="loginService">The login service.</param>
+        /// <param name="typeSystem">The </param>
+        /// <param name="loginService">The required login service.</param>
         /// <param name="authService">The authentication service.</param>
-        /// <param name="loginService">The login service.</param>
+        /// <param name="impersonationService">The optional impersonationService service.</param>
         /// <param name="options">Middleware options.</param>
         public WebFrontAuthMiddleware(
                 RequestDelegate next,
@@ -55,7 +54,8 @@ namespace CK.AspNet.Auth
                 WebFrontAuthService authService,
                 IAuthenticationTypeSystem typeSystem,
                 IWebFrontAuthLoginService loginService,
-                IOptions<WebFrontAuthMiddlewareOptions> options )
+                IOptions<WebFrontAuthMiddlewareOptions> options,
+                IWebFrontAuthImpersonationService impersonationService = null )
             : base( next, options, loggerFactory, urlEncoder )
         {
             if( dataProtectionProvider == null ) throw new ArgumentNullException( nameof( dataProtectionProvider ) );
@@ -67,6 +67,7 @@ namespace CK.AspNet.Auth
             _authService = authService;
             _typeSystem = typeSystem;
             _loginService = loginService;
+            _impersonationService = impersonationService;
             var provider = Options.DataProtectionProvider ?? dataProtectionProvider;
             IDataProtector dataProtector = provider.CreateProtector( typeof( WebFrontAuthMiddleware ).FullName );
             var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
@@ -82,6 +83,7 @@ namespace CK.AspNet.Auth
             readonly WebFrontAuthService _authService;
             readonly IAuthenticationTypeSystem _typeSystem;
             readonly IWebFrontAuthLoginService _loginService;
+            readonly IWebFrontAuthImpersonationService _impersonationService;
 
             public Handler( WebFrontAuthMiddleware middleware )
             {
@@ -89,6 +91,7 @@ namespace CK.AspNet.Auth
                 _authService = middleware._authService;
                 _typeSystem = middleware._typeSystem;
                 _loginService = middleware._loginService;
+                _impersonationService = middleware._impersonationService;
             }
 
             public override Task<bool> HandleRequestAsync()
@@ -113,21 +116,29 @@ namespace CK.AspNet.Auth
                         }
                         else if( cBased.Value == "/startLogin" )
                         {
-                            return StartLogin();
+                            return HandleStartLogin();
                         }
                         else if( cBased.Value == "/endLogin" )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return EndLogin( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return HandleEndLogin( Context.GetRequestMonitor() );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                         else if( cBased.Value == "/unsafeDirectLogin" )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return UnsafeDirectLogin( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( Context.GetRequestMonitor() );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                         else if( cBased.Value == "/logout" )
                         {
                             return HandleLogout();
+                        }
+                        else if( cBased.Value == "/impersonate" )
+                        {
+                            if( _impersonationService != null )
+                            {
+                                if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( Context.GetRequestMonitor() );
+                                Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                            }
                         }
                     }
                     else
@@ -143,6 +154,12 @@ namespace CK.AspNet.Auth
             {
                 IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
                 Debug.Assert( authInfo != null );
+                JObject response = GetRefreshResponseAndSetCookies( authInfo, Request.Query.Keys.Contains( "schemes" ) );
+                return WriteResponseAsync( response );
+            }
+
+            JObject GetRefreshResponseAndSetCookies( IAuthenticationInfo authInfo, bool addSchemes )
+            {
                 bool refreshable = false;
                 if( authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero )
                 {
@@ -154,21 +171,14 @@ namespace CK.AspNet.Auth
                     }
                 }
                 JObject response = CreateAuthResponse( authInfo, refreshable );
-                if( Request.Query.Keys.Contains( "schemes" ) )
+                if( addSchemes )
                 {
                     IReadOnlyList<string> list = Options.AvailableSchemes;
                     if( list == null || list.Count == 0 ) list = _loginService.Providers;
                     response.Add( "schemes", new JArray( _loginService.Providers ) );
                 }
                 _authService.SetCookies( Context, authInfo );
-                return WriteResponseAsync( response );
-            }
-
-            Task<bool> HandleToken()
-            {
-                var info = _authService.EnsureAuthenticationInfo( Context );
-                var o = _typeSystem.AuthenticationInfo.ToJObject( info );
-                return WriteResponseAsync( o );
+                return response;
             }
 
             Task<bool> HandleLogout()
@@ -178,7 +188,7 @@ namespace CK.AspNet.Auth
                 return Task.FromResult( true );
             }
 
-            async Task<bool> StartLogin()
+            async Task<bool> HandleStartLogin()
             {
                 string scheme = Request.Query["scheme"];
                 if( scheme == null )
@@ -213,7 +223,7 @@ namespace CK.AspNet.Auth
                 return true;
             }
 
-            async Task<bool> EndLogin( IActivityMonitor monitor )
+            async Task<bool> HandleEndLogin( IActivityMonitor monitor )
             {
                 Debug.Assert( HttpMethods.IsPost( Request.Method ) );
                 string cData = Request.Form["s"];
@@ -269,27 +279,41 @@ namespace CK.AspNet.Auth
                 public object Payload { get; set; }
             }
 
-            async Task<bool> UnsafeDirectLogin( IActivityMonitor monitor )
+            async Task<bool> HandleUnsafeDirectLogin( IActivityMonitor monitor )
             {
                 Response.StatusCode = StatusCodes.Status403Forbidden;
                 if( Options.UnsafeDirectLoginAllower != null )
                 {
-                    ProviderLoginRequest req = await ReadProviderLoginRequest( monitor );
+                    ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
                     if( req != null && Options.UnsafeDirectLoginAllower( Context, req.Scheme ) )
                     {
-                        IUserInfo u = await _loginService.LoginAsync( Context, req.Scheme, req.Payload );
-                        await DoDirectLogin( u );
+                        try
+                        {
+                            IUserInfo u = await _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
+                            await DoDirectLogin( u );
+                        }
+                        catch( ArgumentException ex )
+                        {
+                            monitor.Error( ex );
+                            await Response.WriteErrorAsync( ex, StatusCodes.Status400BadRequest );
+                        }
+                        catch( Exception ex )
+                        {
+                            monitor.Fatal( ex );
+                            throw;
+                        }
                     }
                 }
                 return true;
             }
 
-            async Task<ProviderLoginRequest> ReadProviderLoginRequest( IActivityMonitor monitor )
+            ProviderLoginRequest ReadDirectLoginRequest( IActivityMonitor monitor )
             {
                 ProviderLoginRequest req = null;
                 try
                 {
-                    var b = await new StreamReader( Request.Body ).ReadToEndAsync();
+                    string b;
+                    if( !Request.TryReadSmallBodyAsString( out b, 4096 ) ) return null;
                     // By using our poor StringMatcher here, we parse the JSON
                     // to basic List<KeyValuePair<string, object>> because 
                     // JObject are IEnumerable<KeyValuePair<string, JToken>> and
@@ -335,21 +359,22 @@ namespace CK.AspNet.Auth
             async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
             {
                 Debug.Assert( _loginService.HasBasicLogin );
-                BasicLoginRequest req = await ReadBasicLoginRequest( monitor );
+                BasicLoginRequest req = ReadBasicLoginRequest( monitor );
                 if( req != null )
                 {
-                    IUserInfo u = await _loginService.BasicLoginAsync( Context, req.UserName, req.Password );
+                    IUserInfo u = await _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
                     await DoDirectLogin( u );
                 }
                 return true;
             }
 
-            async Task<BasicLoginRequest> ReadBasicLoginRequest( IActivityMonitor monitor )
+            BasicLoginRequest ReadBasicLoginRequest( IActivityMonitor monitor )
             {
                 BasicLoginRequest req = null;
                 try
                 {
-                    var b = await new StreamReader( Request.Body ).ReadToEndAsync();
+                    string b;
+                    if( !Request.TryReadSmallBodyAsString( out b, 1024 ) ) return null;
                     var r = JsonConvert.DeserializeObject<BasicLoginRequest>( b );
                     if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
                 }
@@ -359,6 +384,73 @@ namespace CK.AspNet.Auth
                 }
                 if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
                 return req;
+            }
+
+            #endregion
+
+            #region Impersonation
+            async Task<bool> HandleImpersonate( IActivityMonitor monitor )
+            {
+                Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
+                Response.StatusCode = StatusCodes.Status403Forbidden;
+                IAuthenticationInfo info = _authService.EnsureAuthenticationInfo( Context );
+                if( info.ActualUser.UserId != 0 )
+                {
+                    int userId = -1;
+                    string userName = null;
+                    if( TryReadUserKey( monitor, ref userId, ref userName ) )
+                    {
+                        if( userName == info.ActualUser.UserName || userId == info.ActualUser.UserId )
+                        {
+                            info = info.ClearImpersonation();
+                            Response.StatusCode = StatusCodes.Status200OK;
+                        }
+                        else
+                        {
+                            IUserInfo target = userName != null
+                                                ? await _impersonationService.ImpersonateAsync( Context, monitor, info, userName )
+                                                : await _impersonationService.ImpersonateAsync( Context, monitor, info, userId );
+                            if( target != null )
+                            {
+                                info = info.Impersonate( target );
+                                Response.StatusCode = StatusCodes.Status200OK;
+                            }
+                        }
+                        if( Response.StatusCode == StatusCodes.Status200OK )
+                        {
+                            await Response.WriteAsync( GetRefreshResponseAndSetCookies( info, addSchemes: false ) );
+                        }
+                    }
+                }
+                return true;
+            }
+
+            bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string userName )
+            {
+                string b;
+                if( Request.TryReadSmallBodyAsString( out b, 512 ) )
+                {
+                    var m = new StringMatcher( b );
+                    List<KeyValuePair<string, object>> param;
+                    if( m.MatchJSONObject( out object val )
+                        && (param = val as List<KeyValuePair<string, object>>) != null
+                        && param.Count == 1 )
+                    {
+                        if( param[0].Key == "userName" && param[0].Value is string )
+                        {
+                            userName = (string)param[0].Value;
+                            return true;
+                        }
+                        if( param[0].Key == "userId" && param[0].Value is double )
+                        {
+                            userId = (int)(double)param[0].Value;
+                            return true;
+                        }
+                    }
+                    Response.StatusCode = StatusCodes.Status400BadRequest;
+                }
+                Debug.Assert( Response.StatusCode == StatusCodes.Status400BadRequest );
+                return false;
             }
 
             #endregion
@@ -375,6 +467,13 @@ namespace CK.AspNet.Auth
             }
 
             #endregion
+
+            Task<bool> HandleToken()
+            {
+                var info = _authService.EnsureAuthenticationInfo( Context );
+                var o = _typeSystem.AuthenticationInfo.ToJObject( info );
+                return WriteResponseAsync( o );
+            }
 
             struct LoginResult
             {

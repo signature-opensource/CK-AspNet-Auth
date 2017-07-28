@@ -16,13 +16,13 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    public class WebFrontAuthSignInContext
+    class WebFrontAuthLoginContext
     {
         string _errorId;
         string _errorMessage;
         IUserInfo _successfulLogin;
 
-        internal WebFrontAuthSignInContext( 
+        internal WebFrontAuthLoginContext( 
             HttpContext ctx, 
             WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
@@ -124,7 +124,7 @@ namespace CK.AspNet.Auth
             _successfulLogin = user;
         }
 
-        public Task SendResponse()
+        internal Task SendResponse()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorMessage != null )
@@ -144,10 +144,12 @@ namespace CK.AspNet.Auth
             {
                 data.Add( UserDataToJProperty() );
             }
+            // 5 seconds should be enough for the client to handle the form submit
+            // and the request to reach /endLogin.
             string secure = AuthenticationService.ProtectString( 
                                     HttpContext, 
                                     data.ToString( Newtonsoft.Json.Formatting.None ), 
-                                    TimeSpan.FromSeconds( 3 ) );
+                                    TimeSpan.FromSeconds( 5 ) );
             return HttpContext.Response.WritePostRedirectEndLoginAsync( secure, ReturnUrl );
         }
 

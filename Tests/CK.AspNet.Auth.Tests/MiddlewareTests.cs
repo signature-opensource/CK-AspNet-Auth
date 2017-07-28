@@ -20,31 +20,6 @@ namespace CK.AspNet.Auth.Tests
         const string logoutUri = "/.webfront/c/logout";
         const string tokenExplainUri = "/.webfront/token";
 
-        class RefreshResponse
-        {
-            public IAuthenticationInfo Info { get; set; }
-
-            public string Token { get; set; }
-
-            public bool Refreshable { get; set; }
-
-            public string[] Schemes { get; set; }
-
-            public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
-            {
-                JObject o = JObject.Parse( json );
-                var r = new RefreshResponse();
-                if( o["info"].Type == JTokenType.Object )
-                {
-                    r.Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"] );
-                }
-                r.Token = (string)o["token"];
-                r.Refreshable = (bool)o["refreshable"];
-                r.Schemes = o["schemes"]?.Values<string>().ToArray();
-                return r;
-            }
-        }
-
         [Test]
         public void calling_c_refresh_from_scrath_returns_null_info_and_token()
         {
@@ -74,7 +49,7 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() ) )
             {
-                HttpResponseMessage response = s.Client.Post( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage response = s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
                 c.Info.User.UserId.Should().Be( 2 );
@@ -95,7 +70,7 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions(), services => services.Replace<IWebFrontAuthLoginService, NoAuthWebFrontLoginService>() ) )
             {
-                HttpResponseMessage response = s.Client.Post( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage response = s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.NotFound );
             }
         }
@@ -111,7 +86,7 @@ namespace CK.AspNet.Auth.Tests
             using( var s = new AuthServer( opt ) )
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = LoginAlbertViaBasicProvider( s, useGenericWrapper );
+                var login = s.LoginAlbertViaBasicProvider( useGenericWrapper );
                 DateTime basicLoginTime = login.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
@@ -154,10 +129,10 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ) )
             {
-                var firstLogin = LoginAlbertViaBasicProvider( s );
+                var firstLogin = s.LoginAlbertViaBasicProvider();
                 string badToken = firstLogin.Token + 'B';
                 s.Client.Token = badToken;
-                RefreshResponse c = CallRefreshEndPoint( s );
+                RefreshResponse c = s.CallRefreshEndPoint();
                 c.Info.Should().BeNull();
                 HttpResponseMessage tokenRead = s.Client.Get( tokenExplainUri );
                 tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{}" );
@@ -173,7 +148,7 @@ namespace CK.AspNet.Auth.Tests
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ) )
             {
                 // Login: the 2 cookies are set.
-                var firstLogin = LoginAlbertViaBasicProvider( s );
+                var firstLogin = s.LoginAlbertViaBasicProvider();
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
@@ -182,7 +157,7 @@ namespace CK.AspNet.Auth.Tests
                 logout.EnsureSuccessStatusCode();
                 // Refresh: we have the Unsafe Albert.
                 s.Client.Token = null;
-                RefreshResponse c = CallRefreshEndPoint( s );
+                RefreshResponse c = s.CallRefreshEndPoint();
                 c.Info.Level.Should().Be( AuthLevel.Unsafe );
                 c.Info.User.UserName.Should().Be( "" );
                 c.Info.UnsafeUser.UserName.Should().Be( "Albert" );
@@ -199,7 +174,7 @@ namespace CK.AspNet.Auth.Tests
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() { CookieMode = mode } ) )
             {
                 // Login: the 2 cookies are set.
-                var firstLogin = LoginAlbertViaBasicProvider( s );
+                var firstLogin = s.LoginAlbertViaBasicProvider();
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
@@ -221,12 +196,12 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() ) )
             {
-                HttpResponseMessage response = s.Client.Post( basicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}" );
+                HttpResponseMessage response = s.Client.PostJSON( basicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) ).Should().HaveCount( 0 );
-                response = s.Client.Post( basicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}" );
+                response = s.Client.PostJSON( basicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-                response = s.Client.Post( basicLoginUri, "not a json" );
+                response = s.Client.PostJSON( basicLoginUri, "not a json" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
             }
         }
@@ -240,7 +215,7 @@ namespace CK.AspNet.Auth.Tests
                 CookieMode = rootCookiePath ? AuthenticationCookieMode.RootPath : AuthenticationCookieMode.WebFrontPath
             } ) )
             {
-                HttpResponseMessage auth = s.Client.Post( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage auth = s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 var c = RefreshResponse.Parse( s.TypeSystem, auth.Content.ReadAsStringAsync().Result );
                 {
                     // With token: it always works.
@@ -278,10 +253,10 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 // This test is far from perfect but does the job without clock injection.
-                RefreshResponse auth = LoginAlbertViaBasicProvider( s );
+                RefreshResponse auth = s.LoginAlbertViaBasicProvider();
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
-                RefreshResponse refresh = CallRefreshEndPoint( s );
+                RefreshResponse refresh = s.CallRefreshEndPoint();
                 refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Refresh increased the expiration time." );
             }
         }
@@ -297,7 +272,7 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 // This test is far from perfect but does the job without clock injection.
-                RefreshResponse auth = LoginAlbertViaBasicProvider( s );
+                RefreshResponse auth = s.LoginAlbertViaBasicProvider();
                 DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
                 expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: 1000 );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
@@ -311,44 +286,6 @@ namespace CK.AspNet.Auth.Tests
                 DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
                 expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: 1000 );
             }
-        }
-
-        static RefreshResponse LoginAlbertViaBasicProvider( AuthServer s, bool useGenericWrapper = false )
-        {
-            HttpResponseMessage response = useGenericWrapper
-                                            ? s.Client.Post( unsafeDirectLoginUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }" )
-                                            : s.Client.Post( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-            response.EnsureSuccessStatusCode();
-            switch( s.Options.CookieMode )
-            {
-                case AuthenticationCookieMode.WebFrontPath:
-                    {
-                        s.Client.Cookies.GetCookies( s.Server.BaseAddress ).Should().BeEmpty();
-                        s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) ).Should().HaveCount( 2 );
-                        break;
-                    }
-                case AuthenticationCookieMode.RootPath:
-                    {
-                        s.Client.Cookies.GetCookies( s.Server.BaseAddress ).Should().HaveCount( 2 );
-                        break;
-                    }
-                case AuthenticationCookieMode.None:
-                    {
-                        s.Client.Cookies.GetCookies( s.Server.BaseAddress ).Should().BeEmpty();
-                        s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) ).Should().BeEmpty();
-                        break;
-                    }
-            }
-            var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-            c.Info.Level.Should().Be( AuthLevel.Normal );
-            c.Info.User.UserName.Should().Be( "Albert" );
-            return c;
-        }
-        private static RefreshResponse CallRefreshEndPoint( AuthServer s )
-        {
-            HttpResponseMessage tokenRefresh = s.Client.Get( refreshUri );
-            tokenRefresh.EnsureSuccessStatusCode();
-            return RefreshResponse.Parse( s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
         }
 
     }
