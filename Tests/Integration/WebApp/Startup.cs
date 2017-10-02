@@ -41,6 +41,23 @@ namespace WebApp
                     options.RequireHttpsMetadata = false;
                     options.ClientId = "WebApp";
                     options.ClientSecret = "WebApp.Secret";
+                    options.Events.OnMessageReceived = message =>
+                    {
+                        var m = message.HttpContext.GetRequestMonitor();
+                        using( m.OpenInfo( "Receiving Oidc message" ) )
+                        {
+                            string json = Newtonsoft.Json.JsonConvert.SerializeObject(
+                                message,
+                                Newtonsoft.Json.Formatting.Indented,
+                                new Newtonsoft.Json.JsonSerializerSettings()
+                                {
+                                    ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore,
+                                    MaxDepth = 2
+                                } );
+                            m.Info( json );
+                        }
+                        return Task.CompletedTask;
+                    };
                     options.Events.OnTicketReceived = c => c.WebFrontAuthRemoteAuthenticateAsync<IUserOidcInfo>( payload =>
                     {
                         payload.SchemeSuffix = "";
