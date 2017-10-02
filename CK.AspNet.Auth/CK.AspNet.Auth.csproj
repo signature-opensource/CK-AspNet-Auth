@@ -1,20 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\Common\Shared.props" />
-
+  
   <PropertyGroup>
-    <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>Implements CK.ASPNet.Auth.WebFrontAuthMiddleware CK.ASPNet.Auth.WebFrontAuthService abstract base class.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="9.0.0" />
-    <PackageReference Include="CK.AspNet" Version="1.0.0" />
-  </ItemGroup>
-  <ItemGroup>
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="$(CKActivityMonitorVersion)" />
+    <PackageReference Include="CK.AspNet" Version="$(CKAspNetVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="2.0.0" />
   </ItemGroup>
+  
 </Project>

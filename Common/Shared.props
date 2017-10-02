@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- SharedDir is the /Common directory. -->
@@ -15,22 +15,20 @@
 
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>5.0.0-b03</CKDatabaseVersion>
-    <CKDBVersion>1.0.0-d26</CKDBVersion>
-    <CKActivityMonitorVersion>8.0.0</CKActivityMonitorVersion>
-    <CKMonitoringVersion>7.1.0</CKMonitoringVersion>
-    <CKAspNetVersion>1.0.0-a00-00-develop-0003</CKAspNetVersion>
+    <CKDatabaseVersion>5.0.0-d01</CKDatabaseVersion>
+    <CKDBVersion>1.0.0-e</CKDBVersion>
+    <CKActivityMonitorVersion>9.0.0</CKActivityMonitorVersion>
+    <CKMonitoringVersion>8.1.1</CKMonitoringVersion>
+    <CKAspNetVersion>1.0.0</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.5.1</CKAuthAbstractionsVersion>
   </PropertyGroup>
   
   <!-- 
     When building from the CI (ie. from Cake, hence directly with the msbuild tool, SolutionDir is not defined),
-    we unify the behavior here as well as setting the BaseIntermediateOutputPath (the /obj folder)
-    below CodeCakeBuilder/Releases/ so that compilation from external sources does not interfere with visual studio work.
+    we unify the behavior here.
   -->
   <PropertyGroup Condition=" '$(CakeBuild)' == 'true' ">
     <SolutionDir>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(MSBuildThisFileDirectory)))))\</SolutionDir>
-    <BaseIntermediateOutputPath>$(SolutionDir)CodeCakeBuilder\Releases\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
   <!-- When not building from the CI, assemblies do not have any AssemblyInfo attributes. -->
   <PropertyGroup Condition=" '$(CakeBuild)' != 'true' ">
@@ -52,10 +50,10 @@
 
     <!-- Properties that are solution depdendents. -->
     <ProductName>CK-Framework</ProductName>
-    <PackageReleaseNotes>https://github.com/Invenietis/CK-Auth-Abstractions/releases</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/Invenietis/CK-AspNet-Auth/releases</PackageReleaseNotes>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Invenietis/CK-Auth-Abstractions</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Invenietis/CK-AspNet-Auth</RepositoryUrl>
 
   </PropertyGroup>
 </Project>
