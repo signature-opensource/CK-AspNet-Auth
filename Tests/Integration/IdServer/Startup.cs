@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +11,6 @@ using IdentityServer4.Validation;
 using IdentityServer4.Models;
 using IdentityServer4;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Authentication.Google;
 
 namespace IdServer
 {
@@ -21,14 +20,8 @@ namespace IdServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication().AddGoogle( o =>
-            {
-                o.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
-                o.ClientId = "708996912208-9m4dkjb5hscn7cjrn5u0r4tbgkbj1fko.apps.googleusercontent.com";
-                o.ClientSecret = "wdfPY6t8H8cecgjlxud__4Gh";
-            } );
             services.AddIdentityServer()
-                .AddDeveloperSigningCredential()
+                .AddTemporarySigningCredential()
                 .AddInMemoryIdentityResources(new List<IdentityResource>
                 {
                     new IdentityResources.OpenId(),
@@ -101,6 +94,13 @@ namespace IdServer
 
             app.UseIdentityServer();
 
+            app.UseGoogleAuthentication(new GoogleOptions
+            {
+                AuthenticationScheme = "Google",
+                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+                ClientId = "708996912208-9m4dkjb5hscn7cjrn5u0r4tbgkbj1fko.apps.googleusercontent.com",
+                ClientSecret = "wdfPY6t8H8cecgjlxud__4Gh"
+            });
 
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();
