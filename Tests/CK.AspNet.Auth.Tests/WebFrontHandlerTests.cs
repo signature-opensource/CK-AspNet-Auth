@@ -29,7 +29,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage response = await s.Client.Get( refreshUri );
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() );
+                c.ShouldBeEquivalentTo( new RefreshResponse() );
             }
         }
 
@@ -41,7 +41,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage response = await s.Client.Get( refreshUri + "?schemes" );
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() { Schemes = new[] { "Basic" } } );
+                c.ShouldBeEquivalentTo( new RefreshResponse() { Schemes = new[] { "Basic" } } );
             }
         }
 
