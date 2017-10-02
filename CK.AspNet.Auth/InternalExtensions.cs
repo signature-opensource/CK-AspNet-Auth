@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
-    static class InternalExtensions
+    public static class InternalExtensions
     {
         static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
         {

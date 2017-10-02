@@ -1,9 +1,11 @@
-﻿using CK.Auth;
+using CK.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace CK.AspNet.Auth
 {
+
     /// <summary>
     /// Adds classical helper to <see cref="IApplicationBuilder"/>.
     /// </summary>
@@ -15,9 +17,10 @@ namespace CK.AspNet.Auth
         /// <param name="app">The application builder.</param>
         /// <param name="options">The options.</param>
         /// <returns>The application builder.</returns>
-        public static IApplicationBuilder UseWebFrontAuth( this IApplicationBuilder app, WebFrontAuthMiddlewareOptions options )
+        [Obsolete( "Use AddWebFrontAuth on AuthenticationBuilder", true )]
+        public static IApplicationBuilder UseWebFrontAuth( this IApplicationBuilder app, WebFrontAuthOptions options )
         {
-            return app.UseMiddleware<WebFrontAuthMiddleware>( options );
+            throw new NotSupportedException( "Use AddWebFrontAuth on AuthenticationBuilder" );
         }
 
     }

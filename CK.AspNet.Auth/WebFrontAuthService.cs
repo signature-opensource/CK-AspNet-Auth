@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace CK.AspNet.Auth
 {
@@ -37,7 +38,7 @@ namespace CK.AspNet.Auth
         AuthenticationInfoSecureDataFormat _tokenFormat;
         AuthenticationInfoSecureDataFormat _cookieFormat;
         ExtraDataSecureDataFormat _extraDataFormat;
-        WebFrontAuthMiddlewareOptions _options;
+        IOptionsMonitor<WebFrontAuthOptions> _options;
         string _cookiePath;
         TimeSpan _halfSlidingExpirationTime;
 
@@ -46,40 +47,32 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
         /// <param name="loginService">Login service.</param>
-        public WebFrontAuthService( IAuthenticationTypeSystem typeSystem, IWebFrontAuthLoginService loginService )
+        public WebFrontAuthService( IAuthenticationTypeSystem typeSystem, IWebFrontAuthLoginService loginService, IDataProtectionProvider dataProtectionProvider, IOptionsMonitor<WebFrontAuthOptions> options )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
-        }
+            _options = options;
 
-        /// <summary>
-        /// This is called by the WebFrontAuthMiddleware constructor.
-        /// </summary>
-        /// <param name="genericProtector">Base protector.</param>
-        /// <param name="cookieFormat">The formatter for cookies.</param>
-        /// <param name="tokenFormat">The formatter for tokens.</param>
-        /// <param name="extraDataFormat">The formatter for extra data.</param>
-        /// <param name="options">The middleware options.</param>
-        internal void Initialize(
-            IDataProtector genericProtector,
-            AuthenticationInfoSecureDataFormat cookieFormat,
-            AuthenticationInfoSecureDataFormat tokenFormat,
-            ExtraDataSecureDataFormat extraDataFormat,
-            WebFrontAuthMiddlewareOptions options )
-        {
-            if( _tokenFormat != null ) throw new InvalidOperationException( "Only one WebFrontAuthMiddleware must be used." );
-            Debug.Assert( genericProtector != null );
-            Debug.Assert( cookieFormat != null );
-            Debug.Assert( tokenFormat != null );
-            Debug.Assert( options != null );
-            _genericProtector = genericProtector;
+            var provider = Options.DataProtectionProvider ?? dataProtectionProvider;
+            IDataProtector dataProtector = provider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
+            var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
+            var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
+            var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
+            _genericProtector = dataProtector;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
-            _options = options;
-            _cookiePath = options.EntryPath + "/c/";
-            _halfSlidingExpirationTime = new TimeSpan( options.SlidingExpirationTime.Ticks / 2 );
+
+            _cookiePath = Options.EntryPath + "/c/";
+            _halfSlidingExpirationTime = new TimeSpan( Options.SlidingExpirationTime.Ticks / 2 );
         }
+
+        /// <summary>
+        /// Gets the middleware options.
+        /// </summary>
+        protected IOptionsMonitor<WebFrontAuthOptions> OptionsMonitor => _options;
+
+        protected WebFrontAuthOptions Options => OptionsMonitor.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
         {
@@ -163,7 +156,7 @@ namespace CK.AspNet.Auth
             try
             {
                 // First try from the bearer: this is always the preferred way.
-                string authorization = c.Request.Headers[_options.BearerHeaderName];
+                string authorization = c.Request.Headers[Options.BearerHeaderName];
                 if( !string.IsNullOrEmpty( authorization )
                     && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase ) )
                 {
@@ -174,8 +167,7 @@ namespace CK.AspNet.Auth
                 else
                 {
                     // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                    string cookie;
-                    if( Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out cookie ) )
+                    if( Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
                     {
                         authInfo = _cookieFormat.Unprotect( cookie, GetTlsTokenBinding( c ) );
                     }
@@ -285,11 +277,6 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Gets the middleware options.
-        /// </summary>
-        protected WebFrontAuthMiddlewareOptions Options => _options;
-
-        /// <summary>
         /// This method fully handles the request.
         /// </summary>
         /// <typeparam name="T">Type of a payload object that is scheme dependent.</typeparam>
@@ -320,7 +307,7 @@ namespace CK.AspNet.Auth
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
-                                context.Options.AuthenticationScheme,
+                                context.Scheme.Name,
                                 context.Properties,
                                 context.Principal,
                                 initialScheme,

@@ -1,4 +1,5 @@
-﻿using CK.Auth;
+using CK.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
@@ -12,7 +13,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Options for <see cref="WebFrontAuthMiddleware"/>.
     /// </summary>
-    public class WebFrontAuthMiddlewareOptions : AuthenticationOptions, IOptions<WebFrontAuthMiddlewareOptions>
+    public class WebFrontAuthOptions : AuthenticationSchemeOptions, IOptions<WebFrontAuthOptions>
     {
         static readonly PathString _entryPath = new PathString( "/.webfront" );
 
@@ -23,13 +24,10 @@ namespace CK.AspNet.Auth
         public const string OnlyAuthenticationScheme = "WebFrontAuth";
 
         /// <summary>
-        /// Initializes a new instance of <see cref="WebFrontAuthMiddlewareOptions"/>.
+        /// Initializes a new instance of <see cref="WebFrontAuthOptions"/>.
         /// </summary>
-        public WebFrontAuthMiddlewareOptions()
+        public WebFrontAuthOptions()
         {
-            AuthenticationScheme = "WebFrontAuth";
-            AutomaticAuthenticate = false;
-            AutomaticChallenge = false;
         }
 
         /// <summary>
@@ -133,7 +131,7 @@ namespace CK.AspNet.Auth
         public IDataProtectionProvider DataProtectionProvider { get; set; }
 
 
-        WebFrontAuthMiddlewareOptions IOptions<WebFrontAuthMiddlewareOptions>.Value => this;
+        WebFrontAuthOptions IOptions<WebFrontAuthOptions>.Value => this;
 
     }
 }

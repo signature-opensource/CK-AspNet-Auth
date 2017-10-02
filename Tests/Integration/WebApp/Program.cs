@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,36 +7,28 @@ using Microsoft.AspNetCore.Hosting;
 using System.Threading;
 using CK.Monitoring;
 using CK.Core;
+using Microsoft.Extensions.Configuration;
 
 namespace WebApp
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main( string[] args )
         {
-            bool createdNew;
-            using( Mutex m = new Mutex( true, "Invenietis.CK.AspNet.Auth.Integration.WebApp", out createdNew ) )
-            {
-                if( createdNew )
-                {
-                    SystemActivityMonitor.RootLogPath = Directory.GetCurrentDirectory() + "Logs";
-                    var config = new GrandOutputConfiguration();
-                    config.AddHandler( new CK.Monitoring.Handlers.TextFileConfiguration() { Path = "Text" } );
-                    GrandOutput.EnsureActiveDefault( config );
-                    
-                    var host = new WebHostBuilder()
-                        .UseUrls( "http://localhost:4324" )
-                        .UseKestrel()
-                        .UseContentRoot( Directory.GetCurrentDirectory() )
-                        .UseIISIntegration()
-                        .UseStartup<Startup>()
-                        .Build();
+            var config = new ConfigurationBuilder()
+                .AddJsonFile( "appsettings", true, true )
+                .Build();
 
-                    host.Run();
+            var host = new WebHostBuilder()
+                .UseUrls( "http://localhost:4324" )
+                .UseKestrel()
+                .UseContentRoot( Directory.GetCurrentDirectory() )
+                .UseMonitoring( "GrandOutput" )
+                .UseIISIntegration()
+                .UseStartup<Startup>()
+                .Build();
 
-                    GrandOutput.Default.Dispose();
-                }
-            }
+            host.Run();
         }
     }
 }

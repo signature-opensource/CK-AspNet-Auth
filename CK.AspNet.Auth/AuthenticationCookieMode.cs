@@ -12,7 +12,7 @@ namespace CK.AspNet.Auth
     public enum AuthenticationCookieMode
     {
         /// <summary>
-        /// The  authentication cookie <see cref="CookieOptions.Path"/> is set on the <see cref="WebFrontAuthMiddlewareOptions.EntryPath"/>/c/.
+        /// The  authentication cookie <see cref="CookieOptions.Path"/> is set on the <see cref="WebFrontAuthOptions.EntryPath"/>/c/.
         /// This is the default mode.
         /// </summary>
         WebFrontPath = 0,

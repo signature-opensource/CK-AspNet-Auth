@@ -3,22 +3,26 @@
   <Import Project="..\..\Common\Shared.props" />
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFrameworks>net461;netcoreapp2.0</TargetFrameworks>
     <!-- Required for Microsoft.AspNetCore.Testing (see: https://github.com/aspnet/Hosting/issues/926) -->
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="4.19.2" />
+    <PackageReference Include="FluentAssertions" Version="5.0.0-beta0002" />
         
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.DB.AspNet" Version="1.0.0" />
+    <PackageReference Include="CK.AspNet.Tester" Version="1.0.0" />
     
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="5.0.0-d01" />
     
-    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="1.0.0-e" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="1.0.0-e" />
+
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.8.0" />
   </ItemGroup>
 
   <ItemGroup>

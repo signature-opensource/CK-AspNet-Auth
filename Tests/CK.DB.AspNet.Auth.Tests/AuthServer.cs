@@ -1,9 +1,10 @@
-﻿using CK.AspNet;
+using CK.AspNet;
 using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
 using CK.Core;
 using CK.DB.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,19 +18,16 @@ namespace CK.DB.AspNet.Auth.Tests
         WebFrontAuthService _authService;
 
         public AuthServer(
-            WebFrontAuthMiddlewareOptions options,
+            Action<WebFrontAuthOptions> options = null,
             Action<IServiceCollection> configureServices = null,
             Action<IApplicationBuilder> configureApplication = null )
         {
-            Options = options;
             var b = WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
-                    services.AddAuthentication();
+                    services.AddAuthentication().AddWebFrontAuth( options );
                     services.AddStObjMap( TestHelper.StObjMap.Default );
-                    services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
-                    services.AddSingleton<WebFrontAuthService>();
                     configureServices?.Invoke( services );
                 },
                 app =>
@@ -37,7 +35,6 @@ namespace CK.DB.AspNet.Auth.Tests
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
-                    app.UseWebFrontAuth( options );
                     configureApplication?.Invoke( app );
                 } );
             Server = new TestServer( b );
@@ -47,8 +44,6 @@ namespace CK.DB.AspNet.Auth.Tests
         public WebFrontAuthService AuthService => _authService;
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
-
-        public WebFrontAuthMiddlewareOptions Options { get; }
 
         public TestServer Server { get; }
 

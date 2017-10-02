@@ -1,4 +1,4 @@
-﻿using CK.AspNet.Auth;
+using CK.AspNet.Auth;
 using CK.Auth;
 using System;
 using System.Collections.Generic;
@@ -22,15 +22,15 @@ namespace Microsoft.AspNetCore.Http
         {
             IAuthenticationInfo authInfo = null;
             object o;
-            if (@this.Items.TryGetValue(typeof(IAuthenticationInfo), out o))
+            if( @this.Items.TryGetValue( typeof( IAuthenticationInfo ), out o ) )
             {
                 authInfo = (IAuthenticationInfo)o;
             }
             else
             {
-                WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetService(typeof(WebFrontAuthService));
-                if (s == null) throw new InvalidOperationException("Missing WebFrontAuthService registration in Services.");
-                authInfo = s.ReadAndCacheAuthenticationHeader(@this);
+                WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetService( typeof( WebFrontAuthService ) );
+                if( s == null ) throw new InvalidOperationException( "Missing WebFrontAuthService registration in Services." );
+                authInfo = s.ReadAndCacheAuthenticationHeader( @this );
             }
             return authInfo;
         }
