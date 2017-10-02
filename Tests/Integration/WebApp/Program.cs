@@ -23,7 +23,7 @@ namespace WebApp
                 .UseUrls( "http://localhost:4324" )
                 .UseKestrel()
                 .UseContentRoot( Directory.GetCurrentDirectory() )
-                .UseMonitoring( "GrandOutput" )
+                .UseMonitoring()
                 .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
