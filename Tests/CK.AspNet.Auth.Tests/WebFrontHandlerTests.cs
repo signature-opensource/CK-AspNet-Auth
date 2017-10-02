@@ -9,6 +9,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CK.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -76,16 +79,31 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
+        class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
+        {
+            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
+            {
+                return Task.FromResult( scheme == "Basic" );
+            }
+        }
+
         [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
         [TestCase( AuthenticationCookieMode.RootPath, false )]
         [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
         [TestCase( AuthenticationCookieMode.RootPath, true )]
         public async Task successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication( AuthenticationCookieMode mode, bool useGenericWrapper )
         {
-            using( var s = new AuthServer( opt =>
+            using( var s = new AuthServer(
+                opt =>
             {
                 opt.CookieMode = mode;
-                if( useGenericWrapper ) opt.UnsafeDirectLoginAllower = ( httpCtx, scheme ) => scheme == "Basic";
+            },
+            services =>
+            {
+                if( useGenericWrapper )
+                {
+                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,BasicDirectLoginAllower>();
+                }
             } ) )
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.

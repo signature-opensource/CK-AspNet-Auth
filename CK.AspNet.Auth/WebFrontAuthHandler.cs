@@ -1,4 +1,3 @@
-using CK.AspNet.Auth;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,13 +11,12 @@ using Microsoft.AspNetCore.Http;
 using CK.Core;
 using System.Linq;
 using Microsoft.Extensions.Primitives;
-using CK.AspNet;
 using System.Security.Claims;
 using CK.Text;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication;
 
-namespace Microsoft.AspNetCore.Authentication
+namespace CK.AspNet.Auth
 {
     class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
     {
@@ -28,6 +26,7 @@ namespace Microsoft.AspNetCore.Authentication
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
         readonly IWebFrontAuthImpersonationService _impersonationService;
+        readonly IWebFrontAuthUnsafeDirectLoginAllowService _unsafeDirectLoginAllower;
 
         public WebFrontAuthHandler(
             IOptionsMonitor<WebFrontAuthOptions> options,
@@ -37,13 +36,15 @@ namespace Microsoft.AspNetCore.Authentication
             WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
-            IWebFrontAuthImpersonationService impersonationService = null
+            IWebFrontAuthImpersonationService impersonationService = null,
+            IWebFrontAuthUnsafeDirectLoginAllowService unsafeDirectLoginAllower = null
             ) : base( options, logger, encoder, clock )
         {
             _authService = authService;
             _typeSystem = typeSystem;
             _loginService = loginService;
             _impersonationService = impersonationService;
+            _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
         public Task<bool> HandleRequestAsync()
@@ -185,7 +186,7 @@ namespace Microsoft.AspNetCore.Authentication
                 || retUrl == null )
             {
 
-                monitor.Fatal( "Illegal call to EndLogin." );
+                monitor.Fatal( $"Illegal call to EndLogin." );
                 Response.StatusCode = StatusCodes.Status400BadRequest;
             }
             try
@@ -194,8 +195,9 @@ namespace Microsoft.AspNetCore.Authentication
                 JObject o = JObject.Parse( data );
                 IUserInfo u = _typeSystem.UserInfo.FromJObject( (JObject)o["u"] );
                 LoginResult r = HandleLogin( u );
-                if( !string.IsNullOrEmpty( retUrl ) )
+                if( retUrl.Length > 0 )
                 {
+                    // "inline" mode.
                     var caller = new Uri( $"{Context.Request.Scheme}://{Context.Request.Host}/" );
                     var target = new Uri( caller, retUrl );
                     Response.StatusCode = StatusCodes.Status200OK;
@@ -205,6 +207,7 @@ namespace Microsoft.AspNetCore.Authentication
                 }
                 else
                 {
+                    // "popup" mode.
                     o.Remove( "u" );
                     r.Response.Merge( o );
                     await Context.Response.WritePostMessageAsync( r.Response );
@@ -212,6 +215,7 @@ namespace Microsoft.AspNetCore.Authentication
             }
             catch( Exception ex )
             {
+                monitor.Error( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
                 if( string.IsNullOrEmpty( retUrl ) )
                 {
                     await Context.Response.WritePostMessageWithErrorAsync( ex );
@@ -234,10 +238,10 @@ namespace Microsoft.AspNetCore.Authentication
         async Task<bool> HandleUnsafeDirectLogin( IActivityMonitor monitor )
         {
             Response.StatusCode = StatusCodes.Status403Forbidden;
-            if( Options.UnsafeDirectLoginAllower != null )
+            if( _unsafeDirectLoginAllower != null )
             {
                 ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
-                if( req != null && Options.UnsafeDirectLoginAllower( Context, req.Scheme ) )
+                if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
                     try
                     {
@@ -246,12 +250,12 @@ namespace Microsoft.AspNetCore.Authentication
                     }
                     catch( ArgumentException ex )
                     {
-                        monitor.Error( ex );
+                        monitor.Error( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
                         await Response.WriteErrorAsync( ex, StatusCodes.Status400BadRequest );
                     }
                     catch( Exception ex )
                     {
-                        monitor.Fatal( ex );
+                        monitor.Fatal( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
                         throw;
                     }
                 }
@@ -293,7 +297,7 @@ namespace Microsoft.AspNetCore.Authentication
             }
             catch( Exception ex )
             {
-                monitor.Error( "Invalid payload.", ex );
+                monitor.Error( "Invalid payload.", ex, WebFrontAuthService.WebFrontAuthMonitorTag );
             }
             if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
             return req;
@@ -413,12 +417,10 @@ namespace Microsoft.AspNetCore.Authentication
             IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
             if( authInfo.IsNullOrNone() )
             {
-                // INV: Changed from Skip() to Fail()
-                return Task.FromResult( AuthenticateResult.Fail( "No Authentication Info Provided" ) );
+                return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
             }
 
             var principal = new ClaimsPrincipal();
-
             principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( authInfo, userInfoOnly: false ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );
             return Task.FromResult( AuthenticateResult.Success( ticket ) );

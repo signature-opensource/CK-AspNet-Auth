@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
-    public static class InternalExtensions
+    static class InternalExtensions
     {
         static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
         {

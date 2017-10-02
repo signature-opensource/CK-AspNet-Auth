@@ -7,6 +7,8 @@ using CK.DB.Auth;
 using CK.DB.User.UserGoogle;
 using CK.SqlServer;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -49,10 +51,21 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
+        class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
+        {
+            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
+            {
+                return Task.FromResult( scheme == "Basic" );
+            }
+        }
+
         [Test]
         public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
         {
-            using( var server = new AuthServer( opt => opt.UnsafeDirectLoginAllower = ( httpCtx, scheme ) => scheme == "Basic" ) )
+            using( var server = new AuthServer( options: null, configureServices: services =>
+            {
+                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
+            } ) )
             {
                 // Missing userName or userId.
                 {
@@ -99,11 +112,11 @@ namespace CK.DB.AspNet.Auth.Tests
             var basic = auth.FindProvider( "Basic" );
    
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( opt =>
+            using( var server = new AuthServer( options: null, configureServices: services =>
             {
                 if( allowed )
                 {
-                    opt.UnsafeDirectLoginAllower = ( httpCtx, scheme ) => scheme == "Basic";
+                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
                 }
             } ) )
             {

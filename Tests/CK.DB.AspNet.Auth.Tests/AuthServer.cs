@@ -35,6 +35,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
+                    app.UseAuthentication();
                     configureApplication?.Invoke( app );
                 } );
             Server = new TestServer( b );

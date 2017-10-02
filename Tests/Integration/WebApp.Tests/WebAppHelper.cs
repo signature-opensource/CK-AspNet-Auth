@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using CK.Core;
 using System;
 using System.Collections.Generic;
