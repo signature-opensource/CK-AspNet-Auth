@@ -96,19 +96,19 @@ namespace IdServer
             {
                 foreach( var h in context.Request.Headers )
                 {
-                    Console.WriteLine( $"==> Header: {h.Key} => {h.Value}" );
+                    Console.WriteLine( $"==> Header: {h.Key}" );
                     foreach( var v in h.Value )
                     {
-                        Console.WriteLine( $"          : {h.Key} => {h.Value}" );
+                        Console.WriteLine( $"          : {h.Value}" );
                     }
                 }
                 await next();
                 foreach( var h in context.Response.Headers )
                 {
-                    Console.WriteLine( $"<== Header: {h.Key} => {h.Value}" );
+                    Console.WriteLine( $"<== Header: {h.Key}" );
                     foreach( var v in h.Value )
                     {
-                        Console.WriteLine( $"          : {h.Key} => {h.Value}" );
+                        Console.WriteLine( $"          : {h.Value}" );
                     }
                 }
             } );
