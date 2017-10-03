@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,6 +34,19 @@ namespace WebApp
 
         class OidcEventHandler : OpenIdConnectEvents
         {
+            public override Task MessageReceived( MessageReceivedContext message )
+            {
+                var m = message.HttpContext.GetRequestMonitor();
+                using( m.OpenInfo( "Receiving Oidc message" ) )
+                {
+                    foreach( var c in message.Request.Headers )
+                    {
+                        m.Info( $"Header: {c.Key} => {c.Value}" );
+                    }
+                }
+                return Task.CompletedTask;
+            }
+
             public override Task TicketReceived( TicketReceivedContext c )
             {
                 var authService = c.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
