@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -91,6 +91,27 @@ namespace IdServer
             loggerFactory.AddConsole();
 
             app.UseDeveloperExceptionPage();
+
+            app.Use( async (context, next) =>
+            {
+                foreach( var h in context.Request.Headers )
+                {
+                    Console.WriteLine( $"==> Header: {h.Key} => {h.Value}" );
+                    foreach( var v in h.Value )
+                    {
+                        Console.WriteLine( $"          : {h.Key} => {h.Value}" );
+                    }
+                }
+                await next();
+                foreach( var h in context.Response.Headers )
+                {
+                    Console.WriteLine( $"<== Header: {h.Key} => {h.Value}" );
+                    foreach( var v in h.Value )
+                    {
+                        Console.WriteLine( $"          : {h.Key} => {h.Value}" );
+                    }
+                }
+            } );
 
             app.UseIdentityServer();
 
