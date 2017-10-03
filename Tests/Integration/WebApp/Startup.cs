@@ -46,15 +46,10 @@ namespace WebApp
                         var m = message.HttpContext.GetRequestMonitor();
                         using( m.OpenInfo( "Receiving Oidc message" ) )
                         {
-                            string json = Newtonsoft.Json.JsonConvert.SerializeObject(
-                                message,
-                                Newtonsoft.Json.Formatting.Indented,
-                                new Newtonsoft.Json.JsonSerializerSettings()
-                                {
-                                    ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore,
-                                    MaxDepth = 2
-                                } );
-                            m.Info( json );
+                            foreach( var c in message.Request.Headers )
+                            {
+                                m.Info( $"Header: {c.Key} => {c.Value}" );
+                            }
                         }
                         return Task.CompletedTask;
                     };

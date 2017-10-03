@@ -15,14 +15,11 @@ namespace WebApp
     {
         public static void Main( string[] args )
         {
-            var config = new ConfigurationBuilder()
-                .AddJsonFile( "appsettings", true, true )
-                .Build();
-
             var host = new WebHostBuilder()
                 .UseUrls( "http://localhost:4324" )
                 .UseKestrel()
                 .UseContentRoot( Directory.GetCurrentDirectory() )
+                .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
                 .UseIISIntegration()
                 .UseStartup<Startup>()

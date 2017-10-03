@@ -12,8 +12,8 @@
     <PackageReference Include="AngleSharp" Version="0.9.9" />
     <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
 
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.DB.AspNet" Version="1.0.1" />
+    <PackageReference Include="CK.AspNet.Tester" Version="1.0.1" />
 
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
 

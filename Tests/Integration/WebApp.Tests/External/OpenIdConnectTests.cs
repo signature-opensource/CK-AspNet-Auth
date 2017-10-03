@@ -1,4 +1,4 @@
-﻿using AngleSharp;
+using AngleSharp;
 using AngleSharp.Dom.Html;
 using AngleSharp.Network.Default;
 using AngleSharp.Parser.Html;
@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Http;
 using CK.Text;
 using Microsoft.AspNetCore.Http;
+using System.Threading;
 
 namespace WebApp.Tests
 {
