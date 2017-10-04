@@ -24,6 +24,35 @@ namespace WebApp
 {
     public class Startup
     {
+
+        class RootCookieBuilder : Microsoft.AspNetCore.Authentication.Internal.RequestPathBaseCookieBuilder
+        {
+            private readonly OpenIdConnectOptions _options;
+
+            public RootCookieBuilder( OpenIdConnectOptions oidcOptions )
+            {
+                _options = oidcOptions;
+                Name = OpenIdConnectDefaults.CookieNoncePrefix;
+                HttpOnly = true;
+                SameSite = SameSiteMode.None;
+                SecurePolicy = CookieSecurePolicy.SameAsRequest;
+           }
+
+            protected override string AdditionalPath => _options.CallbackPath;
+
+            public override CookieOptions Build( HttpContext context, DateTimeOffset expiresFrom )
+            {
+                var cookieOptions = base.Build( context, expiresFrom );
+
+                if( !Expiration.HasValue || !cookieOptions.Expires.HasValue )
+                {
+                    cookieOptions.Expires = expiresFrom.Add( _options.ProtocolValidator.NonceLifetime );
+                }
+                cookieOptions.Path = "/";
+                return cookieOptions;
+            }
+        }
+
         public void ConfigureServices( IServiceCollection services )
         {
             services.AddAuthentication()
@@ -41,6 +70,8 @@ namespace WebApp
                     options.RequireHttpsMetadata = false;
                     options.ClientId = "WebApp";
                     options.ClientSecret = "WebApp.Secret";
+                    options.NonceCookie = new RootCookieBuilder( options );
+                    options.CorrelationCookie = new RootCookieBuilder( options );
                     options.Events.OnMessageReceived = message =>
                     {
                         var m = message.HttpContext.GetRequestMonitor();
@@ -56,7 +87,7 @@ namespace WebApp
                     options.Events.OnTicketReceived = c => c.WebFrontAuthRemoteAuthenticateAsync<IUserOidcInfo>( payload =>
                     {
                         payload.SchemeSuffix = "";
-                        payload.Sub = c.Principal.FindFirst( "sub" ).Value;
+                        payload.Sub = c.Principal.FindFirst( "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ).Value;
                     } );
                 } )
                 .AddWebFrontAuth();
