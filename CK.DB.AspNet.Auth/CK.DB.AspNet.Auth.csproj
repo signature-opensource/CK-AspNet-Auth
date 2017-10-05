@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.DB.Auth" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.AspNet" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>

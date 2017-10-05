@@ -15,15 +15,15 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore" Version="1.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="1.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="1.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="1.1.2" />
-    <PackageReference Include="CK.Monitoring" Version="$(CKMonitoringVersion)" />
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="2.0.0" />
+    <PackageReference Include="CK.Monitoring" Version="8.1.1" />
+    <PackageReference Include="CK.DB.AspNet" Version="1.0.1" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserOidc" Version="1.0.0-e01" />
   </ItemGroup>
   
   <ItemGroup>

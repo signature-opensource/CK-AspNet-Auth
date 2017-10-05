@@ -12,14 +12,14 @@
     <PackageReference Include="AngleSharp" Version="0.9.9" />
     <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
 
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.DB.AspNet" Version="1.0.1" />
+    <PackageReference Include="CK.AspNet.Tester" Version="1.0.1" />
 
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
 
-    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserOidc" Version="1.0.0-e01" />
   </ItemGroup>
 
   <ItemGroup>

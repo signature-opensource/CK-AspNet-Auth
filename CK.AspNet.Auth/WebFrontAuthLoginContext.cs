@@ -1,6 +1,10 @@
-﻿using CK.Auth;
+using CK.Auth;
 using Microsoft.AspNetCore.Http;
+#if NETSTANDARD1_6
 using Microsoft.AspNetCore.Http.Authentication;
+#else
+using Microsoft.AspNetCore.Authentication;
+#endif
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
@@ -16,7 +20,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    class WebFrontAuthLoginContext
+    public class WebFrontAuthLoginContext
     {
         string _errorId;
         string _errorMessage;

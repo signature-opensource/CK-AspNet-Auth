@@ -1,4 +1,4 @@
-﻿using CK.AspNet.Auth;
+using CK.AspNet.Auth;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +15,7 @@ namespace CK.DB.AspNet.Auth
 {
 
     /// <summary>
-    /// Implements <see cref="IWebFrontAuthLoginService"/> bond to a <see cref="IAuthenticationDatabaseService"/>.
+    /// Implements <see cref="IWebFrontAuthLoginService"/> bousnd to a <see cref="IAuthenticationDatabaseService"/>.
     /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
     {

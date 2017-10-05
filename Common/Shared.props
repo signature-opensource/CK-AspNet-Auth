@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- SharedDir is the /Common directory. -->
@@ -19,7 +19,7 @@
     <CKDBVersion>1.0.0-e</CKDBVersion>
     <CKActivityMonitorVersion>9.0.0</CKActivityMonitorVersion>
     <CKMonitoringVersion>8.1.1</CKMonitoringVersion>
-    <CKAspNetVersion>1.0.0</CKAspNetVersion>
+    <CKAspNetVersion>1.1.0</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.5.1</CKAuthAbstractionsVersion>
   </PropertyGroup>
   

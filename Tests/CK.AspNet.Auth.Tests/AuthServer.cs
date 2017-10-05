@@ -1,11 +1,13 @@
-﻿using CK.AspNet.Tester;
+using CK.AspNet.Tester;
 using CK.Auth;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -23,18 +25,15 @@ namespace CK.AspNet.Auth.Tests
         WebFrontAuthService _authService;
 
         public AuthServer(
-            WebFrontAuthMiddlewareOptions options,
+            Action<WebFrontAuthOptions> options = null,
             Action<IServiceCollection> configureServices = null,
             Action<IApplicationBuilder> configureApplication = null )
         {
-            Options = options;
             var b = WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
-                    services.AddAuthentication();
-                    services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
+                    services.AddAuthentication().AddWebFrontAuth( options );
                     services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();
-                    services.AddSingleton<WebFrontAuthService>();
                     configureServices?.Invoke( services );
                 },
                 app =>
@@ -42,7 +41,8 @@ namespace CK.AspNet.Auth.Tests
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
-                    app.UseWebFrontAuth( options );
+                    app.UseAuthentication();
+                    Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
                 } );
             Server = new TestServer( b );
@@ -51,20 +51,20 @@ namespace CK.AspNet.Auth.Tests
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
 
-        public WebFrontAuthMiddlewareOptions Options { get; }
+        public IOptionsMonitor<WebFrontAuthOptions> Options { get; private set; }
 
         public TestServer Server { get; }
 
         public TestServerClient Client { get; }
 
 
-        public RefreshResponse LoginAlbertViaBasicProvider( bool useGenericWrapper = false )
+        public async Task<RefreshResponse> LoginAlbertViaBasicProvider( bool useGenericWrapper = false )
         {
             HttpResponseMessage response = useGenericWrapper
-                                            ? Client.PostJSON( UnsafeDirectLoginUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }" )
-                                            : Client.PostJSON( BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                                            ? await Client.PostJSON( UnsafeDirectLoginUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }" )
+                                            : await Client.PostJSON( BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
             response.EnsureSuccessStatusCode();
-            switch( Options.CookieMode )
+            switch( Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode )
             {
                 case AuthenticationCookieMode.WebFrontPath:
                     {
@@ -90,9 +90,9 @@ namespace CK.AspNet.Auth.Tests
             return c;
         }
 
-        public RefreshResponse CallRefreshEndPoint()
+        public async Task<RefreshResponse> CallRefreshEndPoint()
         {
-            HttpResponseMessage tokenRefresh = Client.Get( RefreshUri );
+            HttpResponseMessage tokenRefresh = await Client.Get( RefreshUri );
             tokenRefresh.EnsureSuccessStatusCode();
             return RefreshResponse.Parse( TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
         }

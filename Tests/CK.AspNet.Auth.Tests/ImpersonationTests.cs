@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -15,32 +15,32 @@ namespace CK.AspNet.Auth.Tests
     public class ImpersonationTests
     {
         [Test]
-        public void when_no_impersonation_service_is_registered_404_NotFound()
+        public async Task when_no_impersonation_service_is_registered_404_NotFound()
         {
-            using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions() ) )
+            using( var s = new AuthServer( ) )
             {
-                HttpResponseMessage m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
 
-                s.LoginAlbertViaBasicProvider();
-                m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                await s.LoginAlbertViaBasicProvider();
+                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
             }
         }
 
         [Test]
-        public void anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK()
+        public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK()
         {
-            using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions(), services =>
+            using( var s = new AuthServer( configureServices: services =>
             {
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                HttpResponseMessage m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
-                s.LoginAlbertViaBasicProvider();
-                m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                await s.LoginAlbertViaBasicProvider();
+                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = m.Content.ReadAsStringAsync().Result;
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -51,15 +51,15 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public void impersonate_can_be_called_with_userId_instead_of_uerName()
+        public async Task impersonate_can_be_called_with_userId_instead_of_uerName()
         {
-            using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions(), services =>
+            using( var s = new AuthServer( configureServices: services =>
             {
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                s.LoginAlbertViaBasicProvider();
-                HttpResponseMessage m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
+                await s.LoginAlbertViaBasicProvider();
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
                 m.EnsureSuccessStatusCode();
                 string content = m.Content.ReadAsStringAsync().Result;
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -70,18 +70,18 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public void impersonate_to_an_unknown_userName_or_userId_fails_with_403_Forbidden()
+        public async Task impersonate_to_an_unknown_userName_or_userId_fails_with_403_Forbidden()
         {
-            using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions(), services =>
+            using( var s = new AuthServer( configureServices: services =>
             {
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                s.LoginAlbertViaBasicProvider();
-                HttpResponseMessage m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 1e34 }" );
+                await s.LoginAlbertViaBasicProvider();
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 1e34 }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
-                m = s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""kexistepas"" }" );
+                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""kexistepas"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
             }
         }
@@ -94,15 +94,15 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( @"{""userName"":3}" )]
         [TestCase( @"{""userId"": ""3""}" )]
         [TestCase( @"{""userName"":""Robert"",""userId"":3}" )]
-        public void impersonate_with_invalid_body_fails_with_400_BadRequest( string body )
+        public async Task impersonate_with_invalid_body_fails_with_400_BadRequest( string body )
         {
-            using( var s = new AuthServer( new WebFrontAuthMiddlewareOptions(), services =>
+            using( var s = new AuthServer( configureServices: services =>
             {
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                s.LoginAlbertViaBasicProvider();
-                HttpResponseMessage m = s.Client.PostJSON( AuthServer.ImpersonateUri, body );
+                await s.LoginAlbertViaBasicProvider();
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, body );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
             }
         }

@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace CK.AspNet.Auth
 {
@@ -20,6 +21,13 @@ namespace CK.AspNet.Auth
     /// </summary>
     public class WebFrontAuthService
     {
+
+        /// <summary>
+        /// The tag used for logs emitted related to Web Front Authentication or any
+        /// authentication related actions.
+        /// </summary>
+        public static readonly CKTrait WebFrontAuthMonitorTag = ActivityMonitor.Tags.Register( "WebFrontAuth" );
+
         /// <summary>
         /// Name of the authentication cookie.
         /// </summary>
@@ -33,53 +41,47 @@ namespace CK.AspNet.Auth
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
 
-        IDataProtector _genericProtector;
-        AuthenticationInfoSecureDataFormat _tokenFormat;
-        AuthenticationInfoSecureDataFormat _cookieFormat;
-        ExtraDataSecureDataFormat _extraDataFormat;
-        WebFrontAuthMiddlewareOptions _options;
-        string _cookiePath;
-        TimeSpan _halfSlidingExpirationTime;
+        readonly IDataProtector _genericProtector;
+        readonly AuthenticationInfoSecureDataFormat _tokenFormat;
+        readonly AuthenticationInfoSecureDataFormat _cookieFormat;
+        readonly ExtraDataSecureDataFormat _extraDataFormat;
+        readonly string _cookiePath;
+        readonly string _bearerHeaderName;
+        readonly AuthenticationCookieMode _cookieMode;
+        readonly CookieSecurePolicy _cookiePolicy;
+        readonly IOptionsMonitor<WebFrontAuthOptions> _options;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
         /// <param name="loginService">Login service.</param>
-        public WebFrontAuthService( IAuthenticationTypeSystem typeSystem, IWebFrontAuthLoginService loginService )
+        public WebFrontAuthService(
+            IAuthenticationTypeSystem typeSystem,
+            IWebFrontAuthLoginService loginService,
+            IDataProtectionProvider dataProtectionProvider,
+            IOptionsMonitor<WebFrontAuthOptions> options )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
-        }
+            _options = options;
 
-        /// <summary>
-        /// This is called by the WebFrontAuthMiddleware constructor.
-        /// </summary>
-        /// <param name="genericProtector">Base protector.</param>
-        /// <param name="cookieFormat">The formatter for cookies.</param>
-        /// <param name="tokenFormat">The formatter for tokens.</param>
-        /// <param name="extraDataFormat">The formatter for extra data.</param>
-        /// <param name="options">The middleware options.</param>
-        internal void Initialize(
-            IDataProtector genericProtector,
-            AuthenticationInfoSecureDataFormat cookieFormat,
-            AuthenticationInfoSecureDataFormat tokenFormat,
-            ExtraDataSecureDataFormat extraDataFormat,
-            WebFrontAuthMiddlewareOptions options )
-        {
-            if( _tokenFormat != null ) throw new InvalidOperationException( "Only one WebFrontAuthMiddleware must be used." );
-            Debug.Assert( genericProtector != null );
-            Debug.Assert( cookieFormat != null );
-            Debug.Assert( tokenFormat != null );
-            Debug.Assert( options != null );
-            _genericProtector = genericProtector;
+            WebFrontAuthOptions initialOptions = Options;
+            IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
+            var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
+            var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
+            var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
+            _genericProtector = dataProtector;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
-            _options = options;
-            _cookiePath = options.EntryPath + "/c/";
-            _halfSlidingExpirationTime = new TimeSpan( options.SlidingExpirationTime.Ticks / 2 );
+            _cookiePath = initialOptions.EntryPath + "/c/";
+            _bearerHeaderName = initialOptions.BearerHeaderName;
+            _cookieMode = initialOptions.CookieMode;
+            _cookiePolicy = initialOptions.CookieSecurePolicy;
         }
+
+        protected WebFrontAuthOptions Options => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
         {
@@ -163,7 +165,7 @@ namespace CK.AspNet.Auth
             try
             {
                 // First try from the bearer: this is always the preferred way.
-                string authorization = c.Request.Headers[_options.BearerHeaderName];
+                string authorization = c.Request.Headers[_bearerHeaderName];
                 if( !string.IsNullOrEmpty( authorization )
                     && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase ) )
                 {
@@ -174,8 +176,7 @@ namespace CK.AspNet.Auth
                 else
                 {
                     // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                    string cookie;
-                    if( Options.CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out cookie ) )
+                    if( _cookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
                     {
                         authInfo = _cookieFormat.Unprotect( cookie, GetTlsTokenBinding( c ) );
                     }
@@ -186,13 +187,15 @@ namespace CK.AspNet.Auth
                     }
                 }
                 if( authInfo == null ) authInfo = _typeSystem.AuthenticationInfo.None;
+                TimeSpan slidingExpirationTime = Options.SlidingExpirationTime;
+                TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
                 // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
                 if( authInfo.Level >= AuthLevel.Normal
-                    && Options.CookieMode == AuthenticationCookieMode.RootPath
-                    && _halfSlidingExpirationTime > TimeSpan.Zero
-                    && authInfo.Expires.Value <= DateTime.UtcNow + _halfSlidingExpirationTime )
+                    && _cookieMode == AuthenticationCookieMode.RootPath
+                    && halfSlidingExpirationTime > TimeSpan.Zero
+                    && authInfo.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
                 {
-                    var authInfo2 = authInfo.SetExpires( DateTime.UtcNow + Options.SlidingExpirationTime );
+                    var authInfo2 = authInfo.SetExpires( DateTime.UtcNow + slidingExpirationTime );
                     SetCookies( c, authInfo = authInfo2 );
                 }
             }
@@ -221,10 +224,10 @@ namespace CK.AspNet.Auth
                 ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + Options.UnsafeExpireTimeSpan ) );
             }
             else ClearCookie( ctx, UnsafeCookieName );
-            if( authInfo != null && Options.CookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal )
+            if( authInfo != null && _cookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal )
             {
                 Debug.Assert( authInfo.Expires.HasValue );
-                string value = _cookieFormat.Protect( authInfo, WebFrontAuthService.GetTlsTokenBinding( ctx ) );
+                string value = _cookieFormat.Protect( authInfo, GetTlsTokenBinding( ctx ) );
                 ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, authInfo.Expires ) );
             }
             else ClearCookie( ctx, AuthCookieName );
@@ -234,14 +237,14 @@ namespace CK.AspNet.Auth
         {
             return new CookieOptions()
             {
-                Path = Options.CookieMode == AuthenticationCookieMode.WebFrontPath
+                Path = _cookieMode == AuthenticationCookieMode.WebFrontPath
                             ? _cookiePath
                             : "/",
                 Expires = expires,
                 HttpOnly = true,
-                Secure = Options.CookieSecurePolicy == CookieSecurePolicy.SameAsRequest
+                Secure = _cookiePolicy == CookieSecurePolicy.SameAsRequest
                                 ? ctx.Request.IsHttps
-                                : Options.CookieSecurePolicy == CookieSecurePolicy.Always
+                                : _cookiePolicy == CookieSecurePolicy.Always
             };
         }
 
@@ -249,7 +252,7 @@ namespace CK.AspNet.Auth
         {
             return new CookieOptions()
             {
-                Path = Options.CookieMode == AuthenticationCookieMode.WebFrontPath
+                Path = _cookieMode == AuthenticationCookieMode.WebFrontPath
                             ? _cookiePath
                             : "/",
                 Secure = false,
@@ -285,11 +288,6 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Gets the middleware options.
-        /// </summary>
-        protected WebFrontAuthMiddlewareOptions Options => _options;
-
-        /// <summary>
         /// This method fully handles the request.
         /// </summary>
         /// <typeparam name="T">Type of a payload object that is scheme dependent.</typeparam>
@@ -320,7 +318,7 @@ namespace CK.AspNet.Auth
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
-                                context.Options.AuthenticationScheme,
+                                context.Scheme.Name,
                                 context.Properties,
                                 context.Principal,
                                 initialScheme,
@@ -333,6 +331,7 @@ namespace CK.AspNet.Auth
             if( wfaSC.InitialAuthentication.IsImpersonated )
             {
                 wfaSC.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
+                monitor.Error( $"Login is not allowed while impersonation is active: {wfaSC.InitialAuthentication.ActualUser.UserId} impersonated into {wfaSC.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
             }
             else
             {
@@ -342,13 +341,16 @@ namespace CK.AspNet.Auth
                 int currentlyLoggedIn = wfaSC.InitialAuthentication.User.UserId;
                 if( u == null || u.UserId == 0 )
                 {
+                    // Login failed.
                     if( currentlyLoggedIn != 0 )
                     {
                         wfaSC.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                        monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
                     }
                     else
                     {
                         wfaSC.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
+                        monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {wfaSC.CallingScheme}).", WebFrontAuthMonitorTag );
                     }
                 }
                 else
@@ -356,10 +358,12 @@ namespace CK.AspNet.Auth
                     if( currentlyLoggedIn != 0 && u.UserId != currentlyLoggedIn )
                     {
                         wfaSC.SetError( "Account.Conflict", "Conflicting existing login association." );
+                        monitor.Error( $"[Account.Conflict] Currently logged in user {currentlyLoggedIn} also logged as user {u.UserId} via '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
                     }
                     else
                     {
                         wfaSC.SetSuccessfulLogin( u );
+                        monitor.Info( $"Logged in user {u.UserId} via '{wfaSC.CallingScheme}'.", WebFrontAuthMonitorTag );
                     }
                 }
             }
