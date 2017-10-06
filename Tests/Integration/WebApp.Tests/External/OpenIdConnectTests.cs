@@ -14,6 +14,8 @@ using System.Net.Http;
 using CK.Text;
 using Microsoft.AspNetCore.Http;
 using System.Threading;
+using CK.AspNet.Tester;
+using System.Threading.Tasks;
 
 namespace WebApp.Tests
 {
@@ -25,53 +27,53 @@ namespace WebApp.Tests
         [SetUp]
         public void Initialize()
         {
-            _client = WebAppHelper.GetRunningTestClient();
+            _client = WebAppHelper.GetRunningTestClient().GetAwaiter().GetResult();
             _client.ClearCookies( ".webfront/c" );
             _client.Token = null;
         }
 
         [Test]
-        public void Bob_login_on_webfront_returns_User_NoAutoRegistration()
+        public async Task Bob_login_on_webfront_returns_User_NoAutoRegistration()
         {
             DBSetup.BobSetup();
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
+            HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
             m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "bob", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = HandleFinalErrorOrRedirect( finalErrorOrRedirect );
+            HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "bob", "password", true );
+            HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
             final.Item2.Should().Be( "User.NoAutoRegistration" );
         }
 
         [TestCase( true )]
         [TestCase( false )]
-        public void Alice_login_when_Basic_logged_on_webfront_returns_Account_NoAutoBinding( bool useTokenInsteadOfRelyingOnCookies )
+        public async Task Alice_login_when_Basic_logged_on_webfront_returns_Account_NoAutoBinding( bool useTokenInsteadOfRelyingOnCookies )
         {
             DBSetup.AliceSetup();
-            RefreshResponse r = BasicAuthenticationTests.BasicLogin( _client, "alice", "password" );
+            RefreshResponse r = await BasicAuthenticationTests.BasicLogin( _client, "alice", "password" );
             if( useTokenInsteadOfRelyingOnCookies ) _client.Token = r.Token;
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
+            HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
             m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "alice", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = HandleFinalErrorOrRedirect( finalErrorOrRedirect );
+            HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "alice", "password", true );
+            HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
             final.Item2.Should().Be( "Account.NoAutoBinding" );
         }
 
         [TestCase( null )]
         [TestCase( "&A=3&A=p&Other=param&X" )]
-        public void Carol_login_on_webfront_succeeds( string userData )
+        public async Task Carol_login_on_webfront_succeeds( string userData )
         {
             DBSetup.CarolSetup();
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" + userData );
+            HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" + userData );
             m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "carol", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = HandleFinalErrorOrRedirect( finalErrorOrRedirect );
+            HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
+            HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
             final.Item2.Should().BeNull();
-            string content = final.Item1.Content.ReadAsStringAsync().Result;
+            string content = await final.Item1.Content.ReadAsStringAsync();
             content.Should().Contain( "window.opener.postMessage" );
             if( userData != null )
             {
@@ -81,11 +83,11 @@ namespace WebApp.Tests
             {
                 content.Should().Contain( @"""userData"":{}" );
             }
-            CheckUserIsLoggedIn( "carol" );
+            await CheckUserIsLoggedIn( "carol" );
         }
 
         [Test]
-        public void login_works_also_with_Post()
+        public async Task login_works_also_with_Post()
         {
             DBSetup.CarolSetup();
 
@@ -95,48 +97,48 @@ namespace WebApp.Tests
             userData.Add( new KeyValuePair<string, string>( "Other", "param" ) );
             userData.Add( new KeyValuePair<string, string>( "X", "" ) );
 
-            HttpResponseMessage m = _client.Post( WebAppUrl.StartLoginUri + "?scheme=oidc", userData );
+            HttpResponseMessage m = await _client.Post( WebAppUrl.StartLoginUri + "?scheme=oidc", userData );
             m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "carol", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = HandleFinalErrorOrRedirect( finalErrorOrRedirect );
+            HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
+            HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
             final.Item2.Should().BeNull();
-            string content = final.Item1.Content.ReadAsStringAsync().Result;
+            string content = await final.Item1.Content.ReadAsStringAsync();
             content.Should().Contain( "window.opener.postMessage" );
             content.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
-            CheckUserIsLoggedIn( "carol" );
+            await CheckUserIsLoggedIn( "carol" );
         }
 
         [Test]
-        public void login_with_return_url()
+        public async Task login_with_return_url()
         {
             DBSetup.CarolSetup();
 
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc&returnUrl=/auth-done?p=67" );
+            HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc&returnUrl=/auth-done?p=67" );
             m.EnsureSuccessStatusCode();
-            HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "carol", "password", true );
-            HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = HandleFinalErrorOrRedirect( finalErrorOrRedirect );
+            HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
+            HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
             final.Item2.Should().BeNull();
-            string content = final.Item1.Content.ReadAsStringAsync().Result;
+            string content = await final.Item1.Content.ReadAsStringAsync();
             content.Should().Contain( "window.url='http://localhost:4324/auth-done?p=67';" );
-            CheckUserIsLoggedIn( "carol" );
+            await CheckUserIsLoggedIn( "carol" );
         }
 
-        void CheckUserIsLoggedIn( string userName )
+        async Task CheckUserIsLoggedIn( string userName )
         {
-            string json = _client.Get( WebAppUrl.RefreshUri ).Content.ReadAsStringAsync().Result;
+            string json = await (await _client.Get( WebAppUrl.RefreshUri )).Content.ReadAsStringAsync();
             RefreshResponse r = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, json );
             _client.Token = r.Token;
-            HttpResponseMessage auth = _client.Get( WebAppUrl.TokenExplainUri );
+            HttpResponseMessage auth = await _client.Get( WebAppUrl.TokenExplainUri );
             auth.Content.ReadAsStringAsync().Result.Should().Contain( userName );
         }
 
-        HttpResponseMessage AnswerLoginForm( HttpResponseMessage m, string name, string password, bool rememberLogin )
+        async Task<HttpResponseMessage> AnswerLoginForm( HttpResponseMessage m, string name, string password, bool rememberLogin )
         {
-            string content = m.Content.ReadAsStringAsync().Result;
+            string content = await m.Content.ReadAsStringAsync();
             if( content.EndsWith( "<script>(function(){document.forms[0].submit();})();</script>" ) )
             {
                 return m;
@@ -152,7 +154,7 @@ namespace WebApp.Tests
                 { "UserName", name },
                 { "RememberLogin", rememberLogin ? "true" : "false" }
             };
-            return _client.Post( new Uri( idServerUri, form.Action ), formValues );
+            return await _client.Post( new Uri( idServerUri, form.Action ), formValues );
         }
 
         class ConsentInput
@@ -164,10 +166,10 @@ namespace WebApp.Tests
             public bool Checked { get; set; }
         }
 
-        HttpResponseMessage AnswerConsentForm( HttpResponseMessage m, bool rememberConsent )
+        async Task<HttpResponseMessage> AnswerConsentForm( HttpResponseMessage m, bool rememberConsent )
         {
             var idServerUri = m.RequestMessage.RequestUri;
-            string content = m.Content.ReadAsStringAsync().Result;
+            string content = await m.Content.ReadAsStringAsync();
             if( content.EndsWith( "<script>(function(){document.forms[0].submit();})();</script>" ) )
             {
                 return m;
@@ -194,10 +196,10 @@ namespace WebApp.Tests
             {
                 formValues.Add( new KeyValuePair<string, string>( "ScopesConsented", s ) );
             }
-            return _client.Post( new Uri( idServerUri, form.Action ), formValues );
+            return await _client.Post( new Uri( idServerUri, form.Action ), formValues );
         }
 
-        HttpResponseMessage PostAcceptedResult( HttpResponseMessage m )
+        Task<HttpResponseMessage> PostAcceptedResult( HttpResponseMessage m )
         {
             var content = m.Content.ReadAsStringAsync().Result;
             content.Should().EndWith( "<script>(function(){document.forms[0].submit();})();</script>" );
@@ -208,20 +210,20 @@ namespace WebApp.Tests
             return _client.Post( form.Action, values );
         }
 
-        Tuple<HttpResponseMessage,string> HandleFinalErrorOrRedirect( HttpResponseMessage m )
+        async Task<Tuple<HttpResponseMessage, string>> HandleFinalErrorOrRedirect( HttpResponseMessage m )
         {
-            var content = m.Content.ReadAsStringAsync().Result;
+            var content = await m.Content.ReadAsStringAsync();
             const string errorMark = "{\"errorId\":\"";
             int idxError = content.IndexOf( errorMark );
             if( idxError > 0 )
             {
-                return Tuple.Create( (HttpResponseMessage)null, content.Substring( idxError + errorMark.Length ).Split('"')[0] );
+                return Tuple.Create( (HttpResponseMessage)null, content.Substring( idxError + errorMark.Length ).Split( '"' )[0] );
             }
             var doc = new HtmlParser().Parse( content );
             var form = doc.Forms[0];
             var values = form.Elements.OfType<IHtmlInputElement>()
                             .Select( e => new KeyValuePair<string, string>( e.Name, e.Value ) );
-            return Tuple.Create( _client.Post( form.Action, values ), (string)null );
+            return Tuple.Create( await _client.Post( form.Action, values ), (string)null );
         }
 
 

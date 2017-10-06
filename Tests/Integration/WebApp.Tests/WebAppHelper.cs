@@ -1,3 +1,4 @@
+using CK.AspNet.Tester;
 using CK.Auth;
 using CK.Core;
 using System;
@@ -15,7 +16,7 @@ namespace WebApp.Tests
     {
         static TestClient _client;
 
-        static public TestClient GetRunningTestClient()
+        static public async Task<TestClient> GetRunningTestClient()
         {
             if( _client == null )
             {
@@ -29,7 +30,7 @@ namespace WebApp.Tests
                 HttpResponseMessage msg;
                 do
                 {
-                    msg = _client.Get( "app" );
+                    msg = await _client.Get( "" );
                 }
                 while( !msg.IsSuccessStatusCode );
             }

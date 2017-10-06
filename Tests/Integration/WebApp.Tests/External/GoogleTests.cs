@@ -1,4 +1,4 @@
-﻿using AngleSharp;
+using AngleSharp;
 using AngleSharp.Dom.Html;
 using AngleSharp.Network.Default;
 using AngleSharp.Parser.Html;
@@ -12,6 +12,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using CK.Text;
+using CK.AspNet.Tester;
+using System.Threading.Tasks;
 
 namespace WebApp.Tests
 {
@@ -20,13 +22,13 @@ namespace WebApp.Tests
     {
         TestClient _client;
 
-        [SetUp]
-        public void Initialize() => _client = WebAppHelper.GetRunningTestClient();
+        //[SetUp]
+        public void Initialize() => _client = WebAppHelper.GetRunningTestClient().GetAwaiter().GetResult();
 
         //[Test]
-        public void start_login_on_webfront()
+        public async Task start_login_on_webfront()
         {
-            HttpResponseMessage m = _client.Get( WebAppUrl.StartLoginUri + "?scheme=Google" );
+            HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=Google" );
             m.EnsureSuccessStatusCode();
             HttpResponseMessage consentScreenOrAccepted = AnswerLoginForm( m, "ojdhfziifofdhsjs@gmail.com", "2enoNiARdF1Y1LdziC9w", false );
             HttpResponseMessage accepted = AnswerConsentForm( consentScreenOrAccepted, true );

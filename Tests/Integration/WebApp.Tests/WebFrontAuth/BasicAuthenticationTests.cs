@@ -1,4 +1,5 @@
 using CK.AspNet.Auth;
+using CK.AspNet.Tester;
 using CK.Auth;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace WebApp.Tests
 {
@@ -18,33 +20,33 @@ namespace WebApp.Tests
         TestClient _client;
 
         [SetUp]
-        public void Initialize() => _client = WebAppHelper.GetRunningTestClient();
+        public void Initialize() => _client = WebAppHelper.GetRunningTestClient().GetAwaiter().GetResult();
 
         [TestCase( "Albert", "pass" )]
-        public void login_basic_for_known_user_with_invalid_password( string userName, string password )
+        public async Task login_basic_for_known_user_with_invalid_password( string userName, string password )
         {
-            EnsureTokenFor( userName, password );
-            HttpResponseMessage authFailed = _client.Post( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
-            var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, authFailed.Content.ReadAsStringAsync().Result );
+            await EnsureTokenFor( userName, password );
+            HttpResponseMessage authFailed = await _client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
+            var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, await authFailed.Content.ReadAsStringAsync() );
             c.Info.Should().BeNull();
             c.Token.Should().BeNull();
         }
 
         [TestCase( "Albert", "pass" )]
-        public void calling_token_endpoint( string userName, string password )
+        public async Task calling_token_endpoint( string userName, string password )
         {
             {
                 // With token: it always works.
-                _client.Token = EnsureTokenFor( userName, password );
-                HttpResponseMessage req = _client.Get( WebAppUrl.TokenExplainUri );
-                var tokenClear = req.Content.ReadAsStringAsync().Result;
+                _client.Token = await EnsureTokenFor( userName, password );
+                HttpResponseMessage req = await _client.Get( WebAppUrl.TokenExplainUri );
+                var tokenClear = await req.Content.ReadAsStringAsync();
                 tokenClear.Should().Contain( "Albert" );
             }
             {
                 // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
                 _client.Token = null;
-                HttpResponseMessage req = _client.Get( WebAppUrl.TokenExplainUri );
-                var tokenClear = req.Content.ReadAsStringAsync().Result;
+                HttpResponseMessage req = await _client.Get( WebAppUrl.TokenExplainUri );
+                var tokenClear = await req.Content.ReadAsStringAsync();
                 if( _client.Cookies.GetCookies( _client.BaseAddress )[WebFrontAuthService.AuthCookieName] != null )
                 {
                     // Authentication Cookie has been used.
@@ -58,22 +60,22 @@ namespace WebApp.Tests
         }
 
 
-        string EnsureTokenFor( string userName, string password )
+        async Task<string> EnsureTokenFor( string userName, string password )
         {
             string token;
             if( _userToken.TryGetValue( userName, out token ) ) return token;
 
-            HttpResponseMessage ensure = _client.Post( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
+            HttpResponseMessage ensure = await _client.PostJSON( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
             ensure.EnsureSuccessStatusCode();
 
-            RefreshResponse c = BasicLogin( _client, userName, password );
+            RefreshResponse c = await BasicLogin( _client, userName, password );
             _userToken.Add( userName, c.Token );
             return c.Token;
         }
 
-        static public RefreshResponse BasicLogin( TestClient client, string userName, string password )
+        static public async Task<RefreshResponse> BasicLogin( TestClient client, string userName, string password )
         {
-            HttpResponseMessage authBasic = client.Post( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
+            HttpResponseMessage authBasic = await client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
             var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, authBasic.Content.ReadAsStringAsync().Result );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserId.Should().BeGreaterThan( 1 );
