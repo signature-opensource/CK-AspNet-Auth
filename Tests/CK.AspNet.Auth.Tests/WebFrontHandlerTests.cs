@@ -206,7 +206,7 @@ namespace CK.AspNet.Auth.Tests
                 s.Client.Token = null;
                 HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                 c.Info.Should().BeNull();
                 c.Token.Should().BeNull();
             }
@@ -246,7 +246,7 @@ namespace CK.AspNet.Auth.Tests
                     // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
                     s.Client.Token = null;
                     HttpResponseMessage req = await s.Client.Get( tokenExplainUri );
-                    var tokenClear = req.Content.ReadAsStringAsync().Result;
+                    var tokenClear = await req.Content.ReadAsStringAsync();
                     if( rootCookiePath )
                     {
                         // Authentication Cookie has been used.
