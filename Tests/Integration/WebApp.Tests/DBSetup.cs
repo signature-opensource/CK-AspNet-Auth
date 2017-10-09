@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.DB.Actor;
 using CK.DB.Auth;
 using CK.DB.User.UserGoogle;
@@ -22,6 +22,14 @@ namespace WebApp.Tests
         public void Bob_is_totally_unknown()
         {
             BobSetup();
+        }
+
+        [Explicit]
+        [Category( "GenerateWebAppTestsGenerated" )]
+        [Test]
+        public void Generate_Web_App_Tests_Generated()
+        {
+            db_setup( "Source" );
         }
 
         public static void BobSetup()

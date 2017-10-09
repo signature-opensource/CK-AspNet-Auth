@@ -56,6 +56,8 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
         /// <param name="loginService">Login service.</param>
+        /// <param name="dataProtectionProvider">The data protection provider to use.</param>
+        /// <param name="options">Monitored options.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -66,7 +68,7 @@ namespace CK.AspNet.Auth
             _loginService = loginService;
             _options = options;
 
-            WebFrontAuthOptions initialOptions = Options;
+            WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
             var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
             var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
@@ -81,7 +83,10 @@ namespace CK.AspNet.Auth
             _cookiePolicy = initialOptions.CookieSecurePolicy;
         }
 
-        protected WebFrontAuthOptions Options => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
+        /// <summary>
+        /// Gets the current options.
+        /// </summary>
+        protected WebFrontAuthOptions CurrentOptions => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
         {
@@ -180,14 +185,14 @@ namespace CK.AspNet.Auth
                     {
                         authInfo = _cookieFormat.Unprotect( cookie, GetTlsTokenBinding( c ) );
                     }
-                    else if( Options.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
+                    else if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
                     {
                         IUserInfo info = _typeSystem.UserInfo.FromJObject( JObject.Parse( cookie ) );
                         authInfo = _typeSystem.AuthenticationInfo.Create( info );
                     }
                 }
                 if( authInfo == null ) authInfo = _typeSystem.AuthenticationInfo.None;
-                TimeSpan slidingExpirationTime = Options.SlidingExpirationTime;
+                TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
                 TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
                 // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
                 if( authInfo.Level >= AuthLevel.Normal
@@ -218,10 +223,10 @@ namespace CK.AspNet.Auth
 
         internal void SetCookies( HttpContext ctx, IAuthenticationInfo authInfo )
         {
-            if( authInfo != null && Options.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
+            if( authInfo != null && CurrentOptions.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
             {
                 string value = _typeSystem.UserInfo.ToJObject( authInfo.UnsafeActualUser ).ToString( Formatting.None );
-                ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + Options.UnsafeExpireTimeSpan ) );
+                ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + CurrentOptions.UnsafeExpireTimeSpan ) );
             }
             else ClearCookie( ctx, UnsafeCookieName );
             if( authInfo != null && _cookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal )
@@ -269,6 +274,57 @@ namespace CK.AspNet.Auth
         }
 
         #endregion
+
+        internal struct LoginResult
+        {
+            /// <summary>
+            /// Standard JSON response.
+            /// It is mutable: properties can be appended.
+            /// </summary>
+            public readonly JObject Response;
+
+            /// <summary>
+            /// Info can be null.
+            /// </summary>
+            public readonly IAuthenticationInfo Info;
+
+            public LoginResult( JObject r, IAuthenticationInfo a )
+            {
+                Response = r;
+                Info = a;
+            }
+        }
+
+        /// <summary>
+        /// Creates the authentication info, the standard JSON response and sets the cookies.
+        /// </summary>
+        /// <param name="c">The current Http context.</param>
+        /// <param name="u">The user info to login.</param>
+        /// <returns>A login result with the JSON response and authentication info.</returns>
+        internal LoginResult HandleLogin( HttpContext c, IUserInfo u )
+        {
+            IAuthenticationInfo authInfo = u != null && u.UserId != 0
+                                            ? _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
+                                            : null;
+            JObject response = CreateAuthResponse( c, authInfo, authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero );
+            SetCookies( c, authInfo );
+            return new LoginResult( response, authInfo );
+        }
+
+        /// <summary>
+        /// Creates a JSON response object.
+        /// </summary>
+        /// <param name="c">The context.</param>
+        /// <param name="authInfo">The authentication info (can be null).</param>
+        /// <param name="refreshable">Whether the info is refreshable or not.</param>
+        /// <returns>A {info,token,refreshable} object.</returns>
+        internal JObject CreateAuthResponse( HttpContext c, IAuthenticationInfo authInfo, bool refreshable )
+        {
+            return new JObject(
+                new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
+                new JProperty( "token", CreateToken( c, authInfo ) ),
+                new JProperty( "refreshable", refreshable ) );
+        }
 
         /// <summary>
         /// Returns the token (null if authInfo is null or none).

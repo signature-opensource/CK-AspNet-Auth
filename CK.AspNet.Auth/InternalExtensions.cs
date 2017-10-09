@@ -100,10 +100,10 @@ namespace CK.AspNet.Auth
             if( initialScheme != null ) error.Add( new JProperty( "initialScheme", initialScheme ) );
             if( callingScheme != null ) error.Add( new JProperty( "callingScheme", callingScheme ) );
             if( userData != null ) error.Add( userData );
-            return WritePostMessageAsync( @this, error );
+            return WriteWindowPostMessageAsync( @this, error );
         }
 
-        static public Task WritePostMessageAsync( this HttpResponse @this, JObject o )
+        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o )
         {
             var req = @this.HttpContext.Request;
             @this.StatusCode = StatusCodes.Status200OK;
@@ -125,22 +125,6 @@ window.close();
 <!--{GetBreachPadding()}-->
 </body>
 </html>";
-            return @this.WriteAsync( r );
-        }
-
-        static public Task WritePostRedirectEndLoginAsync( this HttpResponse @this, string secureData, string returnUrl )
-        {
-            var req = @this.HttpContext.Request;
-            @this.StatusCode = StatusCodes.Status200OK;
-            @this.ContentType = "text/html";
-            var r = $@"<!DOCTYPE html>
-<html><body>
-<form method='post' action='{req.Scheme}://{req.Host}/.webfront/c/endLogin'>
-<input type='hidden' name='s' value='{secureData}' />
-<input type='hidden' name='r' value='{returnUrl}' />
-</form><script>(function(){{document.forms[0].submit();}})();</script>
-<!--{GetBreachPadding()}-->
-</body></html>";
             return @this.WriteAsync( r );
         }
 

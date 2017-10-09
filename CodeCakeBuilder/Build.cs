@@ -1,4 +1,4 @@
-﻿using Cake.Common.Build;
+using Cake.Common.Build;
 using Cake.Common.Diagnostics;
 using Cake.Common.IO;
 using Cake.Common.Solution;
@@ -86,22 +86,9 @@ namespace CodeCake
                      Cake.CleanDirectories( releasesDir );
                  } );
 
-            Task( "Restore-NuGet-Packages" )
-                .IsDependentOn( "Check-Repository" )
-                .Does( () =>
-                 {
-                     Cake.DotNetCoreRestore( coreBuildFile,
-                         new DotNetCoreRestoreSettings().AddVersionArguments( gitInfo, c =>
-                         {
-                            // No impact see: https://github.com/NuGet/Home/issues/3772
-                            // c.Verbosity = DotNetCoreRestoreVerbosity.Minimal;
-                        } ) );
-                 } );
-
 
             Task( "Build" )
                 .IsDependentOn( "Clean" )
-                .IsDependentOn( "Restore-NuGet-Packages" )
                 .IsDependentOn( "Check-Repository" )
                 .Does( () =>
                  {
@@ -121,15 +108,80 @@ namespace CodeCake
                     var testDlls = projects
                                      .Where( p => p.Name.EndsWith( ".Tests" )
                                                  && !p.Path.Segments.Contains( "Integration" ) )
-                                     .Select( p => p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/" + p.Name + ".dll" ) );
-                    Cake.Information( "Testing: {0}", string.Join( ", ", testDlls.Select( p => p.GetFilename().ToString() ) ) );
-                    Cake.NUnit( testDlls, new NUnitSettings() { Framework = "v4.5" } );
+                                     .Select( p =>
+                                     new
+                                     {
+                                         ProjectPath = p.Path.GetDirectory(),
+                                         NetCoreAppDll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/netcoreapp2.0/" + p.Name + ".dll" ),
+                                         Net461Dll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/" + p.Name + ".dll" ),
+                                     } );
+                    foreach( var test in testDlls )
+                    {
+                        if( System.IO.File.Exists( test.Net461Dll.FullPath ) )
+                        {
+                            Cake.Information( $"Testing: {test.Net461Dll}" );
+                            Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
+                        }
+                        if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
+                        {
+                            Cake.Information( $"Testing: {test.NetCoreAppDll}" );
+                            Cake.DotNetCoreExecute( test.NetCoreAppDll );
+                        }
+                    }
+                } );
+
+            Task( "Build-Integration-Projects" )
+                .IsDependentOn( "Unit-Testing" )
+                .Does( () =>
+                {
+                    var webAppTests = projects.Single( p => p.Name == "WebApp.Tests" );
+                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/WebApp.Tests.dll" );
+                    Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateWebAppTestsGenerated" } );
+
+                    var webApp = projects.Single( p => p.Name == "WebApp" );
+                    Cake.DotNetCoreBuild( webApp.Path.FullPath,
+                                    new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
+                         {
+                             s.Configuration = configuration;
+                         } ) );
+                } );
+
+            Task( "Integration-Testing" )
+                .IsDependentOn( "Build-Integration-Projects" )
+                .WithCriteria( () => !Cake.IsInteractiveMode()
+                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'Y', 'N' ) == 'Y' )
+                .Does( () =>
+                {
+                    var testDlls = projects
+                                        .Where( p => p.Name.EndsWith( ".Tests" )
+                                                    && p.Path.Segments.Contains( "Integration" ) )
+                                        .Select( p =>
+                                        new
+                                        {
+                                            ProjectPath = p.Path.GetDirectory(),
+                                            NetCoreAppDll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/netcoreapp2.0/" + p.Name + ".dll" ),
+                                            Net461Dll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/" + p.Name + ".dll" ),
+                                        } );
+                    foreach( var test in testDlls )
+                    {
+                        if( System.IO.File.Exists( test.Net461Dll.FullPath ) )
+                        {
+                            Cake.Information( $"Testing: {test.Net461Dll}" );
+                            Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
+                        }
+                        if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
+                        {
+                            Cake.Information( $"Testing: {test.NetCoreAppDll}" );
+                            Cake.DotNetCoreExecute( test.NetCoreAppDll );
+                        }
+                    }
                 } );
 
 
             Task( "Create-NuGet-Packages" )
                 .WithCriteria( () => gitInfo.IsValid )
                 .IsDependentOn( "Unit-Testing" )
+                .IsDependentOn( "Integration-Testing" )
                 .Does( () =>
                  {
                      Cake.CreateDirectory( releasesDir );

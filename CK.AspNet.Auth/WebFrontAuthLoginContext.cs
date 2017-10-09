@@ -140,21 +140,27 @@ namespace CK.AspNet.Auth
 
         Task SendSuccess()
         {
-            var data = new JObject(
-                            new JProperty( "u", AuthenticationTypeSystem.UserInfo.ToJObject( _successfulLogin ) ),
-                            new JProperty( "initialScheme", InitialScheme ),
-                            new JProperty( "callingScheme", CallingScheme ) );
-            if( ReturnUrl == null )
+            WebFrontAuthService.LoginResult r = AuthenticationService.HandleLogin( HttpContext, _successfulLogin );
+            if( ReturnUrl != null )
             {
-                data.Add( UserDataToJProperty() );
+                // "inline" mode.
+                var caller = new Uri( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" );
+                var target = new Uri( caller, ReturnUrl );
+                HttpContext.Response.StatusCode = StatusCodes.Status200OK;
+                HttpContext.Response.ContentType = "text/html";
+                var t = $@"<!DOCTYPE html><html><body><script>(function(){{window.url='{target}';}})();</script></body></html>";
+                return HttpContext.Response.WriteAsync( t );
             }
-            // 5 seconds should be enough for the client to handle the form submit
-            // and the request to reach /endLogin.
-            string secure = AuthenticationService.ProtectString( 
-                                    HttpContext, 
-                                    data.ToString( Newtonsoft.Json.Formatting.None ), 
-                                    TimeSpan.FromSeconds( 5 ) );
-            return HttpContext.Response.WritePostRedirectEndLoginAsync( secure, ReturnUrl );
+            else
+            {
+                // "popup" mode.
+                var data = new JObject(
+                                new JProperty( "initialScheme", InitialScheme ),
+                                new JProperty( "callingScheme", CallingScheme ) );
+                data.Add( UserDataToJProperty() );
+                r.Response.Merge( data );
+                return HttpContext.Response.WriteWindowPostMessageAsync( r.Response );
+            }
         }
 
         Task SendError()

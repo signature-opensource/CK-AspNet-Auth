@@ -219,11 +219,7 @@ namespace WebApp.Tests
             {
                 return Tuple.Create( (HttpResponseMessage)null, content.Substring( idxError + errorMark.Length ).Split( '"' )[0] );
             }
-            var doc = new HtmlParser().Parse( content );
-            var form = doc.Forms[0];
-            var values = form.Elements.OfType<IHtmlInputElement>()
-                            .Select( e => new KeyValuePair<string, string>( e.Name, e.Value ) );
-            return Tuple.Create( await _client.Post( form.Action, values ), (string)null );
+            return Tuple.Create( m, (string)null );
         }
 
 

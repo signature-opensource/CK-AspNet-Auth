@@ -71,11 +71,6 @@ namespace CK.AspNet.Auth
                     {
                         return HandleStartLogin();
                     }
-                    else if( cBased.Value == "/endLogin" )
-                    {
-                        if( HttpMethods.IsPost( Request.Method ) ) return HandleEndLogin( Context.GetRequestMonitor() );
-                        Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                    }
                     else if( cBased.Value == "/unsafeDirectLogin" )
                     {
                         if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( Context.GetRequestMonitor() );
@@ -123,7 +118,7 @@ namespace CK.AspNet.Auth
                     authInfo = authInfo.SetExpires( newExp );
                 }
             }
-            JObject response = CreateAuthResponse( authInfo, refreshable );
+            JObject response = _authService.CreateAuthResponse( Context, authInfo, refreshable );
             if( addSchemes )
             {
                 IReadOnlyList<string> list = Options.AvailableSchemes;
@@ -173,58 +168,6 @@ namespace CK.AspNet.Auth
             if( returnUrl != null ) p.Items.Add( "WFA-R", returnUrl );
             else if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, userData ) );
             await Context.ChallengeAsync( scheme, p );
-            return true;
-        }
-
-        async Task<bool> HandleEndLogin( IActivityMonitor monitor )
-        {
-            Debug.Assert( HttpMethods.IsPost( Request.Method ) );
-            string cData = Request.Form["s"];
-            string retUrl = Request.Form["r"];
-            if( !HttpMethods.IsPost( Request.Method )
-                || string.IsNullOrWhiteSpace( cData )
-                || retUrl == null )
-            {
-
-                monitor.Fatal( $"Illegal call to EndLogin." );
-                Response.StatusCode = StatusCodes.Status400BadRequest;
-            }
-            try
-            {
-                string data = _authService.UnprotectString( Context, cData );
-                JObject o = JObject.Parse( data );
-                IUserInfo u = _typeSystem.UserInfo.FromJObject( (JObject)o["u"] );
-                LoginResult r = HandleLogin( u );
-                if( retUrl.Length > 0 )
-                {
-                    // "inline" mode.
-                    var caller = new Uri( $"{Context.Request.Scheme}://{Context.Request.Host}/" );
-                    var target = new Uri( caller, retUrl );
-                    Response.StatusCode = StatusCodes.Status200OK;
-                    Response.ContentType = "text/html";
-                    var t = $@"<!DOCTYPE html><html><body><script>(function(){{window.url='{target}';}})();</script></body></html>";
-                    await Response.WriteAsync( t );
-                }
-                else
-                {
-                    // "popup" mode.
-                    o.Remove( "u" );
-                    r.Response.Merge( o );
-                    await Context.Response.WritePostMessageAsync( r.Response );
-                }
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
-                if( string.IsNullOrEmpty( retUrl ) )
-                {
-                    await Context.Response.WritePostMessageWithErrorAsync( ex );
-                }
-                else
-                {
-                    Context.Response.RedirectToReturnUrlWithError( ex );
-                }
-            }
             return true;
         }
 
@@ -435,58 +378,15 @@ namespace CK.AspNet.Auth
             return WriteResponseAsync( o );
         }
 
-        struct LoginResult
-        {
-            /// <summary>
-            /// Standard JSON response.
-            /// It is mutable: properties can be appended.
-            /// </summary>
-            public readonly JObject Response;
-
-            /// <summary>
-            /// Info can be null.
-            /// </summary>
-            public readonly IAuthenticationInfo Info;
-
-            public LoginResult( JObject r, IAuthenticationInfo a )
-            {
-                Response = r;
-                Info = a;
-            }
-        }
-
         /// <summary>
-        /// Creates the authentication info, the standard JSON response and sets the cookies.
-        /// </summary>
-        /// <param name="u">The user info to login.</param>
-        /// <returns>A login result with the JSON response and authentication info.</returns>
-        LoginResult HandleLogin( IUserInfo u )
-        {
-            IAuthenticationInfo authInfo = u != null && u.UserId != 0
-                                            ? _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow + Options.ExpireTimeSpan )
-                                            : null;
-            JObject response = CreateAuthResponse( authInfo, authInfo != null && Options.SlidingExpirationTime > TimeSpan.Zero );
-            _authService.SetCookies( Context, authInfo );
-            return new LoginResult( response, authInfo );
-        }
-
-        /// <summary>
-        /// Calls <see cref="HandleLogin"/> and writes the JSON response.
+        /// Calls <see cref="WebFrontAuthService.HandleLogin"/> and writes the JSON response.
         /// </summary>
         /// <param name="u">The user info to login.</param>
         /// <returns>Always true.</returns>
         Task<bool> DoDirectLogin( IUserInfo u )
         {
-            LoginResult r = HandleLogin( u );
+            WebFrontAuthService.LoginResult r = _authService.HandleLogin( Context, u );
             return WriteResponseAsync( r.Response, r.Info == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK );
-        }
-
-        JObject CreateAuthResponse( IAuthenticationInfo authInfo, bool refreshable )
-        {
-            return new JObject(
-                new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
-                new JProperty( "token", _authService.CreateToken( Context, authInfo ) ),
-                new JProperty( "refreshable", refreshable ) );
         }
 
         async Task<bool> WriteResponseAsync( JObject o, int code = StatusCodes.Status200OK )

@@ -1,17 +1,18 @@
-﻿<Project ToolsVersion="15.0">
+<Project ToolsVersion="15.0">
  
   <ItemGroup>
     <CoreProj Include="..\**\*.csproj" />
     <CoreProj Remove="..\CodeCakeBuilder\CodeCakeBuilder.csproj" />
-    <CoreProj Remove="..\Tests\Integration\**" />
+    <!-- Do not build WebApp since it uses the WebApp.Tests.Generated dll. -->
+    <CoreProj Remove="..\Tests\Integration\WebApp\WebApp.csproj" />
   </ItemGroup>
-
-  <Target Name="Build">
-    <MSBuild Targets="Build" Projects="@(CoreProj)" Properties="@(Properties)" />
-  </Target>
 
   <Target Name="Restore">
     <MSBuild Targets="Restore" Projects="@(CoreProj)" Properties="@(Properties)" />
+  </Target>
+    
+  <Target Name="Build">
+    <MSBuild Targets="Build" Projects="@(CoreProj)" Properties="@(Properties)" />
   </Target>
 
   <Target Name="Pack">
