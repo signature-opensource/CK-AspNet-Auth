@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\Common\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <OriginProjectName>CK.DB.AspNet.Auth.Tests</OriginProjectName>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="4.19.4" />
+    <PackageReference Include="CK.AspNet.Tester" Version="1.1.2" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="1.0.0-e01" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\$(OriginProjectName)\**\*.cs" Exclude="..\$(OriginProjectName)\obj\**;..\$(OriginProjectName)\bin\**">
+      <Link>Include\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemGroup>
+  
+</Project>
