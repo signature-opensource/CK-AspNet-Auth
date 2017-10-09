@@ -19,6 +19,7 @@ using CK.Core;
 using CK.DB.User.UserOidc;
 using CK.DB.User.UserGoogle;
 using Microsoft.AspNetCore.Authentication.Google;
+using System.Security.Claims;
 
 namespace WebApp
 {
@@ -44,7 +45,9 @@ namespace WebApp
                     options.Events.OnTicketReceived = c => c.WebFrontAuthRemoteAuthenticateAsync<IUserOidcInfo>( payload =>
                     {
                         payload.SchemeSuffix = "";
-                        payload.Sub = c.Principal.FindFirst( "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ).Value;
+                        // Instead of "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+                        // Use standard System.Security.Claims.ClaimTypes.
+                        payload.Sub = c.Principal.FindFirst( ClaimTypes.NameIdentifier ).Value;
                     } );
                 } )
                 .AddWebFrontAuth();
