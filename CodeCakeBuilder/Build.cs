@@ -167,7 +167,22 @@ namespace CodeCake
                         if( System.IO.File.Exists( test.Net461Dll.FullPath ) )
                         {
                             Cake.Information( $"Testing: {test.Net461Dll}" );
-                            Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
+                            try
+                            {
+                                Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
+                            }
+                            catch( Exception ex )
+                            {
+                                Cake.Error( $"Exception: {ex.Message}" );
+                                foreach( var fLog in Cake.GetFiles( "Back/Tests/Integration/WebApp/WebAppLogs" ) )
+                                {
+                                    Cake.Information( "=======================================" );
+                                    Cake.Information( fLog.FullPath );
+                                    Cake.Information( "=======================================" );
+                                    Cake.Information( System.IO.File.ReadAllText( fLog.FullPath ) );
+                                    Cake.AppVeyor().UploadArtifact( fLog );
+                                }
+                            }
                         }
                         if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
                         {

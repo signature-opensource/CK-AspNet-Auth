@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using CK.Auth;
+using Microsoft.AspNetCore.Hosting;
 
 namespace WebApp
 {
@@ -27,19 +28,22 @@ namespace WebApp
         readonly UserTable _userTable;
         readonly UserPasswordTable _pwdTable;
         readonly IAuthenticationTypeSystem _typeSystem;
+        readonly IApplicationLifetime _appLifetime;
 
         public WebAppMiddleware( 
             RequestDelegate next,
             WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
             UserPasswordTable pwdTable,
-            UserTable userTable )
+            UserTable userTable,
+            IApplicationLifetime appLifetime )
         {
             _next = next;
             _authService = authService;
             _pwdTable = pwdTable;
             _userTable = userTable;
             _typeSystem = typeSystem;
+            _appLifetime = appLifetime;
         }
 
         public async Task Invoke( HttpContext c )
@@ -69,6 +73,12 @@ namespace WebApp
                 c.Response.ContentType = "application/json";
                 JObject o = JObject.Parse( @"{ ""IAmHere"": true }" );
                 await c.Response.WriteAsync( o.ToString() );
+                return;
+            }
+            if( path.StartsWithSegments( "/quit" ) )
+            {
+                c.Response.StatusCode = StatusCodes.Status200OK;
+                _appLifetime.StopApplication();
                 return;
             }
             c.Response.StatusCode = StatusCodes.Status200OK;

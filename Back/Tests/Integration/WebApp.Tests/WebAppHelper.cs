@@ -27,18 +27,7 @@ namespace WebApp.Tests
                 LaunchWebApp();
                 LaunchIdServer();
                 _client = new TestClient( "http://localhost:4324/" );
-                // Requires 3 successful calls to the server
-                // before considering that the client is ready.
-                for( int i = 0; i < 3; ++i )
-                {
-                    await WaitForServerAnswer();
-                }
-                // This still fails randomly. Try another loop :(.
-                await Task.Delay( 100 );
-                for( int i = 0; i < 3; ++i )
-                {
-                    await WaitForServerAnswer();
-                }
+                await WaitForServerAnswer();
             }
             return _client;
         }

@@ -32,6 +32,14 @@ namespace WebApp.Tests
             db_setup( "Source" );
         }
 
+        [Explicit]
+        [Test]
+        public async Task close_WebApp_server()
+        {
+            var c = await WebAppHelper.GetRunningTestClient();
+            await c.Get( "/quit" );
+        }
+
         public static void BobSetup()
         {
             var oidc = TestHelper.StObjMap.Default.Obtain<UserOidcTable>();
