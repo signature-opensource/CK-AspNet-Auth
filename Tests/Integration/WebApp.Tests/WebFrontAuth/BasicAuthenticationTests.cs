@@ -69,9 +69,19 @@ namespace WebApp.Tests
         {
             string token;
             if( _userToken.TryGetValue( userName, out token ) ) return token;
-
-            HttpResponseMessage ensure = await _client.PostJSON( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
-            ensure.EnsureSuccessStatusCode();
+            retry:
+            try
+            {
+                Console.WriteLine( "Calling " + WebAppUrl.EnsureBasicUser );
+                HttpResponseMessage ensure = await _client.PostJSON( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
+                ensure.EnsureSuccessStatusCode();
+            }
+            catch( HttpRequestException ex )
+            {
+                Console.WriteLine( "Failed");
+                await Task.Delay( 200 );
+                goto retry;
+            }
 
             RefreshResponse c = await BasicLogin( _client, userName, password );
             _userToken.Add( userName, c.Token );
