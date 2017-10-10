@@ -42,7 +42,7 @@ namespace WebApp.Tests
                         }
                         catch( Exception ex )
                         {
-                            TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount})." );
+                            TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount}).", ex );
                             if( retryCount == 10 ) break;
                             await Task.Delay( 100 );
                         }
