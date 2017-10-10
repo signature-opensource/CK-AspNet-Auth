@@ -27,29 +27,39 @@ namespace WebApp.Tests
                 LaunchWebApp();
                 LaunchIdServer();
                 _client = new TestClient( "http://localhost:4324/" );
-                int retryCount = 0;
-                for( ; ;)
+                // Requires 3 successful calls to the server
+                // before considering that the client is ready.
+                for( int i = 0; i < 3; ++i )
                 {
-                    using( HttpResponseMessage msg = await _client.Get( "/test" ) )
-                    {
-                        try
-                        {
-                            if( msg.IsSuccessStatusCode )
-                            {
-                                string answer = await msg.Content.ReadAsStringAsync();
-                                if( answer.Contains( "IAmHere" ) ) break;
-                            }
-                        }
-                        catch( Exception ex )
-                        {
-                            TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount}).", ex );
-                            if( retryCount == 10 ) break;
-                            await Task.Delay( 100 );
-                        }
-                    }
+                    await WaitForServerAnswer();
                 }
             }
             return _client;
+        }
+
+        private static async Task WaitForServerAnswer()
+        {
+            int retryCount = 0;
+            for(; ; )
+            {
+                using( HttpResponseMessage msg = await _client.Get( "/test" ) )
+                {
+                    try
+                    {
+                        if( msg.IsSuccessStatusCode )
+                        {
+                            string answer = await msg.Content.ReadAsStringAsync();
+                            if( answer.Contains( "IAmHere" ) ) break;
+                        }
+                    }
+                    catch( Exception ex )
+                    {
+                        TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount}).", ex );
+                        if( retryCount == 10 ) break;
+                        await Task.Delay( 100 );
+                    }
+                }
+            }
         }
 
         static void LaunchWebApp()
