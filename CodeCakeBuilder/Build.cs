@@ -174,7 +174,7 @@ namespace CodeCake
                             catch( Exception ex )
                             {
                                 Cake.Error( $"Exception: {ex.Message}" );
-                                foreach( var fLog in Cake.GetFiles( "Back/Tests/Integration/WebApp/WebAppLogs" ) )
+                                foreach( var fLog in Cake.GetFiles( "Back/Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
                                 {
                                     Cake.Information( "=======================================" );
                                     Cake.Information( fLog.FullPath );
@@ -182,6 +182,7 @@ namespace CodeCake
                                     Cake.Information( System.IO.File.ReadAllText( fLog.FullPath ) );
                                     Cake.AppVeyor().UploadArtifact( fLog );
                                 }
+                                throw;
                             }
                         }
                         if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
