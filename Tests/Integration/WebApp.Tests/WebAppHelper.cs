@@ -27,12 +27,17 @@ namespace WebApp.Tests
                 LaunchWebApp();
                 LaunchIdServer();
                 _client = new TestClient( "http://localhost:4324/" );
-                HttpResponseMessage msg;
-                do
+                for( ; ;)
                 {
-                    msg = await _client.Get( "" );
+                    using( HttpResponseMessage msg = await _client.Get( "/test" ) )
+                    {
+                        if( msg.IsSuccessStatusCode )
+                        {
+                            string answer = await msg.Content.ReadAsStringAsync();
+                            if( answer.Contains( "IAmHere" ) ) break;
+                        }
+                    }
                 }
-                while( !msg.IsSuccessStatusCode );
             }
             return _client;
         }

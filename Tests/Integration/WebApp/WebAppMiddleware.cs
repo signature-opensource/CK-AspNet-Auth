@@ -51,7 +51,7 @@ namespace WebApp
 
             var path = c.Request.Path;
 
-            if( path.StartsWithSegments("/ensureBasicUser") )
+            if( path.StartsWithSegments( "/ensureBasicUser" ) )
             {
                 if( HttpMethods.IsPost( c.Request.Method ) )
                 {
@@ -61,6 +61,14 @@ namespace WebApp
                 {
                     c.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                 }
+                return;
+            }
+            if( path.StartsWithSegments( "/test" ) )
+            {
+                c.Response.StatusCode = StatusCodes.Status200OK;
+                c.Response.ContentType = "application/json";
+                JObject o = JObject.Parse( @"{ ""IAmHere"": true }" );
+                await c.Response.WriteAsync( o.ToString() );
                 return;
             }
             c.Response.StatusCode = StatusCodes.Status200OK;
