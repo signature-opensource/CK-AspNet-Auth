@@ -27,14 +27,24 @@ namespace WebApp.Tests
                 LaunchWebApp();
                 LaunchIdServer();
                 _client = new TestClient( "http://localhost:4324/" );
+                int retryCount = 0;
                 for( ; ;)
                 {
                     using( HttpResponseMessage msg = await _client.Get( "/test" ) )
                     {
-                        if( msg.IsSuccessStatusCode )
+                        try
                         {
-                            string answer = await msg.Content.ReadAsStringAsync();
-                            if( answer.Contains( "IAmHere" ) ) break;
+                            if( msg.IsSuccessStatusCode )
+                            {
+                                string answer = await msg.Content.ReadAsStringAsync();
+                                if( answer.Contains( "IAmHere" ) ) break;
+                            }
+                        }
+                        catch( Exception ex )
+                        {
+                            TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount})." );
+                            if( retryCount == 10 ) break;
+                            await Task.Delay( 100 );
                         }
                     }
                 }
