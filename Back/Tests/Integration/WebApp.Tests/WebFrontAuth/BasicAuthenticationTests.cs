@@ -17,13 +17,21 @@ namespace WebApp.Tests
     public class BasicAuthenticationTests
     {
         readonly Dictionary<string, string> _userToken = new Dictionary<string, string>();
+        TestClient _client;
+
+        [SetUp]
+        public void Initialize()
+        {
+            _client = WebAppHelper.GetRunningTestClient().GetAwaiter().GetResult();
+            _client.ClearCookies( ".webfront/c" );
+            _client.Token = null;
+        }
 
         [TestCase( "Albert", "pass" )]
         public async Task login_basic_for_known_user_with_invalid_password( string userName, string password )
         {
-            var client = await WebAppHelper.GetRunningTestClient();
-            await EnsureTokenFor( client, userName, password );
-            HttpResponseMessage authFailed = await client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
+            await EnsureTokenFor( _client, userName, password );
+            HttpResponseMessage authFailed = await _client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
             var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, await authFailed.Content.ReadAsStringAsync() );
             c.Info.Should().BeNull();
             c.Token.Should().BeNull();
@@ -32,20 +40,19 @@ namespace WebApp.Tests
         [TestCase( "Albert", "pass" )]
         public async Task calling_token_endpoint( string userName, string password )
         {
-            var client = await WebAppHelper.GetRunningTestClient();
             {
                 // With token: it always works.
-                client.Token = await EnsureTokenFor( client, userName, password );
-                HttpResponseMessage req = await client.Get( WebAppUrl.TokenExplainUri );
+                _client.Token = await EnsureTokenFor( _client, userName, password );
+                HttpResponseMessage req = await _client.Get( WebAppUrl.TokenExplainUri );
                 var tokenClear = await req.Content.ReadAsStringAsync();
                 tokenClear.Should().Contain( "Albert" );
             }
             {
                 // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
-                client.Token = null;
-                HttpResponseMessage req = await client.Get( WebAppUrl.TokenExplainUri );
+                _client.Token = null;
+                HttpResponseMessage req = await _client.Get( WebAppUrl.TokenExplainUri );
                 var tokenClear = await req.Content.ReadAsStringAsync();
-                if( client.Cookies.GetCookies( client.BaseAddress )[WebFrontAuthService.AuthCookieName] != null )
+                if( _client.Cookies.GetCookies( _client.BaseAddress )[WebFrontAuthService.AuthCookieName] != null )
                 {
                     // Authentication Cookie has been used.
                     tokenClear.Should().Contain( "Albert" );
