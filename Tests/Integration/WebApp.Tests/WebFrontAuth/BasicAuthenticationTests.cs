@@ -19,12 +19,13 @@ namespace WebApp.Tests
         readonly Dictionary<string, string> _userToken = new Dictionary<string, string>();
         TestClient _client;
 
-        [SetUp]
-        public void Initialize() => _client = WebAppHelper.GetRunningTestClient().GetAwaiter().GetResult();
-
         [TestCase( "Albert", "pass" )]
         public async Task login_basic_for_known_user_with_invalid_password( string userName, string password )
         {
+            if( _client == null )
+            {
+                _client = await WebAppHelper.GetRunningTestClient();
+            }
             await EnsureTokenFor( userName, password );
             HttpResponseMessage authFailed = await _client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
             var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, await authFailed.Content.ReadAsStringAsync() );
@@ -35,6 +36,10 @@ namespace WebApp.Tests
         [TestCase( "Albert", "pass" )]
         public async Task calling_token_endpoint( string userName, string password )
         {
+            if( _client == null )
+            {
+                _client = await WebAppHelper.GetRunningTestClient();
+            }
             {
                 // With token: it always works.
                 _client.Token = await EnsureTokenFor( userName, password );
