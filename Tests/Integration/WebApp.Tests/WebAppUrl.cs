@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace WebApp.Tests
 {
     static class WebAppUrl
     {
-        public const string EnsureBasicUser = "/app/ensureBasicUser";
+        public const string EnsureBasicUser = "/ensureBasicUser";
 
         public const string StartLoginUri = "/.webfront/c/startLogin";
         public const string BasicLoginUri = "/.webfront/c/basicLogin";
