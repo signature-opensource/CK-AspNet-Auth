@@ -26,7 +26,7 @@ namespace CodeCake
     /// Standard build "script".
     /// </summary>
     [AddPath( "CodeCakeBuilder/Tools" )]
-    [AddPath( "packages/**/tools*" )]
+    [AddPath("Back/packages/**/tools*")]
     public class Build : CodeCakeHost
     {
         public Build()
