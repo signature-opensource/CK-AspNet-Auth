@@ -33,6 +33,12 @@ namespace WebApp.Tests
                 {
                     await WaitForServerAnswer();
                 }
+                // This still fails randomly. Try another loop :(.
+                await Task.Delay( 100 );
+                for( int i = 0; i < 3; ++i )
+                {
+                    await WaitForServerAnswer();
+                }
             }
             return _client;
         }
