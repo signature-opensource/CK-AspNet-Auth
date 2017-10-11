@@ -1,6 +1,7 @@
 using CK.AspNet.Tester;
 using CK.Auth;
 using CK.Core;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,27 +13,53 @@ using System.Threading.Tasks;
 
 namespace WebApp.Tests
 {
+    [SetUpFixture]
+    public class GlobalTeardown
+    {
+        [TearDown]
+        public void StopServers()
+        {
+            WebAppHelper.WebAppProcess.StopAndWaitForExit();
+            WebAppHelper.IdServerProcess.StopAndWaitForExit();
+        }
+    }
+
     static class WebAppHelper
     {
         static TestClient _client;
+
+        public static ExternalProcess WebAppProcess = new ExternalProcess(
+            pI =>
+            {
+                pI.WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "WebApp" );
+                pI.FileName = Path.Combine( "bin", TestHelper.BuildConfiguration, "net461", "WebApp.exe" );
+            },
+            p =>
+            {
+                if( _client != null ) _client.Get( "/quit" );
+            } );
+
+        public static ExternalProcess IdServerProcess = new ExternalProcess(
+            pI =>
+            {
+                pI.WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "IdServer" );
+                pI.FileName = "dotnet";
+                pI.Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" );
+            } );
 
         static public async Task<TestClient> GetRunningTestClient()
         {
             if( _client == null )
             {
-                // This ensures that the generated dll exists.
-                // WebApp references our WebApp.Tests.Generated dll.
-                var stObjMap = TestHelper.LoadStObjMapFromExistingGeneratedAssembly();
-                if( stObjMap == null ) stObjMap = TestHelper.StObjMap;
-                LaunchWebApp();
-                LaunchIdServer();
                 _client = new TestClient( "http://localhost:4324/" );
-                await WaitForServerAnswer();
             }
+            WebAppProcess.EnsureRunning();
+            IdServerProcess.EnsureRunning();
+            await WaitForWebAppAnswer();
             return _client;
         }
 
-        private static async Task WaitForServerAnswer()
+        static async Task WaitForWebAppAnswer()
         {
             int retryCount = 0;
             for(; ; )
@@ -55,27 +82,6 @@ namespace WebApp.Tests
                     }
                 }
             }
-        }
-
-        static void LaunchWebApp()
-        {
-            var pI = new ProcessStartInfo()
-            {
-                WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "WebApp" ),
-                FileName = Path.Combine( "bin", TestHelper.BuildConfiguration, "net461", "WebApp.exe" )
-            };
-            Process.Start( pI );
-        }
-
-        static void LaunchIdServer()
-        {
-            var pI = new ProcessStartInfo()
-            {
-                WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "IdServer" ),
-                FileName = "dotnet",
-                Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" )
-            };
-            Process.Start( pI );
         }
 
         static public readonly IAuthenticationTypeSystem AuthTypeSystem = new StdAuthenticationTypeSystem();

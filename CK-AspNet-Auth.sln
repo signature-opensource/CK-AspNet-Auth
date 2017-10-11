@@ -10,42 +10,40 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		BasicDoc.docx = BasicDoc.docx
 		NuGet.config = NuGet.config
 		RepositoryInfo.xml = RepositoryInfo.xml
-		Back\Common\Shared.props = Back\Common\Shared.props
-		Back\Common\SharedKey.snk = Back\Common\SharedKey.snk
+		Common\Shared.props = Common\Shared.props
+		Common\SharedKey.snk = Common\SharedKey.snk
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1A7E3E39-6483-4802-8B27-C4D245D35D09}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth", "Back\CK.AspNet.Auth\CK.AspNet.Auth.csproj", "{880BB539-625A-459A-A674-664C563DEAC2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth", "CK.AspNet.Auth\CK.AspNet.Auth.csproj", "{880BB539-625A-459A-A674-664C563DEAC2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.Tests", "Back\Tests\CK.AspNet.Auth.Tests\CK.AspNet.Auth.Tests.csproj", "{63F7B0AF-7934-4AE9-81EF-B8E8364C93F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.Tests", "Tests\CK.AspNet.Auth.Tests\CK.AspNet.Auth.Tests.csproj", "{63F7B0AF-7934-4AE9-81EF-B8E8364C93F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth", "Back\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj", "{FED12EC2-74DE-48C1-91B8-D324DADE6CFB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth", "CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj", "{FED12EC2-74DE-48C1-91B8-D324DADE6CFB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth.Tests", "Back\Tests\CK.DB.AspNet.Auth.Tests\CK.DB.AspNet.Auth.Tests.csproj", "{835B0321-7841-4F9E-8536-FCAFF69F0B6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth.Tests", "Tests\CK.DB.AspNet.Auth.Tests\CK.DB.AspNet.Auth.Tests.csproj", "{835B0321-7841-4F9E-8536-FCAFF69F0B6D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration", "Integration", "{831337CA-34A1-41F8-9C0F-4D38F8D4DD96}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdServer", "Back\Tests\Integration\IdServer\IdServer.csproj", "{A3ABD518-0E6A-43E4-90ED-CF3CC560CFCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdServer", "Tests\Integration\IdServer\IdServer.csproj", "{A3ABD518-0E6A-43E4-90ED-CF3CC560CFCA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp.Tests", "Back\Tests\Integration\WebApp.Tests\WebApp.Tests.csproj", "{219F142D-E712-4942-8855-D73590A73883}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp.Tests", "Tests\Integration\WebApp.Tests\WebApp.Tests.csproj", "{219F142D-E712-4942-8855-D73590A73883}"
 	ProjectSection(ProjectDependencies) = postProject
 		{835B0321-7841-4F9E-8536-FCAFF69F0B6D} = {835B0321-7841-4F9E-8536-FCAFF69F0B6D}
 		{6045AB84-3B80-46B9-8F4E-78B75C761196} = {6045AB84-3B80-46B9-8F4E-78B75C761196}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp", "Back\Tests\Integration\WebApp\WebApp.csproj", "{6045AB84-3B80-46B9-8F4E-78B75C761196}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp", "Tests\Integration\WebApp\WebApp.csproj", "{6045AB84-3B80-46B9-8F4E-78B75C761196}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A3ABD518-0E6A-43E4-90ED-CF3CC560CFCA} = {A3ABD518-0E6A-43E4-90ED-CF3CC560CFCA}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.NetCore.Tests", "Back\Tests\CK.AspNet.Auth.NetCore.Tests\CK.AspNet.Auth.NetCore.Tests.csproj", "{5D23D7CD-EA03-45ED-9D6B-FD659B98949C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.NetCore.Tests", "Tests\CK.AspNet.Auth.NetCore.Tests\CK.AspNet.Auth.NetCore.Tests.csproj", "{5D23D7CD-EA03-45ED-9D6B-FD659B98949C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.BD.AspNet.Auth.NetCore.Tests", "Back\Tests\CK.BD.AspNet.Auth.NetCore.Tests\CK.BD.AspNet.Auth.NetCore.Tests.csproj", "{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Back", "Back", "{5E53C268-8906-4783-A49B-9953EA3149CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.BD.AspNet.Auth.NetCore.Tests", "Tests\CK.BD.AspNet.Auth.NetCore.Tests\CK.BD.AspNet.Auth.NetCore.Tests.csproj", "{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -98,10 +96,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{1A7E3E39-6483-4802-8B27-C4D245D35D09} = {5E53C268-8906-4783-A49B-9953EA3149CC}
-		{880BB539-625A-459A-A674-664C563DEAC2} = {5E53C268-8906-4783-A49B-9953EA3149CC}
 		{63F7B0AF-7934-4AE9-81EF-B8E8364C93F0} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
-		{FED12EC2-74DE-48C1-91B8-D324DADE6CFB} = {5E53C268-8906-4783-A49B-9953EA3149CC}
 		{835B0321-7841-4F9E-8536-FCAFF69F0B6D} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
 		{831337CA-34A1-41F8-9C0F-4D38F8D4DD96} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
 		{A3ABD518-0E6A-43E4-90ED-CF3CC560CFCA} = {831337CA-34A1-41F8-9C0F-4D38F8D4DD96}

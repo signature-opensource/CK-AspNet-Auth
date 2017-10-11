@@ -26,7 +26,7 @@ namespace CodeCake
     /// Standard build "script".
     /// </summary>
     [AddPath( "CodeCakeBuilder/Tools" )]
-    [AddPath("Back/packages/**/tools*")]
+    [AddPath("packages/**/tools*")]
     public class Build : CodeCakeHost
     {
         public Build()
@@ -140,7 +140,7 @@ namespace CodeCake
 
                     var webApp = projects.Single( p => p.Name == "WebApp" );
                     Cake.DotNetCoreBuild( webApp.Path.FullPath,
-                                    new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
+                         new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
                          {
                              s.Configuration = configuration;
                          } ) );

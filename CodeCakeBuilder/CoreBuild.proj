@@ -1,10 +1,10 @@
 <Project ToolsVersion="15.0">
  
   <ItemGroup>
-    <CoreProj Include="..\Back\**\*.csproj" />
+    <CoreProj Include="..\**\*.csproj" />
     <CoreProj Remove="..\CodeCakeBuilder\CodeCakeBuilder.csproj" />
     <!-- Do not build WebApp since it uses the WebApp.Tests.Generated dll. -->
-    <CoreProj Remove="..\Back\Tests\Integration\WebApp\WebApp.csproj" />
+    <CoreProj Remove="..\Tests\Integration\WebApp\WebApp.csproj" />
   </ItemGroup>
 
   <Target Name="Restore">

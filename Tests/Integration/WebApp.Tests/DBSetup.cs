@@ -34,10 +34,11 @@ namespace WebApp.Tests
 
         [Explicit]
         [Test]
-        public async Task close_WebApp_server()
+        public async Task close_WebApp_and_IdServer_servers()
         {
             var c = await WebAppHelper.GetRunningTestClient();
-            await c.Get( "/quit" );
+            WebAppHelper.WebAppProcess.StopAndWaitForExit();
+            WebAppHelper.IdServerProcess.StopAndWaitForExit();
         }
 
         public static void BobSetup()
