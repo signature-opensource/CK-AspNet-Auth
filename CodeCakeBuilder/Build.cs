@@ -162,24 +162,29 @@ namespace CodeCake
                                             NetCoreAppDll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/netcoreapp2.0/" + p.Name + ".dll" ),
                                             Net461Dll = p.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/" + p.Name + ".dll" ),
                                         } );
-                    foreach( var test in testDlls )
+                    try
                     {
-                        if( System.IO.File.Exists( test.Net461Dll.FullPath ) )
+                        foreach( var test in testDlls )
                         {
-                            Cake.Information( $"Testing: {test.Net461Dll}" );
-                            Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
-                        }
-                        if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
-                        {
-                            Cake.Information( $"Testing: {test.NetCoreAppDll}" );
-                            Cake.DotNetCoreExecute( test.NetCoreAppDll );
+                            if( System.IO.File.Exists( test.Net461Dll.FullPath ) )
+                            {
+                                Cake.Information( $"Testing: {test.Net461Dll}" );
+                                Cake.NUnit( test.Net461Dll.FullPath, new NUnitSettings() { Framework = "v4.5" } );
+                            }
+                            if( System.IO.File.Exists( test.NetCoreAppDll.FullPath ) )
+                            {
+                                Cake.Information( $"Testing: {test.NetCoreAppDll}" );
+                                Cake.DotNetCoreExecute( test.NetCoreAppDll );
+                            }
                         }
                     }
-                    foreach( var fLog in Cake.GetFiles( "Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
+                    finally
                     {
-                        Cake.AppVeyor().UploadArtifact( fLog );
+                        foreach( var fLog in Cake.GetFiles( "Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
+                        {
+                            Cake.AppVeyor().UploadArtifact( fLog );
+                        }
                     }
-
                 } );
 
 
