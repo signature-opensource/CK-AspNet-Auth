@@ -180,9 +180,12 @@ namespace CodeCake
                     }
                     finally
                     {
-                        foreach( var fLog in Cake.GetFiles( "Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
+                        if( Cake.AppVeyor().IsRunningOnAppVeyor )
                         {
-                            Cake.AppVeyor().UploadArtifact( fLog );
+                            foreach( var fLog in Cake.GetFiles( "Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
+                            {
+                                Cake.AppVeyor().UploadArtifact( fLog );
+                            }
                         }
                     }
                 } );

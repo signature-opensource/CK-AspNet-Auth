@@ -23,7 +23,6 @@ namespace WebApp
                 .ConfigureLogging( (ctx,b) =>
                 {
                     b.AddDebug();
-                    b.AddConsole();
                 } )
                 .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
