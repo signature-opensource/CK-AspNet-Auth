@@ -20,9 +20,12 @@ namespace WebApp
                 .UseUrls( "http://localhost:4324" )
                 .UseKestrel()
                 .UseContentRoot( Directory.GetCurrentDirectory() )
-                .ConfigureLogging( (ctx,b) =>
+                .ConfigureLogging( b =>
                 {
-                    b.AddDebug();
+                    // This has no impact :(
+                    // b.SetMinimumLevel( Microsoft.Extensions.Logging.LogLevel.Trace );
+                    // Adding the Console, displays the Request start/end. WTF?!
+                    b.AddConsole();
                 } )
                 .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
