@@ -24,12 +24,14 @@ namespace WebApp.Tests
             BobSetup();
         }
 
+        // This unit test is called by Build script (thanks to its category) before
+        // building the WebApp.
         [Explicit]
         [Category( "GenerateWebAppTestsGenerated" )]
         [Test]
         public void Generate_Web_App_Tests_Generated()
         {
-            db_setup( "Source" );
+            TestHelper.RunDBSetup();
         }
 
         [Explicit]

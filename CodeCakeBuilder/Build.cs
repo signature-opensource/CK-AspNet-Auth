@@ -175,6 +175,11 @@ namespace CodeCake
                             Cake.DotNetCoreExecute( test.NetCoreAppDll );
                         }
                     }
+                    foreach( var fLog in Cake.GetFiles( "Tests/Integration/WebApp/WebAppLogs/Textual/*.*" ) )
+                    {
+                        Cake.AppVeyor().UploadArtifact( fLog );
+                    }
+
                 } );
 
 

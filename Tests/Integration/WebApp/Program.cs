@@ -8,6 +8,7 @@ using System.Threading;
 using CK.Monitoring;
 using CK.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace WebApp
 {
@@ -19,6 +20,11 @@ namespace WebApp
                 .UseUrls( "http://localhost:4324" )
                 .UseKestrel()
                 .UseContentRoot( Directory.GetCurrentDirectory() )
+                .ConfigureLogging( (ctx,b) =>
+                {
+                    b.AddDebug();
+                    b.AddConsole();
+                } )
                 .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
                 .UseIISIntegration()
