@@ -10,13 +10,13 @@
     <PackageReference Include="System.Net.Http" Version="4.3.3" />
     <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="AngleSharp" Version="0.9.9" />
-    <PackageReference Include="CK.AspNet.Tester" Version="1.1.2" />
+    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTester)" />
 
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
 
-    <PackageReference Include="CK.DB.User.UserPassword" Version="1.0.0-e01" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="1.0.0-e01" />
-    <PackageReference Include="CK.DB.User.UserOidc" Version="1.0.0-e01" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
   </ItemGroup>
 
   <ItemGroup>

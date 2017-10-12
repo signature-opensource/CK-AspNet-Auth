@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.0" />
     <PackageReference Include="NUnit" Version="3.8.1" />
     <PackageReference Include="NUnitLite" Version="3.8.1" />
-    <PackageReference Include="CK.AspNet.Tester" Version="1.1.2" />
+    <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTester)" />
   </ItemGroup>
 
   <ItemGroup>
