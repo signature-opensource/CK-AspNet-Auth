@@ -21,7 +21,7 @@
     <CKMonitoringVersion>8.2.0</CKMonitoringVersion>
     <CKAspNetVersion>1.2.1</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.5.1</CKAuthAbstractionsVersion>
-    <CKAspNetTester>1.1.2</CKAspNetTester>
+    <CKAspNetTester>1.2.0</CKAspNetTester>
   </PropertyGroup>
   
   <!-- 
