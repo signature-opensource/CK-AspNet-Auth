@@ -1,6 +1,7 @@
 # Basic appveyor configuration : CodeCakeBuilder does the job.
 version: build{build}
 services: mssql2016
+clone_folder: C:\CK-World\CK-AspNet-Projects\CK-AspNet-Auth
 branches:
   only:
   - master
