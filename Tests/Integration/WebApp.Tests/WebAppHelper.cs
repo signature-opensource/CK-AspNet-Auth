@@ -31,8 +31,10 @@ namespace WebApp.Tests
         public static ExternalProcess WebAppProcess = new ExternalProcess(
             pI =>
             {
-                pI.WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "WebApp" );
-                pI.FileName = Path.Combine( "bin", TestHelper.BuildConfiguration, "net461", "WebApp.exe" );
+                var workingDir = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "WebApp" );
+                pI.WorkingDirectory = workingDir;
+                pI.FileName = Path.Combine( workingDir, "bin", TestHelper.BuildConfiguration, "net461", "WebApp.exe" );
+                pI.CreateNoWindow = true;
             },
             p =>
             {
@@ -45,6 +47,7 @@ namespace WebApp.Tests
                 pI.WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "IdServer" );
                 pI.FileName = "dotnet";
                 pI.Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" );
+                pI.CreateNoWindow = true;
             } );
 
         static public async Task<TestClient> GetRunningTestClient()
