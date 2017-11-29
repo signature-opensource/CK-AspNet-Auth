@@ -1,4 +1,4 @@
-﻿using CK.DB.Auth;
+using CK.DB.Auth;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,12 +19,12 @@ namespace CK.DB.AspNet.Auth.Tests
             _db = db;
         }
 
-        public CreateOrUpdateResult CreateOrUpdatePasswordUser(ISqlCallContext ctx, int actorId, int userId, string password, CreateOrUpdateMode mode = CreateOrUpdateMode.CreateOrUpdate)
+        public UCLResult CreateOrUpdatePasswordUser(ISqlCallContext ctx, int actorId, int userId, string password, UCLMode mode = UCLMode.CreateOrUpdate)
         {
             return _db.CreateOrUpdateUser(userId, mode, "Basic" );
         }
 
-        public Task<CreateOrUpdateResult> CreateOrUpdatePasswordUserAsync(ISqlCallContext ctx, int actorId, int userId, string password, CreateOrUpdateMode mode = CreateOrUpdateMode.CreateOrUpdate, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<UCLResult> CreateOrUpdatePasswordUserAsync(ISqlCallContext ctx, int actorId, int userId, string password, UCLMode mode = UCLMode.CreateOrUpdate, CancellationToken cancellationToken = default(CancellationToken))
         {
             return Task.FromResult(CreateOrUpdatePasswordUser(ctx,actorId,userId,password,mode));
         }
@@ -40,22 +40,22 @@ namespace CK.DB.AspNet.Auth.Tests
             return Task.FromResult(0);
         }
 
-        public int LoginUser(ISqlCallContext ctx, string userName, string password, bool actualLogin = true)
+        public LoginResult LoginUser(ISqlCallContext ctx, string userName, string password, bool actualLogin = true)
         {
             return _db.LoginUser(userName, password, actualLogin, "Basic");
         }
 
-        public int LoginUser(ISqlCallContext ctx, int userId, string password, bool actualLogin = true)
+        public LoginResult LoginUser(ISqlCallContext ctx, int userId, string password, bool actualLogin = true)
         {
             return _db.LoginUser(userId, password, actualLogin, "Basic");
         }
 
-        public Task<int> LoginUserAsync(ISqlCallContext ctx, string userName, string password, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<LoginResult> LoginUserAsync(ISqlCallContext ctx, string userName, string password, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
         {
             return Task.FromResult(LoginUser(ctx, userName, password, actualLogin));
         }
 
-        public Task<int> LoginUserAsync(ISqlCallContext ctx, int userId, string password, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<LoginResult> LoginUserAsync(ISqlCallContext ctx, int userId, string password, bool actualLogin = true, CancellationToken cancellationToken = default(CancellationToken))
         {
             return Task.FromResult(LoginUser(ctx, userId, password, actualLogin));
         }

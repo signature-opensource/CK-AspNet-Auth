@@ -188,7 +188,7 @@ namespace CK.AspNet.Auth
                 {
                     try
                     {
-                        IUserInfo u = await _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
+                        UserLoginResult u = await _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
                         await DoDirectLogin( u );
                     }
                     catch( ArgumentException ex )
@@ -261,7 +261,7 @@ namespace CK.AspNet.Auth
             BasicLoginRequest req = ReadBasicLoginRequest( monitor );
             if( req != null )
             {
-                IUserInfo u = await _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
+                UserLoginResult u = await _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
                 await DoDirectLogin( u );
             }
             return true;
@@ -383,7 +383,7 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="u">The user info to login.</param>
         /// <returns>Always true.</returns>
-        Task<bool> DoDirectLogin( IUserInfo u )
+        Task<bool> DoDirectLogin( UserLoginResult u )
         {
             WebFrontAuthService.LoginResult r = _authService.HandleLogin( Context, u );
             return WriteResponseAsync( r.Response, r.Info == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK );

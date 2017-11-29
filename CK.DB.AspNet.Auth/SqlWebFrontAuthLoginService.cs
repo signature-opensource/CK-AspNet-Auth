@@ -10,6 +10,8 @@ using System.Linq;
 using CK.AspNet;
 using CK.Text;
 using CK.Core;
+using System.Diagnostics;
+using CK.SqlServer;
 
 namespace CK.DB.AspNet.Auth
 {
@@ -55,13 +57,19 @@ namespace CK.DB.AspNet.Auth
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<IUserInfo> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
+        public async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
         {
             var c = ctx.GetSqlCallContext( monitor );
-            int userId = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password );
-            return userId > 0
-                    ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( c, 1, userId ) )
-                    : null;
+            LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password );
+            return await CreateUserLoginResultFromDatabase( c, r ); 
+        }
+
+        async Task<UserLoginResult> CreateUserLoginResultFromDatabase( ISqlCallContext ctx, LoginResult dbResult )
+        {
+            IUserInfo info = dbResult.IsSuccessful 
+                                ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( ctx, 1, dbResult.UserId ) )
+                                : null;
+            return new UserLoginResult( info, dbResult.FailureCode, dbResult.FailureReason, dbResult.FailureCode == (int)KnownLoginFailureCode.UnregisteredUser );
         }
 
         /// <summary>
@@ -86,15 +94,13 @@ namespace CK.DB.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The scheme to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
-        /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<IUserInfo> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
+        /// <returns>The login result.</returns>
+        public async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
         {
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
             var c = ctx.GetSqlCallContext( monitor );
-            int userId = await p.LoginUserAsync( c, payload );
-            return userId > 0
-                    ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( c, 1, userId ) )
-                    : null;
+            LoginResult r = await p.LoginUserAsync( c, payload );
+            return await CreateUserLoginResultFromDatabase( c, r );
         }
 
         IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )

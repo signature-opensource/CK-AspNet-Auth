@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -20,16 +20,20 @@ namespace WebApp.Tests
 
         public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
         {
-            JObject o = JObject.Parse( json );
             var r = new RefreshResponse();
+            r.DoParse( t, JObject.Parse( json ) );
+            return r;
+        }
+
+        protected virtual void DoParse( IAuthenticationTypeSystem t, JObject o )
+        {
             if( o["info"].Type == JTokenType.Object )
             {
-                r.Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"] );
+                Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"] );
             }
-            r.Token = (string)o["token"];
-            r.Refreshable = (bool)o["refreshable"];
-            r.Schemes = o["schemes"]?.Values<string>().ToArray();
-            return r;
+            Token = (string)o["token"];
+            Refreshable = (bool)o["refreshable"];
+            Schemes = o["schemes"]?.Values<string>().ToArray();
         }
     }
 

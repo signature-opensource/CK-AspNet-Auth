@@ -1,4 +1,4 @@
-﻿using CK.DB.Auth;
+using CK.DB.Auth;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,22 +74,22 @@ namespace CK.DB.AspNet.Auth.Tests
         /// <param name="mode">Creation/update mode.</param>
         /// <param name="providerName">The provider name.</param>
         /// <returns>The create result.</returns>
-        public CreateOrUpdateResult CreateOrUpdateUser(int userId, CreateOrUpdateMode mode, string providerName)
+        public UCLResult CreateOrUpdateUser(int userId, UCLMode mode, string providerName)
         {
             MockAuthUser user = _users.FirstOrDefault(u => u.UserId == userId);
             if (user == null) throw new Exception("Invalid user identifier.");
             int idx = user.Schemes.IndexOf(p => p.Name == providerName);
-            bool actualLogin = (mode & CreateOrUpdateMode.WithLogin) != 0;
+            bool actualLogin = (mode & UCLMode.WithActualLogin) != 0;
             var loginTime = Util.UtcMinValue;
             if (idx < 0)
             {
-                if ((mode & CreateOrUpdateMode.UpdateOnly) == 0) return CreateOrUpdateResult.None;
+                if( (mode & UCLMode.UpdateOnly) == 0 ) return new UCLResult( 0, UCResult.None, null, 0 );
                 user.Schemes.Add(new UserAuthSchemeInfo(providerName, actualLogin ? DateTime.UtcNow : Util.UtcMinValue));
-                return CreateOrUpdateResult.Created;
+                return new UCLResult( userId, UCResult.Created, null, 0 ); ;
             }
-            if ((mode & CreateOrUpdateMode.CreateOnly) == 0) return CreateOrUpdateResult.None;
+            if ((mode & UCLMode.CreateOnly) == 0) return new UCLResult( 0, UCResult.None, null, 0 );
             user.Schemes[idx] = new UserAuthSchemeInfo(providerName, actualLogin ? DateTime.UtcNow : user.Schemes[idx].LastUsed);
-            return CreateOrUpdateResult.Updated;
+            return new UCLResult( userId, UCResult.Updated, null, 0 ); ;
         }
 
         /// <summary>
@@ -116,15 +116,15 @@ namespace CK.DB.AspNet.Auth.Tests
         /// <param name="actualLogin">True to update provider's last used.</param>
         /// <param name="providerName">The provider name.</param>
         /// <returns>The user identifier or 0 on failure.</returns>
-        public int LoginUser(string userName, string password, bool actualLogin, string providerName)
+        public LoginResult LoginUser(string userName, string password, bool actualLogin, string providerName)
         {
-            if (password == "failed") return 0;
+            if (password == "failed") return new LoginResult( KnownLoginFailureCode.InvalidCredentials );
             MockAuthUser user = _users.FirstOrDefault(u => u.UserName == userName);
-            if (user == null) return 0;
+            if (user == null) return new LoginResult( KnownLoginFailureCode.InvalidUserKey );
             int idx = user.Schemes.IndexOf(p => p.Name == providerName);
-            if (idx < 0) return 0;
+            if (idx < 0) new LoginResult( KnownLoginFailureCode.UnregisteredUser );
             if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo(user.Schemes[idx].Name, DateTime.UtcNow);
-            return user.UserId;
+            return new LoginResult( user.UserId );
         }
         /// <summary>
         /// Challenge a user login for a provider.
@@ -135,15 +135,15 @@ namespace CK.DB.AspNet.Auth.Tests
         /// <param name="actualLogin">True to update provider's last used.</param>
         /// <param name="providerName">The provider name.</param>
         /// <returns>The user identifier or 0 on failure.</returns>
-        public int LoginUser(int userId, string password, bool actualLogin, string providerName)
+        public LoginResult LoginUser(int userId, string password, bool actualLogin, string providerName)
         {
-            if (password == "failed") return 0;
+            if (password == "failed") return new LoginResult(KnownLoginFailureCode.InvalidCredentials);
             MockAuthUser user = _users.FirstOrDefault(u => u.UserId == userId);
-            if (user == null) return 0;
+            if (user == null) return new LoginResult( KnownLoginFailureCode.InvalidUserKey );
             int idx = user.Schemes.IndexOf(p => p.Name == providerName);
-            if (idx < 0) return 0;
+            if (idx < 0) new LoginResult( KnownLoginFailureCode.UnregisteredUser );
             if (actualLogin) user.Schemes[idx] = new UserAuthSchemeInfo(user.Schemes[idx].Name, DateTime.UtcNow);
-            return user.UserId;
+            return new LoginResult( userId );
         }
 
     }

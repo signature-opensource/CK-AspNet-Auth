@@ -1,4 +1,4 @@
-﻿using CK.SqlServer;
+using CK.SqlServer;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,14 +22,14 @@ namespace CK.DB.Auth
 
         string IGenericAuthenticationProvider.ProviderName => Name;
 
-        CreateOrUpdateResult IGenericAuthenticationProvider.CreateOrUpdateUser(ISqlCallContext ctx, int actorId, int userId, object payload, CreateOrUpdateMode mode)
+        UCLResult IGenericAuthenticationProvider.CreateOrUpdateUser(ISqlCallContext ctx, int actorId, int userId, object payload, UCLMode mode)
         {
             string password = payload as string;
             if (password == null) throw new ArgumentException(nameof(payload));
             return _basic.CreateOrUpdatePasswordUser(ctx, actorId, userId, password, mode);
         }
 
-        Task<CreateOrUpdateResult> IGenericAuthenticationProvider.CreateOrUpdateUserAsync(ISqlCallContext ctx, int actorId, int userId, object payload, CreateOrUpdateMode mode, CancellationToken cancellationToken)
+        Task<UCLResult> IGenericAuthenticationProvider.CreateOrUpdateUserAsync(ISqlCallContext ctx, int actorId, int userId, object payload, UCLMode mode, CancellationToken cancellationToken)
         {
             string password = payload as string;
             if (password == null) throw new ArgumentException(nameof(payload));
@@ -46,7 +46,7 @@ namespace CK.DB.Auth
             return _basic.DestroyPasswordUserAsync(ctx, actorId, userId, cancellationToken);
         }
 
-        int IGenericAuthenticationProvider.LoginUser(ISqlCallContext ctx, object payload, bool actualLogin)
+        LoginResult IGenericAuthenticationProvider.LoginUser(ISqlCallContext ctx, object payload, bool actualLogin)
         {
             payload = ExtractPayload(payload);
             Tuple<string, string> byName = payload as Tuple<string, string>;
@@ -55,7 +55,7 @@ namespace CK.DB.Auth
             return _basic.LoginUser(ctx, byId.Item1, byId.Item2, actualLogin);
         }
 
-        async Task<int> IGenericAuthenticationProvider.LoginUserAsync(ISqlCallContext ctx, object payload, bool actualLogin, CancellationToken cancellationToken)
+        async Task<LoginResult> IGenericAuthenticationProvider.LoginUserAsync(ISqlCallContext ctx, object payload, bool actualLogin, CancellationToken cancellationToken)
         {
             payload = ExtractPayload(payload);
             Tuple<string, string> byName = payload as Tuple<string, string>;

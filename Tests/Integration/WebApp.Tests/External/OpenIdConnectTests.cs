@@ -50,7 +50,7 @@ namespace WebApp.Tests
         public async Task Alice_login_when_Basic_logged_on_webfront_returns_Account_NoAutoBinding( bool useTokenInsteadOfRelyingOnCookies )
         {
             DBSetup.AliceSetup();
-            RefreshResponse r = await BasicAuthenticationTests.BasicLogin( _client, "alice", "password" );
+            LoginResponse r = await BasicAuthenticationTests.BasicLogin( _client, "alice", "password" );
             if( useTokenInsteadOfRelyingOnCookies ) _client.Token = r.Token;
             HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc" );
             m.EnsureSuccessStatusCode();

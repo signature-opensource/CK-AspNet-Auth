@@ -105,7 +105,7 @@ namespace WebApp.Tests
                 {
                     google.DestroyGoogleUser( ctx, 1, id );
                 }
-                userPwd.CreateOrUpdatePasswordUser( ctx, 1, id, "password", CreateOrUpdateMode.CreateOrUpdate|CreateOrUpdateMode.WithLogin );
+                userPwd.CreateOrUpdatePasswordUser( ctx, 1, id, "password", UCLMode.CreateOrUpdate| UCLMode.WithActualLogin );
                 var info = oidc.CreateUserInfo<IUserOidcInfo>();
                 info.SchemeSuffix = "";
                 info.Sub = "Carol_is_Basic_and_Oidc_registered";

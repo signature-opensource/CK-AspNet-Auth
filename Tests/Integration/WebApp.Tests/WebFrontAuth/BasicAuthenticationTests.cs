@@ -1,6 +1,7 @@
 using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
+using CK.DB.Auth;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -32,9 +33,11 @@ namespace WebApp.Tests
         {
             await EnsureTokenFor( _client, userName, password );
             HttpResponseMessage authFailed = await _client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
-            var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, await authFailed.Content.ReadAsStringAsync() );
+            var c = LoginResponse.Parse( WebAppHelper.AuthTypeSystem, await authFailed.Content.ReadAsStringAsync() );
             c.Info.Should().BeNull();
             c.Token.Should().BeNull();
+            c.LoginFailureCode.Should().Be( (int)KnownLoginFailureCode.InvalidCredentials );
+            c.LoginFailureReason.Should().NotBeNull();
         }
 
         [TestCase( "Albert", "pass" )]
@@ -71,19 +74,21 @@ namespace WebApp.Tests
             if( _userToken.TryGetValue( userName, out token ) ) return token;
             HttpResponseMessage ensure = await client.PostJSON( WebAppUrl.EnsureBasicUser, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
             ensure.EnsureSuccessStatusCode();
-            RefreshResponse c = await BasicLogin( client, userName, password );
+            LoginResponse c = await BasicLogin( client, userName, password );
             _userToken.Add( userName, c.Token );
             return c.Token;
         }
 
-        static public async Task<RefreshResponse> BasicLogin( TestClient client, string userName, string password )
+        static public async Task<LoginResponse> BasicLogin( TestClient client, string userName, string password )
         {
             HttpResponseMessage authBasic = await client.PostJSON( WebAppUrl.BasicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
-            var c = RefreshResponse.Parse( WebAppHelper.AuthTypeSystem, authBasic.Content.ReadAsStringAsync().Result );
+            var c = LoginResponse.Parse( WebAppHelper.AuthTypeSystem, authBasic.Content.ReadAsStringAsync().Result );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserId.Should().BeGreaterThan( 1 );
             c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
             c.Token.Should().NotBeNullOrWhiteSpace();
+            c.LoginFailureReason.Should().BeNull();
+            c.LoginFailureCode.Should().Be( 0 );
             return c;
         }
     }

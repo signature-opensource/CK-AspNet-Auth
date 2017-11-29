@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,7 +38,7 @@ namespace CK.AspNet.Auth.Tests
             throw new NotSupportedException();
         }
 
-        public Task<IUserInfo> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
+        public Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
         {
             IUserInfo u = null;
             if( password == "success" )
@@ -50,11 +50,12 @@ namespace CK.AspNet.Auth.Tests
                     u = _typeSystem.UserInfo.Create( u.UserId, u.UserName, new[] { new StdUserSchemeInfo( "Basic", DateTime.UtcNow ) } );
                     _users.Add( u );
                 }
+                return Task.FromResult( new UserLoginResult( u, 0, null, false ) );
             }
-            return Task.FromResult( u );
+            return Task.FromResult( new UserLoginResult( null, 1, "Login failed!", false ) );
         }
 
-        public Task<IUserInfo> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload )
+        public Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload )
         {
             if( providerName != "Basic" ) throw new ArgumentException( "Unknown provider.", nameof( providerName ) );
             var o = payload as List<KeyValuePair<string, object>>;

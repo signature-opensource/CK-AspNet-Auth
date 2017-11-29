@@ -24,7 +24,7 @@ namespace CK.AspNet.Auth
     {
         string _errorId;
         string _errorMessage;
-        IUserInfo _successfulLogin;
+        UserLoginResult _successfulLogin;
 
         internal WebFrontAuthLoginContext( 
             HttpContext ctx, 
@@ -122,10 +122,11 @@ namespace CK.AspNet.Auth
         /// Sets a successful login.
         /// </summary>
         /// <param name="user">The logged in user.</param>
-        public void SetSuccessfulLogin( IUserInfo user )
+        public void SetSuccessfulLogin( UserLoginResult successResult )
         {
+            if( successResult == null || !successResult.IsSuccess ) throw new ArgumentException( "Must be a login success.", nameof(successResult) );
             if( _errorMessage != null ) throw new InvalidOperationException();
-            _successfulLogin = user;
+            _successfulLogin = successResult;
         }
 
         internal Task SendResponse()

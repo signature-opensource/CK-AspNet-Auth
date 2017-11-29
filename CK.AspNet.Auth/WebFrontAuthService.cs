@@ -301,12 +301,12 @@ namespace CK.AspNet.Auth
         /// <param name="c">The current Http context.</param>
         /// <param name="u">The user info to login.</param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c, IUserInfo u )
+        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u )
         {
-            IAuthenticationInfo authInfo = u != null && u.UserId != 0
-                                            ? _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
+            IAuthenticationInfo authInfo = u.IsSuccess
+                                            ? _typeSystem.AuthenticationInfo.Create( u.UserInfo, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
                                             : null;
-            JObject response = CreateAuthResponse( c, authInfo, authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero );
+            JObject response = CreateAuthResponse( c, authInfo, authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, u );
             SetCookies( c, authInfo );
             return new LoginResult( response, authInfo );
         }
@@ -318,12 +318,18 @@ namespace CK.AspNet.Auth
         /// <param name="authInfo">The authentication info (can be null).</param>
         /// <param name="refreshable">Whether the info is refreshable or not.</param>
         /// <returns>A {info,token,refreshable} object.</returns>
-        internal JObject CreateAuthResponse( HttpContext c, IAuthenticationInfo authInfo, bool refreshable )
+        internal JObject CreateAuthResponse( HttpContext c, IAuthenticationInfo authInfo, bool refreshable, UserLoginResult onLogin = null )
         {
-            return new JObject(
-                new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
-                new JProperty( "token", CreateToken( c, authInfo ) ),
-                new JProperty( "refreshable", refreshable ) );
+            var j = new JObject(
+                        new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
+                        new JProperty( "token", CreateToken( c, authInfo ) ),
+                        new JProperty( "refreshable", refreshable ) );
+            if( onLogin != null && !onLogin.IsSuccess )
+            {
+                j.Add( new JProperty( "loginFailureCode", onLogin.LoginFailureCode ) );
+                j.Add( new JProperty( "loginFailureReason", onLogin.LoginFailureReason ) );
+            }
+            return j;
         }
 
         /// <summary>
@@ -393,33 +399,42 @@ namespace CK.AspNet.Auth
             {
                 object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
                 payloadConfigurator( (T)payload );
-                IUserInfo u = await _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
+                UserLoginResult u = await _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
                 int currentlyLoggedIn = wfaSC.InitialAuthentication.User.UserId;
-                if( u == null || u.UserId == 0 )
+                if( !u.IsSuccess )
                 {
-                    // Login failed.
-                    if( currentlyLoggedIn != 0 )
+                    // Login failed because user is not registered: entering the account binding or auto registration features.
+                    if( u.IsUnregisteredUser )
                     {
-                        wfaSC.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                        monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                        if( currentlyLoggedIn != 0 )
+                        {
+                            wfaSC.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                            monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                        }
+                        else
+                        {
+                            wfaSC.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
+                            monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {wfaSC.CallingScheme}).", WebFrontAuthMonitorTag );
+                        }
                     }
                     else
                     {
-                        wfaSC.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
-                        monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {wfaSC.CallingScheme}).", WebFrontAuthMonitorTag );
+                        wfaSC.SetError( $"User.LoginError.Code{u.LoginFailureCode}", u.LoginFailureReason );
+                        monitor.Trace( $"[User.LoginError.Code{u.LoginFailureCode}] {u.LoginFailureReason}", WebFrontAuthMonitorTag );
                     }
                 }
                 else
                 {
-                    if( currentlyLoggedIn != 0 && u.UserId != currentlyLoggedIn )
+                    // Login succeeds.
+                    if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
                         wfaSC.SetError( "Account.Conflict", "Conflicting existing login association." );
-                        monitor.Error( $"[Account.Conflict] Currently logged in user {currentlyLoggedIn} also logged as user {u.UserId} via '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                        monitor.Error( $"[Account.Conflict] Currently logged in user {currentlyLoggedIn} also logged as user {u.UserInfo.UserId} via '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
                     }
                     else
                     {
                         wfaSC.SetSuccessfulLogin( u );
-                        monitor.Info( $"Logged in user {u.UserId} via '{wfaSC.CallingScheme}'.", WebFrontAuthMonitorTag );
+                        monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{wfaSC.CallingScheme}'.", WebFrontAuthMonitorTag );
                     }
                 }
             }
