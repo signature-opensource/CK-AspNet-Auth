@@ -35,6 +35,7 @@ namespace WebApp.Tests
                 pI.WorkingDirectory = workingDir;
                 pI.FileName = Path.Combine( workingDir, "bin", TestHelper.BuildConfiguration, "net461", "WebApp.exe" );
                 pI.CreateNoWindow = true;
+                pI.UseShellExecute = false;
             },
             p =>
             {
@@ -48,6 +49,7 @@ namespace WebApp.Tests
                 pI.FileName = "dotnet";
                 pI.Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" );
                 pI.CreateNoWindow = true;
+                pI.UseShellExecute = false;
             } );
 
         static public async Task<TestClient> GetRunningTestClient()
