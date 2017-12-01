@@ -3,6 +3,7 @@ using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,45 +52,10 @@ namespace CK.AspNet.Auth
             return WriteAsync( @this, error, code );
         }
 
-        static public void RedirectToReturnUrlWithError( this HttpResponse @this,
-            Exception ex,
-            string initialScheme = null,
-            string callingScheme = null )
-        {
-            RedirectToReturnUrlWithError( @this, ex.GetType().FullName, ex.Message, initialScheme, callingScheme );
-        }
-
-        static public void RedirectToReturnUrlWithError( this HttpResponse @this, 
-            string returnUrl,
+        static public Task WriteWindowPostMessageWithErrorAsync( this HttpResponse @this,
             string errorId,
             string errorText,
-            string initialScheme = null,
-            string callingScheme = null )
-        {
-            var retUrl = new Uri( returnUrl, UriKind.RelativeOrAbsolute );
-            var parameters = new QueryString( retUrl.Query );
-            parameters.Add( "errorId", errorId );
-            parameters.Add( "errorText", errorText );
-            if( initialScheme != null ) parameters.Add( "initialScheme", initialScheme );
-            if( callingScheme != null ) parameters.Add( "callingScheme", callingScheme );
-
-            var caller = new Uri( $"{@this.HttpContext.Request.Scheme}://{@this.HttpContext.Request.Host}/" );
-            var target = new Uri( caller, retUrl.AbsolutePath + parameters.Value );
-            @this.Redirect( target.ToString() );
-        }
-
-        static public Task WritePostMessageWithErrorAsync( this HttpResponse @this,
-            Exception ex,
-            string initialScheme = null,
-            string callingScheme = null,
-            JProperty userData = null )
-        {
-            return WritePostMessageWithErrorAsync( @this, ex.GetType().FullName, ex.Message, initialScheme, callingScheme, userData );
-        }
-
-        static public Task WritePostMessageWithErrorAsync( this HttpResponse @this,
-            string errorId,
-            string errorText,
+            int loginFailureCode,
             string initialScheme = null,
             string callingScheme = null,
             JProperty userData = null )
@@ -97,6 +63,7 @@ namespace CK.AspNet.Auth
             var error = new JObject(
                 new JProperty( "errorId", errorId ),
                 new JProperty( "errorText", errorText ) );
+            if( loginFailureCode != 0 ) error.Add( new JProperty( "loginFailureCode", loginFailureCode ) );
             if( initialScheme != null ) error.Add( new JProperty( "initialScheme", initialScheme ) );
             if( callingScheme != null ) error.Add( new JProperty( "callingScheme", callingScheme ) );
             if( userData != null ) error.Add( userData );

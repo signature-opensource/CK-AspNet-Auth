@@ -66,7 +66,7 @@ namespace CK.DB.AspNet.Auth
 
         async Task<UserLoginResult> CreateUserLoginResultFromDatabase( ISqlCallContext ctx, LoginResult dbResult )
         {
-            IUserInfo info = dbResult.IsSuccessful 
+            IUserInfo info = dbResult.IsSuccess
                                 ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( ctx, 1, dbResult.UserId ) )
                                 : null;
             return new UserLoginResult( info, dbResult.FailureCode, dbResult.FailureReason, dbResult.FailureCode == (int)KnownLoginFailureCode.UnregisteredUser );

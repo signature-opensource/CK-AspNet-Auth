@@ -5,6 +5,7 @@ using CK.DB.User.UserGoogle;
 using CK.DB.User.UserOidc;
 using CK.DB.User.UserPassword;
 using CK.SqlServer;
+using CK.SqlServer.Setup;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -111,6 +112,20 @@ namespace WebApp.Tests
                 info.Sub = "Carol_is_Basic_and_Oidc_registered";
                 oidc.CreateOrUpdateOidcUser( ctx, 1, id, info );
             }
+
+        }
+
+        public static IDisposable TemporaryDisableAllLogin()
+        {
+            var db = TestHelper.StObjMap.Default.Obtain<SqlDefaultDatabase>();
+            return db.TemporaryTransform( @"
+                            create transformer on CK.sAuthUserOnLogin
+                            as
+                            begin
+                                inject ""set @FailureCode = 6; -- GloballyDisabledUser"" into ""CheckLoginFailure"";
+                            end
+                        " );
+
         }
 
     }

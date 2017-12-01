@@ -14,6 +14,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Globalization;
 
 namespace CK.AspNet.Auth
 {
@@ -22,9 +24,10 @@ namespace CK.AspNet.Auth
     /// </summary>
     public class WebFrontAuthLoginContext
     {
+        UserLoginResult _successfulLogin;
         string _errorId;
         string _errorMessage;
-        UserLoginResult _successfulLogin;
+        int _loginFailureCode;
 
         internal WebFrontAuthLoginContext( 
             HttpContext ctx, 
@@ -114,8 +117,27 @@ namespace CK.AspNet.Auth
         /// <param name="errorMessage">The error message in clear text.</param>
         public void SetError( string errorId, string errorMessage )
         {
+            if( string.IsNullOrWhiteSpace( errorId ) ) throw new ArgumentNullException( nameof( errorId ) );
+            if( string.IsNullOrWhiteSpace( errorMessage ) ) throw new ArgumentNullException( nameof( errorMessage ) );
             _errorId = errorId;
             _errorMessage = errorMessage;
+        }
+
+        /// <summary>
+        /// Sets a login failure.
+        /// The returned error contains the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>, <see cref="UserData"/>,
+        /// the "errorId" is "User.LoginFailure", the "errorMessage" is <see cref="UserLoginResult.LoginFailureReason"/>
+        /// and a specific "loginFailureCode" contains the <see cref="UserLoginResult.LoginFailureCode"/>.
+        /// </summary>
+        /// <param name="loginFailed">Must be not null and <see cref="UserLoginResult.IsSuccess"/> must be false.</param>
+        public void SetError( UserLoginResult loginFailed )
+        {
+            if( loginFailed == null || loginFailed.IsSuccess ) throw new ArgumentException();
+            _errorId = "User.LoginFailure";
+            _errorMessage = loginFailed.LoginFailureReason;
+            _loginFailureCode = loginFailed.LoginFailureCode;
+            Debug.Assert( _errorMessage != null );
+            Debug.Assert( _loginFailureCode > 0 );
         }
 
         /// <summary>
@@ -147,33 +169,43 @@ namespace CK.AspNet.Auth
                 // "inline" mode.
                 var caller = new Uri( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" );
                 var target = new Uri( caller, ReturnUrl );
-                HttpContext.Response.StatusCode = StatusCodes.Status200OK;
-                HttpContext.Response.ContentType = "text/html";
-                var t = $@"<!DOCTYPE html><html><body><script>(function(){{window.url='{target}';}})();</script></body></html>";
-                return HttpContext.Response.WriteAsync( t );
+                HttpContext.Response.Redirect( target.ToString() );
+                return Task.CompletedTask;
             }
-            else
-            {
-                // "popup" mode.
-                var data = new JObject(
-                                new JProperty( "initialScheme", InitialScheme ),
-                                new JProperty( "callingScheme", CallingScheme ) );
-                data.Add( UserDataToJProperty() );
-                r.Response.Merge( data );
-                return HttpContext.Response.WriteWindowPostMessageAsync( r.Response );
-            }
+            // "popup" mode.
+            var data = new JObject(
+                            new JProperty( "initialScheme", InitialScheme ),
+                            new JProperty( "callingScheme", CallingScheme ) );
+            data.Add( UserDataToJProperty() );
+            r.Response.Merge( data );
+            return HttpContext.Response.WriteWindowPostMessageAsync( r.Response );
         }
 
         Task SendError()
         {
             if( ReturnUrl != null )
             {
-                HttpContext.Response.RedirectToReturnUrlWithError( ReturnUrl, _errorId, _errorMessage, InitialScheme, CallingScheme );
+                int idxQuery = ReturnUrl.IndexOf( '?' );
+                var path = idxQuery > 0
+                            ? ReturnUrl.Substring( 0, idxQuery )
+                            : string.Empty;
+                var parameters = idxQuery > 0
+                                    ? new QueryString( ReturnUrl.Substring(idxQuery))
+                                    : new QueryString();
+                parameters = parameters.Add( "errorId", _errorId )
+                                       .Add( "errorText", _errorMessage );
+                if( _loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", _loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
+                if( InitialScheme != null ) parameters = parameters.Add( "initialScheme", InitialScheme );
+                if( CallingScheme != null ) parameters = parameters.Add( "callingScheme", CallingScheme );
+
+                var caller = new Uri( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" );
+                var target = new Uri( caller, path + parameters.ToString() );
+                HttpContext.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
             else
             {
-                return HttpContext.Response.WritePostMessageWithErrorAsync( _errorId, _errorMessage, InitialScheme, CallingScheme, UserDataToJProperty() );
+                return HttpContext.Response.WriteWindowPostMessageWithErrorAsync( _errorId, _errorMessage, _loginFailureCode, InitialScheme, CallingScheme, UserDataToJProperty() );
             }
         }
 

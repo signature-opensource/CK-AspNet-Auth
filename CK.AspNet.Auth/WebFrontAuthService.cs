@@ -419,8 +419,8 @@ namespace CK.AspNet.Auth
                     }
                     else
                     {
-                        wfaSC.SetError( $"User.LoginError.Code{u.LoginFailureCode}", u.LoginFailureReason );
-                        monitor.Trace( $"[User.LoginError.Code{u.LoginFailureCode}] {u.LoginFailureReason}", WebFrontAuthMonitorTag );
+                        wfaSC.SetError( u );
+                        monitor.Trace( $"[User.LoginError] ({u.LoginFailureCode}) {u.LoginFailureReason}", WebFrontAuthMonitorTag );
                     }
                 }
                 else

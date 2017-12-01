@@ -41,8 +41,8 @@ namespace WebApp.Tests
             HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "bob", "password", true );
             HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
             HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
-            final.Item2.Should().Be( "User.NoAutoRegistration" );
+            string final = await finalErrorOrRedirect.Content.ReadAsStringAsync();
+            ExtractErrorIdField( final ).Should().Be( "User.NoAutoRegistration" );
         }
 
         [TestCase( true )]
@@ -57,8 +57,8 @@ namespace WebApp.Tests
             HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "alice", "password", true );
             HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
             HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
-            final.Item2.Should().Be( "Account.NoAutoBinding" );
+            string final = await finalErrorOrRedirect.Content.ReadAsStringAsync();
+            ExtractErrorIdField( final ).Should().Be( "Account.NoAutoBinding" );
         }
 
         [TestCase( null )]
@@ -71,19 +71,55 @@ namespace WebApp.Tests
             HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
             HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
             HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
-            final.Item2.Should().BeNull();
-            string content = await final.Item1.Content.ReadAsStringAsync();
-            content.Should().Contain( "window.opener.postMessage" );
+            string final = await finalErrorOrRedirect.Content.ReadAsStringAsync();
+            ExtractErrorIdField( final ).Should().BeNull();
+            final.Should().Contain( "window.opener.postMessage" );
             if( userData != null )
             {
-                content.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
+                final.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
             }
             else
             {
-                content.Should().Contain( @"""userData"":{}" );
+                final.Should().Contain( @"""userData"":{}" );
             }
             await CheckUserIsLoggedIn( "carol" );
+        }
+
+        [Test]
+        public async Task when_login_fails_loginFailureReason_is_errorText_and_loginFailureCode_is_available()
+        {
+            DBSetup.CarolSetup();
+            using( DBSetup.TemporaryDisableAllLogin() )
+            {
+                HttpResponseMessage m = await _client.Get( WebAppUrl.StartLoginUri + "?scheme=oidc&A=3&A=p&Other=param&X" );
+                m.EnsureSuccessStatusCode();
+                HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
+                HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+                HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
+                string final = await finalErrorOrRedirect.Content.ReadAsStringAsync();
+                ExtractErrorIdField( final ).Should().Be( "User.LoginFailure" );
+                final.Should().Contain( @"""errorText"":""User login is disabled.""" );
+                final.Should().Contain( @"""loginFailureCode"":6" );
+                final.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
+            }
+        }
+
+        [Test]
+        public async Task when_login_fails_loginFailureReason_is_errorText_and_loginFailureCode_is_available_with_returnUrl()
+        {
+            DBSetup.CarolSetup();
+            using( DBSetup.TemporaryDisableAllLogin() )
+            {
+                string returnedUrl = WebUtility.UrlEncode( "/auth-done?anyUserData&val=6370" );
+                HttpResponseMessage m = await _client.Get( $"{WebAppUrl.StartLoginUri}?scheme=oidc&returnUrl={returnedUrl}" );
+                m.EnsureSuccessStatusCode();
+                HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
+                HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
+                HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted, noFollow: true );
+                finalErrorOrRedirect.StatusCode.Should().Be( HttpStatusCode.Found );
+                var loc = WebUtility.UrlDecode( finalErrorOrRedirect.Headers.Location.PathAndQuery );
+                loc.Should().Be( "/auth-done?anyUserData&val=6370&errorId=User.LoginFailure&errorText=User login is disabled.&loginFailureCode=6&initialScheme=oidc&callingScheme=oidc" );
+            }
         }
 
         [Test]
@@ -102,11 +138,10 @@ namespace WebApp.Tests
             HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
             HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
             HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
-            final.Item2.Should().BeNull();
-            string content = await final.Item1.Content.ReadAsStringAsync();
-            content.Should().Contain( "window.opener.postMessage" );
-            content.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
+            string final = await finalErrorOrRedirect.Content.ReadAsStringAsync();
+            ExtractErrorIdField( final ).Should().BeNull();
+            final.Should().Contain( "window.opener.postMessage" );
+            final.Should().Contain( @"""userData"":{""A"":[""3"",""p""],""Other"":""param"",""X"":""""}" );
             await CheckUserIsLoggedIn( "carol" );
         }
 
@@ -119,11 +154,9 @@ namespace WebApp.Tests
             m.EnsureSuccessStatusCode();
             HttpResponseMessage consentScreenOrAccepted = await AnswerLoginForm( m, "carol", "password", true );
             HttpResponseMessage accepted = await AnswerConsentForm( consentScreenOrAccepted, true );
-            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted );
-            Tuple<HttpResponseMessage, string> final = await HandleFinalErrorOrRedirect( finalErrorOrRedirect );
-            final.Item2.Should().BeNull();
-            string content = await final.Item1.Content.ReadAsStringAsync();
-            content.Should().Contain( "window.url='http://localhost:4324/auth-done?p=67';" );
+            HttpResponseMessage finalErrorOrRedirect = await PostAcceptedResult( accepted, noFollow:true );
+            finalErrorOrRedirect.StatusCode.Should().Be( HttpStatusCode.Found );
+            finalErrorOrRedirect.Headers.Location.PathAndQuery.Should().Be( "/auth-done?p=67" );
             await CheckUserIsLoggedIn( "carol" );
         }
 
@@ -199,7 +232,7 @@ namespace WebApp.Tests
             return await _client.Post( new Uri( idServerUri, form.Action ), formValues );
         }
 
-        Task<HttpResponseMessage> PostAcceptedResult( HttpResponseMessage m )
+        async Task<HttpResponseMessage> PostAcceptedResult( HttpResponseMessage m, bool noFollow = false )
         {
             var content = m.Content.ReadAsStringAsync().Result;
             content.Should().EndWith( "<script>(function(){document.forms[0].submit();})();</script>" );
@@ -207,19 +240,27 @@ namespace WebApp.Tests
             var form = doc.Forms[0];
             var values = form.Elements.OfType<IHtmlInputElement>()
                             .Select( e => new KeyValuePair<string, string>( e.Name, e.Value ) );
-            return _client.Post( form.Action, values );
+            int maxRedir = _client.MaxAutomaticRedirections;
+            try
+            {
+                if( noFollow ) _client.MaxAutomaticRedirections = 0;
+                return await _client.Post( form.Action, values );
+            }
+            finally
+            {
+                _client.MaxAutomaticRedirections = maxRedir;
+            }
         }
 
-        async Task<Tuple<HttpResponseMessage, string>> HandleFinalErrorOrRedirect( HttpResponseMessage m )
+        string ExtractErrorIdField( string s )
         {
-            var content = await m.Content.ReadAsStringAsync();
             const string errorMark = "{\"errorId\":\"";
-            int idxError = content.IndexOf( errorMark );
+            int idxError = s.IndexOf( errorMark );
             if( idxError > 0 )
             {
-                return Tuple.Create( (HttpResponseMessage)null, content.Substring( idxError + errorMark.Length ).Split( '"' )[0] );
+                return s.Substring( idxError + errorMark.Length ).Split( '"' )[0];
             }
-            return Tuple.Create( m, (string)null );
+            return null;
         }
 
 
