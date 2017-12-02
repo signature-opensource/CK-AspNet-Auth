@@ -28,6 +28,8 @@ namespace WebApp.Tests
     {
         static TestClient _client;
 
+        static public readonly IAuthenticationTypeSystem AuthTypeSystem = new StdAuthenticationTypeSystem();
+
         public static ExternalProcess WebAppProcess = new ExternalProcess(
             pI =>
             {
@@ -69,28 +71,25 @@ namespace WebApp.Tests
             int retryCount = 0;
             for(; ; )
             {
-                    try
+                try
+                {
+                    using( HttpResponseMessage msg = await _client.Get( "/test" ) )
                     {
-                        using( HttpResponseMessage msg = await _client.Get( "/test" ) )
+                        if( msg.IsSuccessStatusCode )
                         {
-                            if( msg.IsSuccessStatusCode )
-                            {
-                                string answer = await msg.Content.ReadAsStringAsync();
-                                if( answer.Contains( "IAmHere" ) ) break;
-                            }
+                            string answer = await msg.Content.ReadAsStringAsync();
+                            if( answer.Contains( "IAmHere" ) ) break;
                         }
                     }
-                    catch( Exception ex )
-                    {
-                        TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount}).", ex );
-                        if( retryCount == 10 ) break;
-                        await Task.Delay( 100 );
-                    }
+                }
+                catch( Exception ex )
+                {
+                    TestHelper.Monitor.Warn( $"Failed to connect to WebApp ({++retryCount}).", ex );
+                    if( retryCount == 10 ) break;
+                    await Task.Delay( 100 );
                 }
             }
         }
-
-        static public readonly IAuthenticationTypeSystem AuthTypeSystem = new StdAuthenticationTypeSystem();
 
     }
 }
