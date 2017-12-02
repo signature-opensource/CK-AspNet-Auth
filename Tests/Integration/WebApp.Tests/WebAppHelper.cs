@@ -69,14 +69,15 @@ namespace WebApp.Tests
             int retryCount = 0;
             for(; ; )
             {
-                using( HttpResponseMessage msg = await _client.Get( "/test" ) )
-                {
                     try
                     {
-                        if( msg.IsSuccessStatusCode )
+                        using( HttpResponseMessage msg = await _client.Get( "/test" ) )
                         {
-                            string answer = await msg.Content.ReadAsStringAsync();
-                            if( answer.Contains( "IAmHere" ) ) break;
+                            if( msg.IsSuccessStatusCode )
+                            {
+                                string answer = await msg.Content.ReadAsStringAsync();
+                                if( answer.Contains( "IAmHere" ) ) break;
+                            }
                         }
                     }
                     catch( Exception ex )
