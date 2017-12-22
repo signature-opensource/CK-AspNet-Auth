@@ -254,7 +254,7 @@ namespace WebApp.Tests
 
         string ExtractErrorIdField( string s )
         {
-            const string errorMark = "{\"errorId\":\"";
+            const string errorMark = "\"errorId\":\"";
             int idxError = s.IndexOf( errorMark );
             if( idxError > 0 )
             {

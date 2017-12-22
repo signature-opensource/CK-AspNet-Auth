@@ -26,9 +26,9 @@ namespace CK.AspNet.Auth
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
+        UserLoginResult _failedLogin;
         string _errorId;
-        string _errorMessage;
-        int _loginFailureCode;
+        string _errorText;
 
         internal WebFrontAuthLoginContext( 
             HttpContext ctx, 
@@ -110,9 +110,14 @@ namespace CK.AspNet.Auth
         public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
 
         /// <summary>
-        /// Gets whether <see cref="SetError"/> or <see cref="SetSuccessfulLogin"/> have been called.
+        /// Gets whether SetError or SetSuccessfulLogin methods have been called.
         /// </summary>
-        public bool IsHandled => _errorMessage != null || _successfulLogin != null;
+        public bool IsHandled => _errorText != null || _successfulLogin != null;
+
+        /// <summary>
+        /// Gets whether an error has already been set.
+        /// </summary>
+        public bool HasError => _errorText != null;
 
         /// <summary>
         /// Sets an error message.
@@ -127,8 +132,23 @@ namespace CK.AspNet.Auth
             if( string.IsNullOrWhiteSpace( errorId ) ) throw new ArgumentNullException( nameof( errorId ) );
             if( string.IsNullOrWhiteSpace( errorMessage ) ) throw new ArgumentNullException( nameof( errorMessage ) );
             _errorId = errorId;
-            _errorMessage = errorMessage;
-            _loginFailureCode = 0;
+            _errorText = errorMessage;
+            _failedLogin = null;
+        }
+
+        /// <summary>
+        /// Sets an error message.
+        /// The returned error has "errorId" set to the full name of the exception
+        /// and the "errorText" is the <see cref="Exception.Message"/>.
+        /// Can be called multiple times: new error information replaces the previous one.
+        /// </summary>
+        /// <param name="ex">The exception.</param>
+        public void SetError( Exception ex )
+        {
+            if( ex == null ) throw new ArgumentNullException( nameof( ex ) );
+            _errorId = ex.GetType().FullName;
+            _errorText = ex.Message ?? "Exception has null message!";
+            _failedLogin = null;
         }
 
         /// <summary>
@@ -143,10 +163,9 @@ namespace CK.AspNet.Auth
         {
             if( loginFailed == null || loginFailed.IsSuccess ) throw new ArgumentException();
             _errorId = "User.LoginFailure";
-            _errorMessage = loginFailed.LoginFailureReason;
-            _loginFailureCode = loginFailed.LoginFailureCode;
-            Debug.Assert( _errorMessage != null );
-            Debug.Assert( _loginFailureCode > 0 );
+            _errorText = loginFailed.LoginFailureReason;
+            _failedLogin = loginFailed;
+            Debug.Assert( _errorText != null );
         }
 
         /// <summary>
@@ -158,14 +177,14 @@ namespace CK.AspNet.Auth
         public void SetSuccessfulLogin( UserLoginResult successResult )
         {
             if( successResult == null || !successResult.IsSuccess ) throw new ArgumentException( "Must be a login success.", nameof(successResult) );
-            if( _errorMessage != null ) throw new InvalidOperationException( $"An error ({_errorMessage}) has been already set." );
+            if( _errorText != null ) throw new InvalidOperationException( $"An error ({_errorText}) has been already set." );
             _successfulLogin = successResult;
         }
 
         internal Task SendResponse()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
-            if( _errorMessage != null )
+            if( _errorText != null )
             {
                 return LoginMode == WebFrontAuthLoginMode.StartLogin
                         ? SendRemoteAuthenticationError()
@@ -219,8 +238,9 @@ namespace CK.AspNet.Auth
                                     ? new QueryString( ReturnUrl.Substring(idxQuery))
                                     : new QueryString();
                 parameters = parameters.Add( "errorId", _errorId )
-                                       .Add( "errorText", _errorMessage );
-                if( _loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", _loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
+                                       .Add( "errorText", _errorText );
+                int loginFailureCode = _failedLogin?.LoginFailureCode ?? 0;
+                if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
                 if( InitialScheme != null ) parameters = parameters.Add( "initialScheme", InitialScheme );
                 if( CallingScheme != null ) parameters = parameters.Add( "callingScheme", CallingScheme );
 
@@ -229,27 +249,18 @@ namespace CK.AspNet.Auth
                 HttpContext.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
-            else
-            {
-                return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse() );
-            }
+            return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse() );
         }
 
         JObject CreateErrorResponse()
         {
-            var error = new JObject(
-                new JProperty( "info", AuthenticationTypeSystem.AuthenticationInfo.None ),
-                new JProperty( "token", null ),
-                new JProperty( "errorId", _errorId ),
-                new JProperty( "errorText", _errorMessage ) );
-            if( _loginFailureCode != 0 ) error.Add( new JProperty( "loginFailureCode", _loginFailureCode ) );
-            if( InitialScheme != null ) error.Add( new JProperty( "initialScheme", InitialScheme ) );
-            if( CallingScheme != null ) error.Add( new JProperty( "callingScheme", CallingScheme ) );
-            if( UserData != null )
-            {
-                error.Add( UserDataToJProperty() );
-            }
-            return error;
+            var response = _authenticationService.CreateAuthResponse( HttpContext, null, false, _failedLogin );
+            response.Add( new JProperty( "errorId", _errorId ) );
+            response.Add( new JProperty( "errorText", _errorText ) );
+            if( InitialScheme != null ) response.Add( new JProperty( "initialScheme", InitialScheme ) );
+            if( CallingScheme != null ) response.Add( new JProperty( "callingScheme", CallingScheme ) );
+            if( UserData != null ) response.Add( UserDataToJProperty() );
+            return response;
         }
 
         JProperty UserDataToJProperty()

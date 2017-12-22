@@ -186,36 +186,23 @@ namespace CK.AspNet.Auth
                 ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
                 if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
-                    try
-                    {
-                        var wfaSC = new WebFrontAuthLoginContext(
-                                            Context,
-                                            _authService,
-                                            _typeSystem,
-                                            WebFrontAuthLoginMode.UnsafeDirectLogin,
-                                            req.Scheme,
-                                            null,
-                                            req.Scheme,
-                                            _authService.EnsureAuthenticationInfo( Context ),
-                                            null,
-                                            null
-                                            );
+                    var wfaSC = new WebFrontAuthLoginContext(
+                                        Context,
+                                        _authService,
+                                        _typeSystem,
+                                        WebFrontAuthLoginMode.UnsafeDirectLogin,
+                                        req.Scheme,
+                                        null,
+                                        req.Scheme,
+                                        _authService.EnsureAuthenticationInfo( Context ),
+                                        null,
+                                        null
+                                        );
 
-                        await _authService.UnifiedLogin( monitor, wfaSC, () =>
-                        {
-                            return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
-                        } );
-                    }
-                    catch( ArgumentException ex )
+                    await _authService.UnifiedLogin( monitor, wfaSC, () =>
                     {
-                        monitor.Error( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
-                        await Response.WriteErrorAsync( ex, StatusCodes.Status400BadRequest );
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Fatal( ex, WebFrontAuthService.WebFrontAuthMonitorTag );
-                        throw;
-                    }
+                        return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
+                    } );
                 }
             }
             return true;

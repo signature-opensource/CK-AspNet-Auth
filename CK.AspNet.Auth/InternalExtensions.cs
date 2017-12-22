@@ -44,14 +44,6 @@ namespace CK.AspNet.Auth
             return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
         }
 
-        static public Task WriteErrorAsync( this HttpResponse @this, Exception ex, int code )
-        {
-            var error = new JObject(
-                new JProperty( "errorId", ex.GetType().FullName ),
-                new JProperty( "errorText", ex.Message ) );
-            return WriteAsync( @this, error, code );
-        }
-
         static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o )
         {
             var req = @this.HttpContext.Request;

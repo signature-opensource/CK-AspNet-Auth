@@ -398,9 +398,27 @@ namespace CK.AspNet.Auth
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
                 monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
             }
-            else
+            UserLoginResult u = null;
+            if( !ctx.HasError )
             {
-                UserLoginResult u = await logger();
+                try
+                {
+                    u = await logger();
+                    if( u == null )
+                    {
+                        monitor.Fatal( "Login service returned a null UserLoginResult.", WebFrontAuthMonitorTag );
+                        ctx.SetError( "InternalError", "Login service returned a null UserLoginResult." );
+                    }
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( "While calling login service.", ex, WebFrontAuthMonitorTag );
+                    ctx.SetError( ex );
+                }
+            }
+            if( !ctx.HasError )
+            {
+                Debug.Assert( u != null );
                 int currentlyLoggedIn = ctx.InitialAuthentication.User.UserId;
                 if( !u.IsSuccess )
                 {

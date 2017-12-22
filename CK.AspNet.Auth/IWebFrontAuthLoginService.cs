@@ -24,14 +24,14 @@ namespace CK.AspNet.Auth
         IReadOnlyList<string> Providers { get; }
 
         /// <summary>
-        /// Attempts to login. If it fails, null is returned. <see cref="HasBasicLogin"/> must be true for this
-        /// to be called.
+        /// Attempts to login. <see cref="HasBasicLogin"/> must be true for this
+        /// to be called. Must never return null. 
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
-        /// <returns>The <see cref="UserLoginResult"/>.</returns>
+        /// <returns>A non null <see cref="UserLoginResult"/>.</returns>
         Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password );
 
         /// <summary>
@@ -48,12 +48,13 @@ namespace CK.AspNet.Auth
         /// Attempts to login a user using an existing provider.
         /// The provider derived from the scheme must exist and the payload must be compatible 
         /// otherwise an <see cref="ArgumentException"/> is thrown.
+        /// Must never return null. 
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The login scheme (either the provider name to use or starts with the provider name and a dotted suffix).</param>
         /// <param name="payload">The provider dependent login payload.</param>
-        /// <returns>The <see cref="UserLoginResult"/>.</returns>
+        /// <returns>A non null <see cref="UserLoginResult"/>.</returns>
         Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload );
     }
 }
