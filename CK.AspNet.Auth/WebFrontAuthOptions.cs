@@ -72,6 +72,9 @@ namespace CK.AspNet.Auth
         /// authentication level, the expirations if they exist and impersonation is handled thanks to the
         /// <see cref="System.Security.Claims.ClaimsIdentity.Actor"/>.
         /// </para>
+        /// <para>
+        /// This can not be changed dynamically.
+        /// </para>
         /// </summary>
         public bool UseFullClaimsPrincipalOnAuthenticate { get; set; }
 

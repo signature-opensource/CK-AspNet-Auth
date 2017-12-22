@@ -24,6 +24,7 @@ namespace CK.AspNet.Auth
     /// </summary>
     public class WebFrontAuthLoginContext
     {
+        readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
         string _errorId;
         string _errorMessage;
@@ -33,6 +34,7 @@ namespace CK.AspNet.Auth
             HttpContext ctx, 
             WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
+            WebFrontAuthLoginMode loginMode,
             string callingScheme,
             AuthenticationProperties authProps,
             string initialScheme, 
@@ -41,8 +43,9 @@ namespace CK.AspNet.Auth
             List<KeyValuePair<string, StringValues>> userData )
         {
             HttpContext = ctx;
-            AuthenticationService = authService;
+            _authenticationService = authService;
             AuthenticationTypeSystem = typeSystem;
+            LoginMode = loginMode;
             CallingScheme = callingScheme;
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
@@ -50,11 +53,6 @@ namespace CK.AspNet.Auth
             ReturnUrl = returnUrl;
             UserData = userData;
         }
-
-        /// <summary>
-        /// Gets the authentication service.
-        /// </summary>
-        public WebFrontAuthService AuthenticationService { get; }
 
         /// <summary>
         /// Gets the authentication type system.
@@ -67,33 +65,47 @@ namespace CK.AspNet.Auth
         public HttpContext HttpContext { get; }
 
         /// <summary>
+        /// Gets the endpoint that started the authentication.
+        /// </summary>
+        public WebFrontAuthLoginMode LoginMode { get; }
+
+        /// <summary>
         /// Gets the Authentication properties.
+        /// This is null when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>. 
         /// </summary>
         public AuthenticationProperties AuthenticationProperties { get; }
 
         /// <summary>
-        /// Gets the return url if '/c/startLogin' has been called with a 'returnUrl' parameter.
+        /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
+        /// Null otherwise.
         /// </summary>
         public string ReturnUrl { get; }
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
+        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>. 
         /// </summary>
         public string InitialScheme { get; }
 
         /// <summary>
         /// Gets the calling authentication scheme.
+        /// This is usually the same as the <see cref="InitialScheme"/>.
         /// </summary>
         public string CallingScheme { get; }
 
         /// <summary>
-        /// Gets the current authentication when .webfront/c/starLogin has been called.
+        /// Gets the current authentication when .webfront/c/starLogin has been called
+        /// or the current authentication when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>.
         /// </summary>
         public IAuthenticationInfo InitialAuthentication { get; }
 
         /// <summary>
         /// Gets the query (for GET) or form (when POST was used) data of the 
         /// initial .webfront/c/starLogin call as a readonly list.
+        /// This is null when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>. 
         /// </summary>
         public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
 
@@ -106,6 +118,7 @@ namespace CK.AspNet.Auth
         /// Sets an error message.
         /// The returned error contains the <paramref name="errorId"/> and <paramref name="errorMessage"/>, the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>
         /// and <see cref="UserData"/>.
+        /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
         /// <param name="errorId">Error identifier (a dotted identifier string).</param>
         /// <param name="errorMessage">The error message in clear text.</param>
@@ -115,6 +128,7 @@ namespace CK.AspNet.Auth
             if( string.IsNullOrWhiteSpace( errorMessage ) ) throw new ArgumentNullException( nameof( errorMessage ) );
             _errorId = errorId;
             _errorMessage = errorMessage;
+            _loginFailureCode = 0;
         }
 
         /// <summary>
@@ -122,6 +136,7 @@ namespace CK.AspNet.Auth
         /// The returned error contains the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>, <see cref="UserData"/>,
         /// the "errorId" is "User.LoginFailure", the "errorMessage" is <see cref="UserLoginResult.LoginFailureReason"/>
         /// and a specific "loginFailureCode" contains the <see cref="UserLoginResult.LoginFailureCode"/>.
+        /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
         /// <param name="loginFailed">Must be not null and <see cref="UserLoginResult.IsSuccess"/> must be false.</param>
         public void SetError( UserLoginResult loginFailed )
@@ -136,12 +151,14 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Sets a successful login.
+        /// Must be called only if no <see cref="SetError(string, string)"/> or <see cref="SetError(UserLoginResult)"/>
+        /// have been called before.
         /// </summary>
         /// <param name="user">The logged in user.</param>
         public void SetSuccessfulLogin( UserLoginResult successResult )
         {
             if( successResult == null || !successResult.IsSuccess ) throw new ArgumentException( "Must be a login success.", nameof(successResult) );
-            if( _errorMessage != null ) throw new InvalidOperationException();
+            if( _errorMessage != null ) throw new InvalidOperationException( $"An error ({_errorMessage}) has been already set." );
             _successfulLogin = successResult;
         }
 
@@ -157,7 +174,7 @@ namespace CK.AspNet.Auth
 
         Task SendRemoteAuthenticationSuccess()
         {
-            WebFrontAuthService.LoginResult r = AuthenticationService.HandleLogin( HttpContext, _successfulLogin );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin );
             if( ReturnUrl != null )
             {
                 // "inline" mode.

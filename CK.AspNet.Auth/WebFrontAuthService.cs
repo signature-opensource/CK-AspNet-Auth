@@ -17,11 +17,10 @@ using Microsoft.Extensions.Options;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Default implementation of an authentication service.
+    /// Implementation of the authentication service.
     /// </summary>
     public class WebFrontAuthService
     {
-
         /// <summary>
         /// The tag used for logs emitted related to Web Front Authentication or any
         /// authentication related actions.
@@ -85,6 +84,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the current options.
+        /// This must be used for configurations that can be changed dynamically like <see cref="WebFrontAuthOptions.ExpireTimeSpan"/>
+        /// but not for non dynamic ones like <see cref="WebFrontAuthOptions.CookieMode"/>.
         /// </summary>
         protected WebFrontAuthOptions CurrentOptions => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
 
@@ -317,12 +318,15 @@ namespace CK.AspNet.Auth
         /// <param name="c">The context.</param>
         /// <param name="authInfo">The authentication info (can be null).</param>
         /// <param name="refreshable">Whether the info is refreshable or not.</param>
+        /// <param name="onLogin">Not null when this response is the result of an actual login (and not a refresh).</param>
         /// <returns>A {info,token,refreshable} object.</returns>
         internal JObject CreateAuthResponse( HttpContext c, IAuthenticationInfo authInfo, bool refreshable, UserLoginResult onLogin = null )
         {
             var j = new JObject(
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
-                        new JProperty( "token", CreateToken( c, authInfo ) ),
+                        new JProperty( "token", authInfo.IsNullOrNone()
+                                                    ? null
+                                                    : _tokenFormat.Protect( authInfo, GetTlsTokenBinding( c ) ) ),
                         new JProperty( "refreshable", refreshable ) );
             if( onLogin != null && !onLogin.IsSuccess )
             {
@@ -330,17 +334,6 @@ namespace CK.AspNet.Auth
                 j.Add( new JProperty( "loginFailureReason", onLogin.LoginFailureReason ) );
             }
             return j;
-        }
-
-        /// <summary>
-        /// Returns the token (null if authInfo is null or none).
-        /// </summary>
-        /// <param name="c">The context.</param>
-        /// <param name="authInfo">The authentication info. Can be null.</param>
-        /// <returns>The token (can be null).</returns>
-        internal string CreateToken( HttpContext c, IAuthenticationInfo authInfo )
-        {
-            return authInfo.IsNullOrNone() ? null : _tokenFormat.Protect( authInfo, GetTlsTokenBinding( c ) );
         }
 
         static string GetTlsTokenBinding( HttpContext c )
@@ -380,6 +373,7 @@ namespace CK.AspNet.Auth
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
+                                WebFrontAuthLoginMode.StartLogin,
                                 context.Scheme.Name,
                                 context.Properties,
                                 initialScheme,
