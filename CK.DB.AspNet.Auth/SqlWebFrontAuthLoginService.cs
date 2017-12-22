@@ -17,7 +17,7 @@ namespace CK.DB.AspNet.Auth
 {
 
     /// <summary>
-    /// Implements <see cref="IWebFrontAuthLoginService"/> bousnd to a <see cref="IAuthenticationDatabaseService"/>.
+    /// Implements <see cref="IWebFrontAuthLoginService"/> bounds to a <see cref="IAuthenticationDatabaseService"/>.
     /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
     {

@@ -35,7 +35,6 @@ namespace CK.AspNet.Auth
             IAuthenticationTypeSystem typeSystem,
             string callingScheme,
             AuthenticationProperties authProps,
-            ClaimsPrincipal principal,
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
             string returnUrl,
@@ -78,11 +77,6 @@ namespace CK.AspNet.Auth
         public string ReturnUrl { get; }
 
         /// <summary>
-        /// Gets the ClaimsPrincipal.
-        /// </summary>
-        public ClaimsPrincipal Principal { get; }
-
-        /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
         /// </summary>
         public string InitialScheme { get; }
@@ -98,7 +92,7 @@ namespace CK.AspNet.Auth
         public IAuthenticationInfo InitialAuthentication { get; }
 
         /// <summary>
-        /// Gets the query (fer GET) or form (when POST was used) data of the 
+        /// Gets the query (for GET) or form (when POST was used) data of the 
         /// initial .webfront/c/starLogin call as a readonly list.
         /// </summary>
         public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
@@ -151,17 +145,17 @@ namespace CK.AspNet.Auth
             _successfulLogin = successResult;
         }
 
-        internal Task SendResponse()
+        internal Task SendRemoteAuthenticationResponse()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorMessage != null )
             {
-                return SendError();
+                return SendRemoteAuthenticationError();
             }
-            return SendSuccess();
+            return SendRemoteAuthenticationSuccess();
         }
 
-        Task SendSuccess()
+        Task SendRemoteAuthenticationSuccess()
         {
             WebFrontAuthService.LoginResult r = AuthenticationService.HandleLogin( HttpContext, _successfulLogin );
             if( ReturnUrl != null )
@@ -181,7 +175,7 @@ namespace CK.AspNet.Auth
             return HttpContext.Response.WriteWindowPostMessageAsync( r.Response );
         }
 
-        Task SendError()
+        Task SendRemoteAuthenticationError()
         {
             if( ReturnUrl != null )
             {

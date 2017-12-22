@@ -355,6 +355,7 @@ namespace CK.AspNet.Auth
         #endregion
 
         #region Authentication handling (handles standard Authenticate API).
+
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
@@ -362,9 +363,9 @@ namespace CK.AspNet.Auth
             {
                 return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
             }
-
+            
             var principal = new ClaimsPrincipal();
-            principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( authInfo, userInfoOnly: false ) );
+            principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( authInfo, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );
             return Task.FromResult( AuthenticateResult.Success( ticket ) );
         }
