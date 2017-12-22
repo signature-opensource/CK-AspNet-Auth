@@ -52,24 +52,6 @@ namespace CK.AspNet.Auth
             return WriteAsync( @this, error, code );
         }
 
-        static public Task WriteWindowPostMessageWithErrorAsync( this HttpResponse @this,
-            string errorId,
-            string errorText,
-            int loginFailureCode,
-            string initialScheme = null,
-            string callingScheme = null,
-            JProperty userData = null )
-        {
-            var error = new JObject(
-                new JProperty( "errorId", errorId ),
-                new JProperty( "errorText", errorText ) );
-            if( loginFailureCode != 0 ) error.Add( new JProperty( "loginFailureCode", loginFailureCode ) );
-            if( initialScheme != null ) error.Add( new JProperty( "initialScheme", initialScheme ) );
-            if( callingScheme != null ) error.Add( new JProperty( "callingScheme", callingScheme ) );
-            if( userData != null ) error.Add( userData );
-            return WriteWindowPostMessageAsync( @this, error );
-        }
-
         static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o )
         {
             var req = @this.HttpContext.Request;

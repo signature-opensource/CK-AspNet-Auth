@@ -162,19 +162,34 @@ namespace CK.AspNet.Auth
             _successfulLogin = successResult;
         }
 
-        internal Task SendRemoteAuthenticationResponse()
+        internal Task SendResponse()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorMessage != null )
             {
-                return SendRemoteAuthenticationError();
+                return LoginMode == WebFrontAuthLoginMode.StartLogin
+                        ? SendRemoteAuthenticationError()
+                        : SendDirectAuthenticationError();
             }
-            return SendRemoteAuthenticationSuccess();
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin );
+            return LoginMode == WebFrontAuthLoginMode.StartLogin
+                    ? SendRemoteAuthenticationSuccess( r )
+                    : SendDirectAuthenticationSuccess( r );
         }
 
-        Task SendRemoteAuthenticationSuccess()
+        Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
         {
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin );
+            Debug.Assert( r.Info != null ); 
+            return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
+        }
+
+        Task SendDirectAuthenticationError()
+        {
+            return HttpContext.Response.WriteAsync( CreateErrorResponse(), StatusCodes.Status401Unauthorized );
+        }
+
+        Task SendRemoteAuthenticationSuccess( WebFrontAuthService.LoginResult r )
+        {
             if( ReturnUrl != null )
             {
                 // "inline" mode.
@@ -216,8 +231,23 @@ namespace CK.AspNet.Auth
             }
             else
             {
-                return HttpContext.Response.WriteWindowPostMessageWithErrorAsync( _errorId, _errorMessage, _loginFailureCode, InitialScheme, CallingScheme, UserDataToJProperty() );
+                return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse() );
             }
+        }
+
+        JObject CreateErrorResponse()
+        {
+            var error = new JObject(
+                new JProperty( "errorId", _errorId ),
+                new JProperty( "errorText", _errorMessage ) );
+            if( _loginFailureCode != 0 ) error.Add( new JProperty( "loginFailureCode", _loginFailureCode ) );
+            if( InitialScheme != null ) error.Add( new JProperty( "initialScheme", InitialScheme ) );
+            if( CallingScheme != null ) error.Add( new JProperty( "callingScheme", CallingScheme ) );
+            if( UserData != null )
+            {
+                error.Add( UserDataToJProperty() );
+            }
+            return error;
         }
 
         JProperty UserDataToJProperty()

@@ -352,7 +352,7 @@ namespace CK.AspNet.Auth
         /// from the <see cref="TicketReceivedContext"/> principal claims.
         /// </param>
         /// <returns>The awaitable.</returns>
-        public async Task HandleRemoteAuthentication<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
+        public Task HandleRemoteAuthentication<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
         {
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
@@ -383,17 +383,25 @@ namespace CK.AspNet.Auth
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
 
-            if( wfaSC.InitialAuthentication.IsImpersonated )
-            {
-                wfaSC.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( $"Login is not allowed while impersonation is active: {wfaSC.InitialAuthentication.ActualUser.UserId} impersonated into {wfaSC.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
-            }
-            else
+            return UnifiedLogin( monitor, wfaSC, () =>
             {
                 object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
                 payloadConfigurator( (T)payload );
-                UserLoginResult u = await _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
-                int currentlyLoggedIn = wfaSC.InitialAuthentication.User.UserId;
+                return _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
+            } );
+        }
+
+        async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<Task<UserLoginResult>> logger )
+        {
+            if( ctx.InitialAuthentication.IsImpersonated )
+            {
+                ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
+                monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
+            }
+            else
+            {
+                UserLoginResult u = await logger();
+                int currentlyLoggedIn = ctx.InitialAuthentication.User.UserId;
                 if( !u.IsSuccess )
                 {
                     // Login failed because user is not registered: entering the account binding or auto registration features.
@@ -401,18 +409,18 @@ namespace CK.AspNet.Auth
                     {
                         if( currentlyLoggedIn != 0 )
                         {
-                            wfaSC.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                            monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                            ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                            monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
                         }
                         else
                         {
-                            wfaSC.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
-                            monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {wfaSC.CallingScheme}).", WebFrontAuthMonitorTag );
+                            ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
+                            monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
                         }
                     }
                     else
                     {
-                        wfaSC.SetError( u );
+                        ctx.SetError( u );
                         monitor.Trace( $"[User.LoginError] ({u.LoginFailureCode}) {u.LoginFailureReason}", WebFrontAuthMonitorTag );
                     }
                 }
@@ -421,18 +429,15 @@ namespace CK.AspNet.Auth
                     // Login succeeds.
                     if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
-                        wfaSC.SetError( "Account.Conflict", "Conflicting existing login association." );
-                        monitor.Error( $"[Account.Conflict] Currently logged in user {currentlyLoggedIn} also logged as user {u.UserInfo.UserId} via '{wfaSC.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                        monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} relogged as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
                     }
-                    else
-                    {
-                        wfaSC.SetSuccessfulLogin( u );
-                        monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{wfaSC.CallingScheme}'.", WebFrontAuthMonitorTag );
-                    }
+                    ctx.SetSuccessfulLogin( u );
+                    monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'.", WebFrontAuthMonitorTag );
                 }
             }
-            await wfaSC.SendRemoteAuthenticationResponse();
+            await ctx.SendResponse();
         }
-    }
 
+    }
 }
+
