@@ -22,7 +22,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    public class WebFrontAuthLoginContext
+    public class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;

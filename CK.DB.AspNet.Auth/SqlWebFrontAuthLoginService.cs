@@ -56,11 +56,15 @@ namespace CK.DB.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
+        /// <param name="actualLogin">
+        /// Set it to false to avoid login side-effect (such as updating the LastLoginTime) on success:
+        /// only checks are done.
+        /// </param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
+        public async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
             var c = ctx.GetSqlCallContext( monitor );
-            LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password );
+            LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
             return await CreateUserLoginResultFromDatabase( c, r ); 
         }
 
@@ -94,12 +98,16 @@ namespace CK.DB.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The scheme to use.</param>
         /// <param name="payload">The provider dependent login payload.</param>
+        /// <param name="actualLogin">
+        /// Set it to false to avoid login side-effect (such as updating the LastLoginTime) on success:
+        /// only checks are done.
+        /// </param>
         /// <returns>The login result.</returns>
-        public async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
+        public async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
             var c = ctx.GetSqlCallContext( monitor );
-            LoginResult r = await p.LoginUserAsync( c, payload );
+            LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
             return await CreateUserLoginResultFromDatabase( c, r );
         }
 

@@ -31,8 +31,12 @@ namespace CK.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="password">The password.</param>
+        /// <param name="actualLogin">
+        /// Set it to false to avoid login side-effect (such as updating the LastLoginTime) on success:
+        /// only checks are done.
+        /// </param>
         /// <returns>A non null <see cref="UserLoginResult"/>.</returns>
-        Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password );
+        Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true );
 
         /// <summary>
         /// Creates a payload object for a given scheme that can be used to 
@@ -54,7 +58,11 @@ namespace CK.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The login scheme (either the provider name to use or starts with the provider name and a dotted suffix).</param>
         /// <param name="payload">The provider dependent login payload.</param>
+        /// <param name="actualLogin">
+        /// Set it to false to avoid login side-effect (such as updating the LastLoginTime) on success:
+        /// only checks are done.
+        /// </param>
         /// <returns>A non null <see cref="UserLoginResult"/>.</returns>
-        Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload );
+        Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true );
     }
 }

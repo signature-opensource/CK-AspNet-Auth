@@ -145,20 +145,16 @@ namespace CK.AspNet.Auth
                 return true;
             }
             string returnUrl = Request.Query["returnUrl"];
-
             IEnumerable<KeyValuePair<string, StringValues>> userData = null;
-            if( returnUrl == null )
+            if( HttpMethods.IsPost( Request.Method ) )
             {
-                if( HttpMethods.IsPost( Request.Method ) )
-                {
-                    userData = Request.Form;
-                }
-                else
-                {
-                    userData = Request.Query
-                                       .Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
-                                                    && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase ) );
-                }
+                userData = Request.Form;
+            }
+            else
+            {
+                userData = Request.Query
+                                    .Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
+                                                && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase ) );
             }
             var current = _authService.EnsureAuthenticationInfo( Context );
 
@@ -199,9 +195,9 @@ namespace CK.AspNet.Auth
                                         null
                                         );
 
-                    await _authService.UnifiedLogin( monitor, wfaSC, () =>
+                    await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
                     {
-                        return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
+                        return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload, actualLogin );
                     } );
                 }
             }
@@ -276,9 +272,9 @@ namespace CK.AspNet.Auth
                     null
                     );
 
-                await _authService.UnifiedLogin( monitor, wfaSC, () =>
+                await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
                 {
-                    return _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
+                    return _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password, actualLogin );
                 } );
             }
             return true;

@@ -49,6 +49,7 @@ namespace CK.AspNet.Auth
         readonly AuthenticationCookieMode _cookieMode;
         readonly CookieSecurePolicy _cookiePolicy;
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
+        readonly IWebFrontAuthValidateLoginService _validateLoginService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -57,15 +58,18 @@ namespace CK.AspNet.Auth
         /// <param name="loginService">Login service.</param>
         /// <param name="dataProtectionProvider">The data protection provider to use.</param>
         /// <param name="options">Monitored options.</param>
+        /// <param name="validateLoginService">Optional service that validates logins.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
             IDataProtectionProvider dataProtectionProvider,
-            IOptionsMonitor<WebFrontAuthOptions> options )
+            IOptionsMonitor<WebFrontAuthOptions> options,
+            IWebFrontAuthValidateLoginService validateLoginService = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
             _options = options;
+            _validateLoginService = validateLoginService;
 
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
@@ -383,15 +387,15 @@ namespace CK.AspNet.Auth
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
 
-            return UnifiedLogin( monitor, wfaSC, () =>
+            object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
+            payloadConfigurator( (T)payload );
+            return UnifiedLogin( monitor, wfaSC, actualLogin =>
             {
-                object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
-                payloadConfigurator( (T)payload );
-                return _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload );
+                return _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload, actualLogin );
             } );
         }
 
-        internal async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<Task<UserLoginResult>> logger )
+        internal async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
         {
             if( ctx.InitialAuthentication.IsImpersonated )
             {
@@ -401,20 +405,7 @@ namespace CK.AspNet.Auth
             UserLoginResult u = null;
             if( !ctx.HasError )
             {
-                try
-                {
-                    u = await logger();
-                    if( u == null )
-                    {
-                        monitor.Fatal( "Login service returned a null UserLoginResult.", WebFrontAuthMonitorTag );
-                        ctx.SetError( "InternalError", "Login service returned a null UserLoginResult." );
-                    }
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( "While calling login service.", ex, WebFrontAuthMonitorTag );
-                    ctx.SetError( ex );
-                }
+                u = await SafeCallLogin( monitor, ctx, logger, actualLogin: _validateLoginService == null );
             }
             if( !ctx.HasError )
             {
@@ -444,6 +435,17 @@ namespace CK.AspNet.Auth
                 }
                 else
                 {
+                    if( _validateLoginService != null )
+                    {
+                        await _validateLoginService.ValidateLoginAsync( monitor, u.UserInfo, ctx );
+                        if( !ctx.HasError )
+                        {
+                            u = await SafeCallLogin( monitor, ctx, logger, actualLogin: true );
+                        }
+                    }
+                }
+                if( !ctx.HasError )
+                { 
                     // Login succeeds.
                     if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
@@ -456,6 +458,25 @@ namespace CK.AspNet.Auth
             await ctx.SendResponse();
         }
 
+        static async Task<UserLoginResult> SafeCallLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
+        {
+            UserLoginResult u = null;
+            try
+            {
+                u = await logger( actualLogin );
+                if( u == null )
+                {
+                    monitor.Fatal( "Login service returned a null UserLoginResult.", WebFrontAuthMonitorTag );
+                    ctx.SetError( "InternalError", "Login service returned a null UserLoginResult." );
+                }
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( "While calling login service.", ex, WebFrontAuthMonitorTag );
+                ctx.SetError( ex );
+            }
+            return u;
+        }
     }
 }
 

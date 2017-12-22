@@ -19,7 +19,7 @@ namespace CK.AspNet.Auth.Tests
 
         public IReadOnlyList<string> Providers => new string[0];
 
-        public Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password )
+        public Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin )
         {
             throw new NotSupportedException();
         }
@@ -29,7 +29,7 @@ namespace CK.AspNet.Auth.Tests
             throw new NotSupportedException();
         }
 
-        public Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload )
+        public Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload, bool actualLogin )
         {
             throw new NotSupportedException();
         }
