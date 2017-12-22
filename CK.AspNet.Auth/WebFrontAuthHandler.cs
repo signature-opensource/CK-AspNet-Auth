@@ -188,8 +188,23 @@ namespace CK.AspNet.Auth
                 {
                     try
                     {
-                        UserLoginResult u = await _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
-                        await DoDirectLogin( u );
+                        var wfaSC = new WebFrontAuthLoginContext(
+                                            Context,
+                                            _authService,
+                                            _typeSystem,
+                                            WebFrontAuthLoginMode.UnsafeDirectLogin,
+                                            req.Scheme,
+                                            null,
+                                            req.Scheme,
+                                            _authService.EnsureAuthenticationInfo( Context ),
+                                            null,
+                                            null
+                                            );
+
+                        await _authService.UnifiedLogin( monitor, wfaSC, () =>
+                        {
+                            return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload );
+                        } );
                     }
                     catch( ArgumentException ex )
                     {
@@ -261,8 +276,23 @@ namespace CK.AspNet.Auth
             BasicLoginRequest req = ReadBasicLoginRequest( monitor );
             if( req != null )
             {
-                UserLoginResult u = await _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
-                await DoDirectLogin( u );
+                var wfaSC = new WebFrontAuthLoginContext(
+                    Context,
+                    _authService,
+                    _typeSystem,
+                    WebFrontAuthLoginMode.BasicLogin,
+                    "Basic",
+                    null,
+                    "Basic",
+                    _authService.EnsureAuthenticationInfo( Context ),
+                    null,
+                    null
+                    );
+
+                await _authService.UnifiedLogin( monitor, wfaSC, () =>
+                {
+                    return _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password );
+                } );
             }
             return true;
         }
@@ -377,17 +407,6 @@ namespace CK.AspNet.Auth
             var info = _authService.EnsureAuthenticationInfo( Context );
             var o = _typeSystem.AuthenticationInfo.ToJObject( info );
             return WriteResponseAsync( o );
-        }
-
-        /// <summary>
-        /// Calls <see cref="WebFrontAuthService.HandleLogin"/> and writes the JSON response.
-        /// </summary>
-        /// <param name="u">The user info to login.</param>
-        /// <returns>Always true.</returns>
-        Task<bool> DoDirectLogin( UserLoginResult u )
-        {
-            WebFrontAuthService.LoginResult r = _authService.HandleLogin( Context, u );
-            return WriteResponseAsync( r.Response, r.Info == null ? StatusCodes.Status401Unauthorized : StatusCodes.Status200OK );
         }
 
         async Task<bool> WriteResponseAsync( JObject o, int code = StatusCodes.Status200OK )

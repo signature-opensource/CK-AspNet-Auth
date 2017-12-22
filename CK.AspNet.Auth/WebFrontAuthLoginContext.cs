@@ -238,6 +238,8 @@ namespace CK.AspNet.Auth
         JObject CreateErrorResponse()
         {
             var error = new JObject(
+                new JProperty( "info", AuthenticationTypeSystem.AuthenticationInfo.None ),
+                new JProperty( "token", null ),
                 new JProperty( "errorId", _errorId ),
                 new JProperty( "errorText", _errorMessage ) );
             if( _loginFailureCode != 0 ) error.Add( new JProperty( "loginFailureCode", _loginFailureCode ) );

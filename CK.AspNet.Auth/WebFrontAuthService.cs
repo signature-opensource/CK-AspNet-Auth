@@ -391,7 +391,7 @@ namespace CK.AspNet.Auth
             } );
         }
 
-        async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<Task<UserLoginResult>> logger )
+        internal async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<Task<UserLoginResult>> logger )
         {
             if( ctx.InitialAuthentication.IsImpersonated )
             {
