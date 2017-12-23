@@ -172,6 +172,7 @@ namespace CK.AspNet.Auth
         {
             public string Scheme { get; set; }
             public object Payload { get; set; }
+            public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
         async Task<bool> HandleUnsafeDirectLogin( IActivityMonitor monitor )
@@ -192,7 +193,7 @@ namespace CK.AspNet.Auth
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
                                         null,
-                                        null
+                                        req.UserData.ToList()
                                         );
 
                     await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
@@ -219,19 +220,24 @@ namespace CK.AspNet.Auth
                 // A dependency on NewtonSoft.Json may not be suitable for some 
                 // providers.
                 var m = new StringMatcher( b );
-                if( m.MatchJSONObject( out object val ) )
+                if( m.MatchJSONObject( out object val )
+                    && val is List<KeyValuePair<string, object>> o )
                 {
-                    var o = val as List<KeyValuePair<string, object>>;
-                    if( o != null )
+                    string provider = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "provider" ) ).Value as string;
+                    if( !string.IsNullOrWhiteSpace( provider ) )
                     {
-                        string provider = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "provider" ) ).Value as string;
-                        if( !string.IsNullOrWhiteSpace( provider ) )
+                        req = new ProviderLoginRequest()
                         {
-                            req = new ProviderLoginRequest()
+                            Scheme = provider,
+                            Payload = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "payload" ) ).Value
+                        };
+                        var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "userData" ) ).Value;
+                        if( userData is List<KeyValuePair<string, object>> data )
+                        {
+                            foreach( var kv in data )
                             {
-                                Scheme = provider,
-                                Payload = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "payload" ) ).Value
-                            };
+                                req.UserData.Add( kv.Key, (string)kv.Value );
+                            }
                         }
                     }
                 }
@@ -251,6 +257,7 @@ namespace CK.AspNet.Auth
         {
             public string UserName { get; set; }
             public string Password { get; set; }
+            public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
         async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
@@ -269,7 +276,7 @@ namespace CK.AspNet.Auth
                     "Basic",
                     _authService.EnsureAuthenticationInfo( Context ),
                     null,
-                    null
+                    req.UserData.ToList()
                     );
 
                 await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
@@ -286,7 +293,7 @@ namespace CK.AspNet.Auth
             try
             {
                 string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 1024 ) ) return null;
+                if( !Request.TryReadSmallBodyAsString( out b, 2048 ) ) return null;
                 var r = JsonConvert.DeserializeObject<BasicLoginRequest>( b );
                 if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
             }

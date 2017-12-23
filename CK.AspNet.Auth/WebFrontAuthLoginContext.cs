@@ -22,13 +22,15 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    public class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext
+    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
         UserLoginResult _failedLogin;
         string _errorId;
         string _errorText;
+        // Used for Direct login (post return code).
+        int _httpErrorCode;
 
         internal WebFrontAuthLoginContext( 
             HttpContext ctx, 
@@ -148,6 +150,8 @@ namespace CK.AspNet.Auth
             if( ex == null ) throw new ArgumentNullException( nameof( ex ) );
             _errorId = ex.GetType().FullName;
             _errorText = ex.Message ?? "Exception has null message!";
+            if( ex is ArgumentException ) _httpErrorCode = StatusCodes.Status400BadRequest;
+            else _httpErrorCode = 0;
             _failedLogin = null;
         }
 
@@ -198,13 +202,15 @@ namespace CK.AspNet.Auth
 
         Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
         {
-            Debug.Assert( r.Info != null ); 
+            Debug.Assert( r.Info != null );
+            if( UserData != null ) r.Response.Add( UserDataToJProperty() );
             return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
         }
 
         Task SendDirectAuthenticationError()
         {
-            return HttpContext.Response.WriteAsync( CreateErrorResponse(), StatusCodes.Status401Unauthorized );
+            int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
+            return HttpContext.Response.WriteAsync( CreateErrorResponse(), code );
         }
 
         Task SendRemoteAuthenticationSuccess( WebFrontAuthService.LoginResult r )

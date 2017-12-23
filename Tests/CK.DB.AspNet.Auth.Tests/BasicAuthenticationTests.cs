@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -37,6 +38,12 @@ namespace CK.DB.AspNet.Auth.Tests
 
             public bool Refreshable { get; set; }
 
+            public IList<KeyValuePair<string, string>> UserData { get; } = new List<KeyValuePair<string, string>>();
+
+            public string ErrorId { get; set; }
+
+            public string ErrorText { get; set; }
+
             public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
             {
                 JObject o = JObject.Parse( json );
@@ -47,59 +54,17 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
                 r.Token = (string)o["token"];
                 r.Refreshable = (bool)o["refreshable"];
+                JObject userData = (JObject)o["userData"];
+                if( userData != null )
+                {
+                    foreach( var kv in userData )
+                    {
+                        r.UserData.Add( new KeyValuePair<string, string>( kv.Key, (string)kv.Value ) );
+                    }
+                }
+                r.ErrorId = (string)o["errorId"];
+                r.ErrorText = (string)o["errorText"];
                 return r;
-            }
-        }
-
-        class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
-        {
-            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
-            {
-                return Task.FromResult( scheme == "Basic" );
-            }
-        }
-
-        [Test]
-        public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
-        {
-            using( var server = new AuthServer( options: null, configureServices: services =>
-            {
-                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
-            } ) )
-            {
-                // Missing userName or userId.
-                {
-                    var payload = new JObject( new JProperty( "password", "pass" ) );
-                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
-                    m.StatusCode = HttpStatusCode.BadRequest;
-                    string content = m.Content.ReadAsStringAsync().Result;
-                    JObject r = JObject.Parse( content );
-                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
-                    ((string)r["errorText"]).Should().Contain( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string" );
-                }
-                // Missing password.
-                {
-                    var payload = new JObject( new JProperty( "userId", "3712" ) );
-                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
-                    m.StatusCode = HttpStatusCode.BadRequest;
-                    string content = m.Content.ReadAsStringAsync().Result;
-                    JObject r = JObject.Parse( content );
-                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
-                    ((string)r["errorText"]).Should().Contain( "Invalid payload. Missing 'Password' -> string entry." );
-                }
-                // Totally invalid payload.
-                {
-                    var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", null ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
-                    m.StatusCode = HttpStatusCode.BadRequest;
-                    string content = m.Content.ReadAsStringAsync().Result;
-                    JObject r = JObject.Parse( content );
-                    ((string)r["errorId"]).Should().Be( "System.ArgumentException" );
-                    ((string)r["errorText"]).Should().Contain( "Invalid payload. It must be either a Tuple<int,string>, a Tuple<string,string> or a IDictionary<string,object> or IEnumerable<KeyValuePair<string,object>> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
-                }
-
             }
         }
 
@@ -164,14 +129,16 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
             {
-                user.FindByName( ctx, "MKLJHZDJKH" );
-                int idUser = user.CreateUser( ctx, 1, userName );
-                if( idUser == -1 ) idUser = user.FindByName( ctx, userName );
-                basic.CreateOrUpdatePasswordUser( ctx, 1, idUser, password );
+                int idUser = await user.CreateUserAsync( ctx, 1, userName );
+                if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+                await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
                 {
-                    HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", password ) ).ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result );
+                    var payload = new JObject(
+                                        new JProperty( "userName", userName ),
+                                        new JProperty( "password", password ) );
+                    HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -179,13 +146,210 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
 
                 {
-                    HttpResponseMessage authFailed = await server.Client.PostJSON( basicLoginUri, new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" + password ) ).ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
+                    var payload = new JObject(
+                                        new JProperty( "userName", userName ),
+                                        new JProperty( "password", "failed" + password ) );
+                    HttpResponseMessage authFailed = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
                     c.Info.Should().BeNull();
                     c.Token.Should().BeNull();
                 }
             }
         }
+
+        [Test]
+        public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
+        {
+            using( var server = new AuthServer( options: null, configureServices: services =>
+            {
+                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
+            } ) )
+            {
+                // Missing userName or userId.
+                {
+                    var param = new JObject( new JProperty( "provider", "Basic" ),
+                                             new JProperty( "payload",
+                                                    new JObject( new JProperty( "password", "pass" ) ) ) );
+                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    r.ErrorId.Should().Be( "System.ArgumentException" );
+                    r.ErrorText.Should().Contain( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string" );
+                }
+                // Missing password.
+                {
+                    var param = new JObject( new JProperty( "provider", "Basic" ),
+                                             new JProperty( "payload",
+                                                    new JObject( new JProperty( "userId", "3712" ) ) ) );
+                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    r.ErrorId.Should().Be( "System.ArgumentException" );
+                    r.ErrorText.Should().Contain( "Invalid payload. Missing 'Password' -> string entry." );
+                }
+                // Totally invalid payload.
+                {
+                    var param = new JObject( new JProperty( "provider", "Basic" ),
+                                             new JProperty( "payload", null ) );
+                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    r.ErrorId.Should().Be( "System.ArgumentException" );
+                    r.ErrorText.Should().Contain( "Invalid payload. It must be either a Tuple<int,string>, a Tuple<string,string> or a IDictionary<string,object> or IEnumerable<KeyValuePair<string,object>> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
+                }
+            }
+        }
+
+        class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
+        {
+            public Task ValidateLoginAsync( IActivityMonitor monitor, IUserInfo loggedInUser, IWebFrontAuthValidateLoginContext context )
+            {
+                if( loggedInUser.UserName == "Paula"
+                    && context.UserData.Any( kv => kv.Key == "zone" && kv.Value == "<&>vil") )
+                {
+                    context.SetError( "Validation", "Paula must not go in the <&>vil Zone!" );
+                }
+                return Task.CompletedTask;
+            }
+        }
+
+        class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
+        {
+            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
+            {
+                return Task.FromResult( scheme == "Basic" );
+            }
+        }
+
+        [TestCase( "Albert", "pass", true )]
+        [TestCase( "Paula", "pass", false )]
+        public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login( string userName, string password, bool okInEvil )
+        {
+            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
+            var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
+            using( var ctx = new SqlStandardCallContext() )
+            using( var server = new AuthServer( null, services =>
+            {
+                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
+                services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+            } ) )
+            {
+                await ctx.GetConnection( user ).EnsureOpenAsync();
+                int idUser = await user.CreateUserAsync( ctx, 1, userName );
+                if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+                await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
+
+                {
+                    var param = new JObject(
+                                        new JProperty( "provider", "Basic" ),
+                                        new JProperty( "payload", new JObject(
+                                            new JProperty( "userName", userName ),
+                                            new JProperty( "password", password ) ) ),
+                                        new JProperty( "userData", new JObject(
+                                                new JProperty( "zone", "good" ) ) ) );
+                    HttpResponseMessage authBasic = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    c.Info.Level.Should().Be( AuthLevel.Normal );
+                    c.Info.User.UserId.Should().Be( idUser );
+                    c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+                    c.Token.Should().NotBeNullOrWhiteSpace();
+                    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "good" ) } );
+                }
+
+                {
+                    var param = new JObject(
+                                        new JProperty( "provider", "Basic" ),
+                                        new JProperty( "payload", new JObject(
+                                            new JProperty( "userName", userName ),
+                                            new JProperty( "password", password ) ) ),
+                                        new JProperty( "userData",
+                                            new JObject( new JProperty( "zone", "<&>vil" ) ) ) );
+                    HttpResponseMessage auth = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+                    if( okInEvil )
+                    {
+                        c.Info.Level.Should().Be( AuthLevel.Normal );
+                        c.Info.User.UserId.Should().Be( idUser );
+                        c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+                        c.Token.Should().NotBeNullOrWhiteSpace();
+                        c.ErrorId.Should().BeNull();
+                        c.ErrorText.Should().BeNull();
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
+                    else
+                    {
+                        c.Info.Should().BeNull();
+                        c.Token.Should().BeNull();
+                        c.ErrorId.Should().Be( "Validation" );
+                        c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
+                }
+            }
+        }
+
+        [TestCase( "Albert", "pass", true )]
+        [TestCase( "Paula", "pass", false )]
+        public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login( string userName, string password, bool okInEvil )
+        {
+            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
+            var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
+            using( var ctx = new SqlStandardCallContext() )
+            using( var server = new AuthServer( null, services =>
+            {
+                services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+            } ) )
+            {
+                await ctx.GetConnection( user ).EnsureOpenAsync();
+                int idUser = await user.CreateUserAsync( ctx, 1, userName );
+                if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+                await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
+
+                {
+                    var payload = new JObject(
+                                        new JProperty( "userName", userName ),
+                                        new JProperty( "password", password ),
+                                        new JProperty( "userData", new JObject(
+                                                new JProperty( "zone", "good" ) ) ) );
+                    HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    c.Info.Level.Should().Be( AuthLevel.Normal );
+                    c.Info.User.UserId.Should().Be( idUser );
+                    c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+                    c.Token.Should().NotBeNullOrWhiteSpace();
+                    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "good" ) } );
+                }
+
+                {
+                    var payload = new JObject(
+                                        new JProperty( "userName", userName ),
+                                        new JProperty( "password", password ),
+                                        new JProperty( "userData", new JObject(
+                                                new JProperty( "zone", "<&>vil" ) ) ) );
+                    HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+                    if( okInEvil )
+                    {
+                        c.Info.Level.Should().Be( AuthLevel.Normal );
+                        c.Info.User.UserId.Should().Be( idUser );
+                        c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+                        c.Token.Should().NotBeNullOrWhiteSpace();
+                        c.ErrorId.Should().BeNull();
+                        c.ErrorText.Should().BeNull();
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
+                    else
+                    {
+                        c.Info.Should().BeNull();
+                        c.Token.Should().BeNull();
+                        c.ErrorId.Should().Be( "Validation" );
+                        c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
+                }
+            }
+        }
+
     }
 
 }
