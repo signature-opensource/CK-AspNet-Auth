@@ -8,10 +8,8 @@ using CK.SqlServer;
 using CK.SqlServer.Setup;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using static CK.Testing.DBSetupTestHelper;
 
 namespace WebApp.Tests
 {
@@ -25,16 +23,6 @@ namespace WebApp.Tests
             BobSetup();
         }
 
-        // This unit test is called by Build script (thanks to its category) before
-        // building the WebApp.
-        [Explicit]
-        [Category( "GenerateWebAppTestsGenerated" )]
-        [Test]
-        public void Generate_Web_App_Tests_Generated()
-        {
-            TestHelper.RunDBSetup();
-        }
-
         [Explicit]
         [Test]
         public async Task close_WebApp_and_IdServer_servers()
@@ -43,6 +31,18 @@ namespace WebApp.Tests
             WebAppHelper.WebAppProcess.StopAndWaitForExit();
             WebAppHelper.IdServerProcess.StopAndWaitForExit();
         }
+
+        // This unit test is called by Build script (thanks to its category) before
+        // building the WebApp.
+        [Explicit]
+        [Category( "GenerateStObjAssembly" )]
+        [Test]
+        public void Generate_StObj_Assembly_Generated()
+        {
+            TestHelper.RunDBSetup();
+        }
+
+
 
         public static void BobSetup()
         {

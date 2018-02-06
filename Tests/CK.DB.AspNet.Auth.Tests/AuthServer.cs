@@ -1,14 +1,11 @@
-using CK.AspNet;
 using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
-using CK.Core;
-using CK.DB.Auth;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using static CK.Testing.DBSetupTestHelper;
 
 namespace CK.DB.AspNet.Auth.Tests
 {

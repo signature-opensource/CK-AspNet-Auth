@@ -16,20 +16,18 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="2.0.0" />
-    <PackageReference Include="CK.Monitoring" Version="8.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="2.0.1" />
+    <PackageReference Include="CK.Monitoring" Version="$(CKMonitoringVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
   </ItemGroup>
-  
   <ItemGroup>
-    <Reference Include="WebApp.Tests.Generated">
-      <HintPath>..\WebApp.Tests\bin\Debug\net461\WebApp.Tests.Generated.dll</HintPath>
+    <Reference Include="CK.StObj.AutoAssembly">
+      <HintPath>..\WebApp.Tests\bin\Debug\net461\CK.StObj.AutoAssembly.dll</HintPath>
     </Reference>
   </ItemGroup>
-
 </Project>

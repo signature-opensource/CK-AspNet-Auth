@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.8
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7C9F751D-25CD-4A19-838B-B69E7B897468}"
 	ProjectSection(SolutionItems) = preProject
@@ -43,7 +43,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp", "Tests\Integration
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.NetCore.Tests", "Tests\CK.AspNet.Auth.NetCore.Tests\CK.AspNet.Auth.NetCore.Tests.csproj", "{5D23D7CD-EA03-45ED-9D6B-FD659B98949C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.BD.AspNet.Auth.NetCore.Tests", "Tests\CK.BD.AspNet.Auth.NetCore.Tests\CK.BD.AspNet.Auth.NetCore.Tests.csproj", "{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth.NetCore.Tests", "Tests\CK.DB.AspNet.Auth.NetCore.Tests\CK.DB.AspNet.Auth.NetCore.Tests.csproj", "{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

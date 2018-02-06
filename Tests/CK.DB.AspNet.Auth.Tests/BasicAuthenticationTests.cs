@@ -1,15 +1,12 @@
 using CK.AspNet.Auth;
-using CK.AspNet.Tester;
 using CK.Auth;
 using CK.Core;
 using CK.DB.Actor;
 using CK.DB.Auth;
-using CK.DB.User.UserGoogle;
 using CK.SqlServer;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
@@ -18,6 +15,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using static CK.Testing.DBSetupTestHelper;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
@@ -200,6 +198,9 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
+        /// <summary>
+        /// Client calls login with userData that contains a Zone.
+        /// </summary>
         class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
         {
             public Task ValidateLoginAsync( IActivityMonitor monitor, IUserInfo loggedInUser, IWebFrontAuthValidateLoginContext context )
@@ -306,6 +307,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
                 {
+                    // Zone is "good".
                     var payload = new JObject(
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", password ),
@@ -321,31 +323,32 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
 
                 {
-                    var payload = new JObject(
-                                        new JProperty( "userName", userName ),
-                                        new JProperty( "password", password ),
-                                        new JProperty( "userData", new JObject(
-                                                new JProperty( "zone", "<&>vil" ) ) ) );
-                    HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
-                    if( okInEvil )
-                    {
-                        c.Info.Level.Should().Be( AuthLevel.Normal );
-                        c.Info.User.UserId.Should().Be( idUser );
-                        c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
-                        c.Token.Should().NotBeNullOrWhiteSpace();
-                        c.ErrorId.Should().BeNull();
-                        c.ErrorText.Should().BeNull();
-                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
-                    }
-                    else
-                    {
-                        c.Info.Should().BeNull();
-                        c.Token.Should().BeNull();
-                        c.ErrorId.Should().Be( "Validation" );
-                        c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
-                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
-                    }
+// Zone is "<&>vil".
+var payload = new JObject(
+                    new JProperty( "userName", userName ),
+                    new JProperty( "password", password ),
+                    new JProperty( "userData", new JObject(
+                            new JProperty( "zone", "<&>vil" ) ) ) );
+HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+if( okInEvil ) // When userName is "Albert".
+{
+    c.Info.Level.Should().Be( AuthLevel.Normal );
+    c.Info.User.UserId.Should().Be( idUser );
+    c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+    c.Token.Should().NotBeNullOrWhiteSpace();
+    c.ErrorId.Should().BeNull();
+    c.ErrorText.Should().BeNull();
+    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+}
+else  // When userName is "Paula".
+{
+    c.Info.Should().BeNull();
+    c.Token.Should().BeNull();
+    c.ErrorId.Should().Be( "Validation" );
+    c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
+    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+}
                 }
             }
         }

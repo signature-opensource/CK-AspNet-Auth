@@ -177,7 +177,7 @@ namespace CK.AspNet.Auth
         /// Must be called only if no <see cref="SetError(string, string)"/> or <see cref="SetError(UserLoginResult)"/>
         /// have been called before.
         /// </summary>
-        /// <param name="user">The logged in user.</param>
+        /// <param name="successResult">The result that must be successful.</param>
         public void SetSuccessfulLogin( UserLoginResult successResult )
         {
             if( successResult == null || !successResult.IsSuccess ) throw new ArgumentException( "Must be a login success.", nameof(successResult) );

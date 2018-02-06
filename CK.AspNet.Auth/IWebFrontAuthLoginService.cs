@@ -40,7 +40,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Creates a payload object for a given scheme that can be used to 
-        /// call <see cref="LoginAsync(HttpContext,IActivityMonitor, string, object)"/>.
+        /// call <see cref="LoginAsync"/>.
         /// </summary>
         /// <param name="ctx">Current Http context.</param>
         /// <param name="monitor">The activity monitor to use.</param>

@@ -26,7 +26,7 @@ namespace CodeCake
     /// Standard build "script".
     /// </summary>
     [AddPath( "CodeCakeBuilder/Tools" )]
-    [AddPath("packages/**/tools*")]
+    [AddPath( "packages/**/tools*" )]
     public class Build : CodeCakeHost
     {
         public Build()
@@ -62,7 +62,7 @@ namespace CodeCake
                          {
                              Cake.Warning( "GitInfo is not valid, but you choose to continue..." );
                          }
-                        else if(!Cake.AppVeyor().IsRunningOnAppVeyor) throw new Exception("Repository is not ready to be published.");
+                         else if( !Cake.AppVeyor().IsRunningOnAppVeyor ) throw new Exception( "Repository is not ready to be published." );
                      }
 
                      if( gitInfo.IsValidRelease
@@ -134,9 +134,10 @@ namespace CodeCake
                 .IsDependentOn( "Unit-Testing" )
                 .Does( () =>
                 {
+                    // Use WebApp.Tests to generate the StObj assembly.
                     var webAppTests = projects.Single( p => p.Name == "WebApp.Tests" );
                     var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/WebApp.Tests.dll" );
-                    Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateWebAppTestsGenerated" } );
+                    Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateStObjAssembly" } );
 
                     var webApp = projects.Single( p => p.Name == "WebApp" );
                     Cake.DotNetCoreBuild( webApp.Path.FullPath,
@@ -239,8 +240,8 @@ namespace CodeCake
                          }
                          else
                          {
-                            // An alpha, beta, delta, epsilon, gamma, kappa goes to invenietis-preview.
-                            PushNuGetPackages( "MYGET_PREVIEW_API_KEY", "https://www.myget.org/F/invenietis-preview/api/v2/package", nugetPackages );
+                             // An alpha, beta, delta, epsilon, gamma, kappa goes to invenietis-preview.
+                             PushNuGetPackages( "MYGET_PREVIEW_API_KEY", "https://www.myget.org/F/invenietis-preview/api/v2/package", nugetPackages );
                          }
                      }
                      else

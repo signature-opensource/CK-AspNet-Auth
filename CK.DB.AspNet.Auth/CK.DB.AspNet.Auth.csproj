@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKAspNetVersion)" />
+    <PackageReference Include="CK.DB.AspNet" Version="$(CKDatabaseVersion)" />
   </ItemGroup>
 
   <ItemGroup>

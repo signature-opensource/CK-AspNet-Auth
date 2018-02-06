@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "CK.Setupable.Engine.NetCore.Tests": {
+    "CK.DB.AspNet.Auth.NetCore.Tests": {
       "commandName": "Project",
       "commandLineArgs": "--wait"
     }

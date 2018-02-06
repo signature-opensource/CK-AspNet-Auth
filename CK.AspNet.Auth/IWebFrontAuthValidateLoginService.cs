@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Optional service that, when registered, offers login validations.
+    /// Optional service that, when registered, enables login validations.
     /// </summary>
     public interface IWebFrontAuthValidateLoginService
     {
