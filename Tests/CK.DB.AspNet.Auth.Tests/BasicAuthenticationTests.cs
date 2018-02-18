@@ -235,7 +235,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
             } ) )
             {
-                await ctx.GetConnection( user ).EnsureOpenAsync();
+                await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );
                 if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
@@ -301,7 +301,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
             } ) )
             {
-                await ctx.GetConnection( user ).EnsureOpenAsync();
+                await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );
                 if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
