@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--This file represents the results of running a test suite-->
+<test-results name="C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\CK.AspNet.Auth.Tests\bin\Debug\net461\CK.AspNet.Auth.Tests.dll" total="35" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2018-03-01" time="18:52:17">
+  <environment nunit-version="2.6.4.14350" clr-version="4.0.30319.42000" os-version="Microsoft Windows NT 6.2.9200.0" platform="Win32NT" cwd="C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth" machine-name="DESKTOP-5BQ4M95" user="olivi" user-domain="DESKTOP-5BQ4M95" />
+  <culture-info current-culture="fr-FR" current-uiculture="fr-FR" />
+  <test-suite type="Assembly" name="C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\CK.AspNet.Auth.Tests\bin\Debug\net461\CK.AspNet.Auth.Tests.dll" executed="True" result="Success" success="True" time="8.631" asserts="0">
+    <results>
+      <test-suite type="Namespace" name="CK" executed="True" result="Success" success="True" time="8.604" asserts="0">
+        <results>
+          <test-suite type="Namespace" name="AspNet" executed="True" result="Success" success="True" time="8.604" asserts="0">
+            <results>
+              <test-suite type="Namespace" name="Auth" executed="True" result="Success" success="True" time="8.603" asserts="0">
+                <results>
+                  <test-suite type="Namespace" name="Tests" executed="True" result="Success" success="True" time="8.603" asserts="0">
+                    <results>
+                      <test-suite type="TestFixture" name="ImpersonationTests" executed="True" result="Success" success="True" time="7.215" asserts="0">
+                        <results>
+                          <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK" executed="True" result="Success" success="True" time="6.937" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_can_be_called_with_userId_instead_of_uerName" executed="True" result="Success" success="True" time="0.055" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_to_an_unknown_userName_or_userId_fails_with_403_Forbidden" executed="True" result="Success" success="True" time="0.021" asserts="0" />
+                          <test-suite type="ParameterizedTest" name="impersonate_with_invalid_body_fails_with_400_BadRequest" executed="True" result="Success" success="True" time="0.135" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;&quot;)" executed="True" result="Success" success="True" time="0.013" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{&quot;)" executed="True" result="Success" success="True" time="0.008" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;\&quot;not a json object\&quot;&quot;)" executed="True" result="Success" success="True" time="0.015" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{\&quot;name\&quot;:\&quot;n\&quot;}&quot;)" executed="True" result="Success" success="True" time="0.013" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{\&quot;id\&quot;:3}&quot;)" executed="True" result="Success" success="True" time="0.012" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{\&quot;userName\&quot;:3}&quot;)" executed="True" result="Success" success="True" time="0.013" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{\&quot;userId\&quot;: \&quot;3\&quot;}&quot;)" executed="True" result="Success" success="True" time="0.016" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.impersonate_with_invalid_body_fails_with_400_BadRequest(&quot;{\&quot;userName\&quot;:\&quot;Robert\&quot;,\&quot;userId\&quot;:3}&quot;)" executed="True" result="Success" success="True" time="0.016" asserts="0" />
+                            </results>
+                          </test-suite>
+                          <test-case name="CK.AspNet.Auth.Tests.ImpersonationTests.when_no_impersonation_service_is_registered_404_NotFound" executed="True" result="Success" success="True" time="0.024" asserts="0" />
+                        </results>
+                      </test-suite>
+                      <test-suite type="TestFixture" name="WebFrontHandlerTests" executed="True" result="Success" success="True" time="1.382" asserts="0">
+                        <results>
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.a_successful_basic_login_returns_valid_info_and_token" executed="True" result="Success" success="True" time="0.038" asserts="0" />
+                          <test-suite type="ParameterizedTest" name="bad_tokens_are_ignored" executed="True" result="Success" success="True" time="0.077" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.bad_tokens_are_ignored(WebFrontPath)" executed="True" result="Success" success="True" time="0.063" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.bad_tokens_are_ignored(RootPath)" executed="True" result="Success" success="True" time="0.011" asserts="0" />
+                            </results>
+                          </test-suite>
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.basic_login_is_404NotFound_when_no_BasicAuthenticationProvider_exists" executed="True" result="Success" success="True" time="0.018" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.calling_c_refresh_from_scrath_returns_null_info_and_token" executed="True" result="Success" success="True" time="0.165" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.calling_c_refresh_from_scrath_with_providers_query_parameter_returns_null_info_and_null_token_but_the_array_of_providers_name" executed="True" result="Success" success="True" time="0.123" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.invalid_payload_to_basic_login_returns_a_400_bad_request" executed="True" result="Success" success="True" time="0.036" asserts="0" />
+                          <test-suite type="ParameterizedTest" name="logout_with_full_query_parameter_removes_both_cookies" executed="True" result="Success" success="True" time="0.081" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_with_full_query_parameter_removes_both_cookies(WebFrontPath,True)" executed="True" result="Success" success="True" time="0.036" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_with_full_query_parameter_removes_both_cookies(RootPath,True)" executed="True" result="Success" success="True" time="0.013" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_with_full_query_parameter_removes_both_cookies(WebFrontPath,False)" executed="True" result="Success" success="True" time="0.013" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_with_full_query_parameter_removes_both_cookies(RootPath,False)" executed="True" result="Success" success="True" time="0.012" asserts="0" />
+                            </results>
+                          </test-suite>
+                          <test-suite type="ParameterizedTest" name="logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one" executed="True" result="Success" success="True" time="0.053" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(WebFrontPath,True)" executed="True" result="Success" success="True" time="0.022" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(RootPath,True)" executed="True" result="Success" success="True" time="0.008" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(WebFrontPath,False)" executed="True" result="Success" success="True" time="0.011" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one(RootPath,False)" executed="True" result="Success" success="True" time="0.009" asserts="0" />
+                            </results>
+                          </test-suite>
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint" executed="True" result="Success" success="True" time="0.324" asserts="0" />
+                          <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.SlidingExpiration_works_as_expected_in_rooted_Cookie_mode_where_any_request_can_do_the_job" executed="True" result="Success" success="True" time="0.317" asserts="0" />
+                          <test-suite type="ParameterizedTest" name="successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication" executed="True" result="Success" success="True" time="0.096" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(WebFrontPath,False)" executed="True" result="Success" success="True" time="0.035" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(RootPath,False)" executed="True" result="Success" success="True" time="0.015" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(WebFrontPath,True)" executed="True" result="Success" success="True" time="0.032" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication(RootPath,True)" executed="True" result="Success" success="True" time="0.012" asserts="0" />
+                            </results>
+                          </test-suite>
+                          <test-suite type="ParameterizedTest" name="webfront_token_endpoint_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication" executed="True" result="Success" success="True" time="0.036" asserts="0">
+                            <results>
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.webfront_token_endpoint_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication(False)" description="With cookies on the .webfront path." executed="True" result="Success" success="True" time="0.019" asserts="0" />
+                              <test-case name="CK.AspNet.Auth.Tests.WebFrontHandlerTests.webfront_token_endpoint_returns_the_current_authentication_indented_JSON_and_enables_to_test_actual_authentication(True)" description="With cookies on the root path." executed="True" result="Success" success="True" time="0.014" asserts="0" />
+                            </results>
+                          </test-suite>
+                        </results>
+                      </test-suite>
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>

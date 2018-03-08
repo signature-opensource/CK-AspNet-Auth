@@ -1,11 +1,9 @@
+using Code.Cake;
+using CodeCake;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CodeCake
+namespace CodeCakeBuilder
 {
     class Program
     {
