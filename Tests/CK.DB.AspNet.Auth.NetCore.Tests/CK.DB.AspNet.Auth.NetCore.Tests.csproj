@@ -2,12 +2,10 @@
   <Import Project="..\..\Common\Shared.props" />
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <OriginProjectName>CK.DB.AspNet.Auth.Tests</OriginProjectName>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="5.2.0" />
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTesterVersion)" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />

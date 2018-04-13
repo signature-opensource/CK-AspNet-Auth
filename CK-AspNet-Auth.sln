@@ -16,7 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1A7E3E39-6483-4802-8B27-C4D245D35D09}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth", "CK.AspNet.Auth\CK.AspNet.Auth.csproj", "{880BB539-625A-459A-A674-664C563DEAC2}"
 EndProject
@@ -44,6 +44,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AspNet.Auth.NetCore.Tests", "Tests\CK.AspNet.Auth.NetCore.Tests\CK.AspNet.Auth.NetCore.Tests.csproj", "{5D23D7CD-EA03-45ED-9D6B-FD659B98949C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DB.AspNet.Auth.NetCore.Tests", "Tests\CK.DB.AspNet.Auth.NetCore.Tests\CK.DB.AspNet.Auth.NetCore.Tests.csproj", "{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBWithPasswordAndGoogle", "Tests\DBWithPasswordAndGoogle\DBWithPasswordAndGoogle.csproj", "{F76DC7E3-4813-457F-9C1C-6C4B969222E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,10 @@ Global
 		{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96CCF27E-1801-4AFB-9F5D-34764AEA0F64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F76DC7E3-4813-457F-9C1C-6C4B969222E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F76DC7E3-4813-457F-9C1C-6C4B969222E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F76DC7E3-4813-457F-9C1C-6C4B969222E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F76DC7E3-4813-457F-9C1C-6C4B969222E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -104,6 +110,7 @@ Global
 		{6045AB84-3B80-46B9-8F4E-78B75C761196} = {831337CA-34A1-41F8-9C0F-4D38F8D4DD96}
 		{5D23D7CD-EA03-45ED-9D6B-FD659B98949C} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
 		{96CCF27E-1801-4AFB-9F5D-34764AEA0F64} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
+		{F76DC7E3-4813-457F-9C1C-6C4B969222E2} = {1A7E3E39-6483-4802-8B27-C4D245D35D09}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {95BADE5D-C81E-4600-8D4E-7F7BA194A14A}
