@@ -45,19 +45,23 @@ namespace CodeCake
             var projectsToPublish = projects
                                         .Where( p => !p.Path.Segments.Contains( "Tests" ) );
 
+            // The SimpleRepositoryInfo should be computed once and only once.
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
-
-            // Configuration is either "Debug" or "Release".
-            string configuration = "Debug";
+            // This default global info will be replaced by Check-Repository task.
+            // It is allocated here to ease debugging and/or manual work on complex build script.
+            CheckRepositoryInfo globalInfo = new CheckRepositoryInfo { Version = gitInfo.SafeNuGetVersion };
 
             Task( "Check-Repository" )
                 .Does( () =>
-                 {
-                     configuration = StandardCheckRepository( projectsToPublish, gitInfo );
-                 } );
+                {
+                    globalInfo = StandardCheckRepository( projectsToPublish, gitInfo );
+                    if( globalInfo.ShouldStop )
+                    {
+                        Cake.TerminateWithSuccess( "All packages from this commit are already available. Build skipped." );
+                    }
+                } );
 
             Task( "Clean" )
-                .IsDependentOn( "Check-Repository" )
                 .Does( () =>
                  {
                      Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
@@ -66,24 +70,25 @@ namespace CodeCake
 
 
             Task( "Build" )
-                .IsDependentOn( "Clean" )
                 .IsDependentOn( "Check-Repository" )
+                .IsDependentOn( "Clean" )
                 .Does( () =>
                  {
                      // Excludes WebApp from build since it relies on the auto generated assembly
                      // built by explicit test "GenerateStObjAssembly" below.
-                     StandardSolutionBuild( solutionFileName, gitInfo, configuration, "WebApp" );
+                     StandardSolutionBuild( solutionFileName, gitInfo, globalInfo.BuildConfiguration, "WebApp" );
                  } );
 
             Task( "Unit-Testing" )
                 .IsDependentOn( "Build" )
-                .WithCriteria( () => !Cake.IsInteractiveMode()
+                .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
                                         || Cake.ReadInteractiveOption( "Run unit tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    StandardUnitTests( configuration, projects
-                                                        .Where( p => p.Name.EndsWith( ".Tests" )
-                                                                     && !p.Path.Segments.Contains( "Integration" ) ) );
+                    StandardUnitTests( globalInfo.BuildConfiguration,
+                                        projects
+                                           .Where( p => p.Name.EndsWith( ".Tests" )
+                                                        && !p.Path.Segments.Contains( "Integration" ) ) );
                 } );
 
             Task( "Build-Integration-Projects" )
@@ -92,27 +97,27 @@ namespace CodeCake
                 {
                     // Use WebApp.Tests to generate the StObj assembly.
                     var webAppTests = projects.Single( p => p.Name == "WebApp.Tests" );
-                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/WebApp.Tests.dll" );
+                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + globalInfo.BuildConfiguration + "/net461/WebApp.Tests.dll" );
                     Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateStObjAssembly" } );
 
                     var webApp = projects.Single( p => p.Name == "WebApp" );
                     Cake.DotNetCoreBuild( webApp.Path.FullPath,
                          new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
                          {
-                             s.Configuration = configuration;
+                             s.Configuration = globalInfo.BuildConfiguration;
                          } ) );
                 } );
 
             Task( "Integration-Testing" )
                 .IsDependentOn( "Build-Integration-Projects" )
-                .WithCriteria( () => !Cake.IsInteractiveMode()
+                .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
                                      || Cake.ReadInteractiveOption( "Run integration tests?", 'Y', 'N' ) == 'Y' )
                 .Does( () =>
                 {
                     var testProjects = projects
                                         .Where( p => p.Name.EndsWith( ".Tests" )
                                                     && p.Path.Segments.Contains( "Integration" ) );
-                    StandardUnitTests( configuration, testProjects );
+                    StandardUnitTests( globalInfo.BuildConfiguration, testProjects );
                 } );
 
 
@@ -122,7 +127,7 @@ namespace CodeCake
                 .IsDependentOn( "Integration-Testing" )
                 .Does( () =>
                  {
-                     StandardCreateNuGetPackages( releasesDir, projectsToPublish, gitInfo, configuration );
+                     StandardCreateNuGetPackages( releasesDir, projectsToPublish, gitInfo, globalInfo.BuildConfiguration );
                  } );
 
             Task( "Push-NuGet-Packages" )
@@ -130,8 +135,7 @@ namespace CodeCake
                 .IsDependentOn( "Create-NuGet-Packages" )
                 .Does( () =>
                  {
-                     IEnumerable<FilePath> nugetPackages = Cake.GetFiles( releasesDir.Path + "/*.nupkg" );
-                     StandardPushNuGetPackages( nugetPackages, gitInfo );
+                     StandardPushNuGetPackages( globalInfo, releasesDir );
                  } );
 
             // The Default task for this script can be set here.

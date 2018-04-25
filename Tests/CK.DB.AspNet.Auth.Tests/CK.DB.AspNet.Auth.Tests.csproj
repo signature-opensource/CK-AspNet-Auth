@@ -7,9 +7,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="5.2.0" />
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTesterVersion)" />
-    <PackageReference Include="CK.Testing.StObjMap" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
