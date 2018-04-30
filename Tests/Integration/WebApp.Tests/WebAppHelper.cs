@@ -36,10 +36,7 @@ namespace WebApp.Tests
                 pI.CreateNoWindow = true;
                 pI.UseShellExecute = false;
             },
-            p =>
-            {
-                if( _client != null ) _client.Get( "/quit" );
-            } );
+            p => _client?.Get( "/quit" ) );
 
         public static ExternalProcess IdServerProcess = new ExternalProcess(
             pI =>
