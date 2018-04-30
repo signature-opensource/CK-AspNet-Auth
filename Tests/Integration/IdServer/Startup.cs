@@ -92,7 +92,18 @@ namespace IdServer
 
             app.UseDeveloperExceptionPage();
 
-            app.Use( async (context, next) =>
+            app.Use( async ( context, next ) =>
+            {
+                if( context.Request.Path.StartsWithSegments( "/quit" ) )
+                {
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    context.RequestServices.GetRequiredService<IApplicationLifetime>().StopApplication();
+                    return;
+                }
+                await next();
+            } );
+
+            app.Use( async ( context, next ) =>
             {
                 foreach( var h in context.Request.Headers )
                 {
