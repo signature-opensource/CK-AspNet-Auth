@@ -250,3 +250,9 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+CodeCakeBuilder/Tools
+Tests/Integration/WebApp/WebAppLogs/
+Tests/Integration/WebAppLogs/
+Back/Tests/Integration/WebApp/WebAppLogs/
+TestResult.*.xml
