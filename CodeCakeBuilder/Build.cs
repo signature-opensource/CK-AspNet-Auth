@@ -74,9 +74,7 @@ namespace CodeCake
                 .IsDependentOn( "Clean" )
                 .Does( () =>
                  {
-                     // Excludes WebApp from build since it relies on the auto generated assembly
-                     // built by explicit test "GenerateStObjAssembly" below.
-                     StandardSolutionBuild( solutionFileName, gitInfo, globalInfo.BuildConfiguration, "WebApp" );
+                     StandardSolutionBuild( solutionFileName, gitInfo, globalInfo.BuildConfiguration );
                  } );
 
             Task( "Unit-Testing" )
