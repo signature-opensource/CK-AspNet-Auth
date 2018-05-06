@@ -34,6 +34,7 @@ namespace WebApp
                 .Build();
 
             host.Run();
+            GrandOutput.Default?.Dispose();
         }
     }
 }
