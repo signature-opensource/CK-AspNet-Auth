@@ -25,9 +25,4 @@
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="CK.StObj.AutoAssembly">
-      <HintPath>..\WebApp.Tests\bin\Debug\net461\CK.StObj.AutoAssembly.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>
