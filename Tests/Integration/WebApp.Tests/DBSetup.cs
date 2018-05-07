@@ -32,14 +32,17 @@ namespace WebApp.Tests
             WebAppHelper.IdServerProcess.StopAndWaitForExit();
         }
 
-        // This unit test is called by Build script (thanks to its category) before
-        // building the WebApp.
+        // This unit test is called by the CodeCakeBuilder Build script (thanks to its category) before
+        // running the WebApp.
         [Explicit]
         [Category( "GenerateStObjAssembly" )]
         [Test]
         public void Generate_StObj_Assembly_Generated()
         {
-            TestHelper.RunDBSetup();
+            Assert.That( TestHelper.RunDBSetup() != CKSetup.CKSetupRunResult.Failed, "DBSetup failed." );
+            var source = TestHelper.BinFolder.AppendPart( TestHelper.GeneratedAssemblyName );
+            var target = TestHelper.TestProjectFolder.Combine( "../WebApp/bin" ).AppendPart( TestHelper.BuildConfiguration ).AppendPart( "net461" );
+            System.IO.File.Copy( source, target, true );
         }
 
 
