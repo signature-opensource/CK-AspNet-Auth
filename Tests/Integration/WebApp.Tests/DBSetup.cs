@@ -40,8 +40,11 @@ namespace WebApp.Tests
         public void Generate_StObj_Assembly_Generated()
         {
             Assert.That( TestHelper.RunDBSetup() != CKSetup.CKSetupRunResult.Failed, "DBSetup failed." );
-            var source = TestHelper.BinFolder.AppendPart( TestHelper.GeneratedAssemblyName );
-            var target = TestHelper.TestProjectFolder.Combine( "../WebApp/bin" ).AppendPart( TestHelper.BuildConfiguration ).AppendPart( "net461" );
+            var source = TestHelper.BinFolder.AppendPart( TestHelper.GeneratedAssemblyName + ".dll" );
+            var target = TestHelper.TestProjectFolder.Combine( "../WebApp/bin" )
+                                                     .AppendPart( TestHelper.BuildConfiguration )
+                                                     .AppendPart( "net461" )
+                                                     .AppendPart( TestHelper.GeneratedAssemblyName + ".dll" );
             System.IO.File.Copy( source, target, true );
         }
 
