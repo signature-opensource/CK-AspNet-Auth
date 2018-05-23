@@ -59,7 +59,7 @@ namespace CK.AspNet.Auth
 <body>
 <script>
 (function(){{
-window.opener.postMessage( {oS}, '{req.Scheme}://{req.Host}/');
+window.opener.postMessage( {{""WFA"": ""WFA"", ""data"": {oS} }}, '{req.Scheme}://{req.Host}/');
 window.close();
 }})();
 </script>

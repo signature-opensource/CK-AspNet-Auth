@@ -26,6 +26,7 @@ namespace WebApp
                     // b.SetMinimumLevel( Microsoft.Extensions.Logging.LogLevel.Trace );
                     // Adding the Console, displays the Request start/end. WTF?!
                     b.AddConsole();
+                    b.SetMinimumLevel( Microsoft.Extensions.Logging.LogLevel.Trace );
                 } )
                 .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
