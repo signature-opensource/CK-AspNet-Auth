@@ -19,6 +19,8 @@ namespace CK.DB.Auth
         /// the <see cref="AuthenticationTypeSystemExtensions.FromUserAuthInfo"/> helper method when <paramref name="dbResult"/>
         /// is successful or returns a failed <see cref="UserLoginResult"/> based on dbResult error properties if it is on error.
         /// </summary>
+        /// <param name="this">This IAuthenticationDatabaseService.</param>
+        /// <param name="typeSystem">The type system to use.</param>
         /// <param name="ctx">The call context to use.</param>
         /// <param name="dbResult">The database result to transform.</param>
         /// <returns>The (never null) UserLoginResult.</returns>

@@ -48,6 +48,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the provider payload (type is provider -ie. <see cref="CallingScheme"/>- dependent).
+        /// This is never null but may be an empty object when unsafe login is used with no payload.
         /// </summary>
         object Payload { get; }
 

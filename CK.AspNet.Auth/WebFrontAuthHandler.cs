@@ -204,13 +204,15 @@ namespace CK.AspNet.Auth
                 ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
                 if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
+                    // The req.Payload my be null here. We map it to an empty object to preserve the invariant of the context.
+                    var payload = req.Payload ?? new Object();
                     var wfaSC = new WebFrontAuthLoginContext(
                                         Context,
                                         _authService,
                                         _typeSystem,
                                         WebFrontAuthLoginMode.UnsafeDirectLogin,
                                         req.Scheme,
-                                        req.Payload,
+                                        payload,
                                         null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
@@ -220,7 +222,7 @@ namespace CK.AspNet.Auth
 
                     await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
                     {
-                        return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload, actualLogin );
+                        return _loginService.LoginAsync( Context, monitor, req.Scheme, payload, actualLogin );
                     } );
                 }
             }

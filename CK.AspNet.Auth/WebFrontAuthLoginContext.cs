@@ -45,7 +45,7 @@ namespace CK.AspNet.Auth
             string returnUrl,
             List<KeyValuePair<string, StringValues>> userData )
         {
-            Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null && authProps != null );
+            Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null );
             HttpContext = ctx;
             _authenticationService = authService;
             AuthenticationTypeSystem = typeSystem;
@@ -101,6 +101,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the provider payload (type is provider dependent).
+        /// This is never null but may be an empty object when unsafe login is used with no payload.
         /// </summary>
         public object Payload { get; }
 
