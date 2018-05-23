@@ -27,6 +27,10 @@ namespace WebApp
 
         public async Task<UserLoginResult> CreateAccountAndLoginAsync( IActivityMonitor monitor, IWebFrontAuthAutoCreateAccountContext context )
         {
+            //
+            // This is for OpenIdConnectTests.Bob_login_on_webfront_returns_User_NoAutoRegistration test.
+            //
+            if( context.CallingScheme == "oidc" ) return null;
             using( var ctx = new SqlStandardCallContext() )
             {
                 int idUser = await _userTable.CreateUserAsync( ctx, 1, Guid.NewGuid().ToString() );
