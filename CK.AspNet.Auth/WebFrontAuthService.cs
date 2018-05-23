@@ -435,6 +435,9 @@ namespace CK.AspNet.Auth
                 }
                 else
                 {
+                    // If a validation service is registered, the first call above
+                    // did not actually logged the user in (actualLogin = false).
+                    // We trigger the real login now if the validation service validates it.
                     if( _validateLoginService != null )
                     {
                         await _validateLoginService.ValidateLoginAsync( monitor, u.UserInfo, ctx );
