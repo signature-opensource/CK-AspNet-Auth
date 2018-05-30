@@ -12,7 +12,7 @@
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.Monitoring" Version="9.0.1-C0001-develop" />
+    <PackageReference Include="CK.Monitoring" Version="9.0.2-C0004-local" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
