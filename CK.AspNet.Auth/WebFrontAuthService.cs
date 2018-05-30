@@ -50,6 +50,7 @@ namespace CK.AspNet.Auth
         readonly CookieSecurePolicy _cookiePolicy;
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
         readonly IWebFrontAuthValidateLoginService _validateLoginService;
+        readonly IWebFrontAuthAutoCreateAccountService _autoCreateAccountService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -59,17 +60,20 @@ namespace CK.AspNet.Auth
         /// <param name="dataProtectionProvider">The data protection provider to use.</param>
         /// <param name="options">Monitored options.</param>
         /// <param name="validateLoginService">Optional service that validates logins.</param>
+        /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
             IDataProtectionProvider dataProtectionProvider,
             IOptionsMonitor<WebFrontAuthOptions> options,
-            IWebFrontAuthValidateLoginService validateLoginService = null )
+            IWebFrontAuthValidateLoginService validateLoginService = null,
+            IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
             _options = options;
             _validateLoginService = validateLoginService;
+            _autoCreateAccountService = autoCreateAccountService;
 
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
@@ -373,12 +377,17 @@ namespace CK.AspNet.Auth
             List<KeyValuePair<string, StringValues>> userData = d == null
                                                                 ? new List<KeyValuePair<string, StringValues>>()
                                                                 : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, d );
+            string callingScheme = context.Scheme.Name;
+            object payload = _loginService.CreatePayload( context.HttpContext, monitor, callingScheme );
+            payloadConfigurator( (T)payload );
+
             var wfaSC = new WebFrontAuthLoginContext(
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
                                 WebFrontAuthLoginMode.StartLogin,
-                                context.Scheme.Name,
+                                callingScheme,
+                                payload,
                                 context.Properties,
                                 initialScheme,
                                 initialAuth,
@@ -387,11 +396,9 @@ namespace CK.AspNet.Auth
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
 
-            object payload = _loginService.CreatePayload( context.HttpContext, monitor, wfaSC.CallingScheme );
-            payloadConfigurator( (T)payload );
             return UnifiedLogin( monitor, wfaSC, actualLogin =>
             {
-                return _loginService.LoginAsync( context.HttpContext, monitor, wfaSC.CallingScheme, payload, actualLogin );
+                return _loginService.LoginAsync( context.HttpContext, monitor, callingScheme, payload, actualLogin );
             } );
         }
 
@@ -423,8 +430,22 @@ namespace CK.AspNet.Auth
                         }
                         else
                         {
-                            ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
-                            monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
+                            bool noAutoRegistrationError = true;
+                            if( _autoCreateAccountService != null )
+                            {
+                                UserLoginResult uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
+                                if( uAuto != null )
+                                {
+                                    noAutoRegistrationError = false;
+                                    if( !uAuto.IsSuccess ) ctx.SetError( uAuto );
+                                    else u = uAuto;
+                                }
+                            }
+                            if( noAutoRegistrationError )
+                            {
+                                ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
+                                monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
+                            }
                         }
                     }
                     else
@@ -435,6 +456,9 @@ namespace CK.AspNet.Auth
                 }
                 else
                 {
+                    // If a validation service is registered, the first call above
+                    // did not actually logged the user in (actualLogin = false).
+                    // We trigger the real login now if the validation service validates it.
                     if( _validateLoginService != null )
                     {
                         await _validateLoginService.ValidateLoginAsync( monitor, u.UserInfo, ctx );

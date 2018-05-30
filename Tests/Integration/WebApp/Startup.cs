@@ -27,7 +27,7 @@ namespace WebApp
     {
         public void ConfigureServices( IServiceCollection services )
         {
-            services.AddAuthentication()
+            services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme )
                 .AddGoogle( "Google", options =>
                 {
                     options.SignInScheme = WebFrontAuthOptions.OnlyAuthenticationScheme;
@@ -53,6 +53,7 @@ namespace WebApp
                 .AddWebFrontAuth();
             services.AddDefaultStObjMap( "CK.StObj.AutoAssembly" );
             services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
+            services.AddSingleton<IWebFrontAuthAutoCreateAccountService,AutoCreateAccountService>();
         }
 
         class OAuthEventHandler : OAuthEvents
@@ -62,7 +63,7 @@ namespace WebApp
                 var authService = c.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
                 return authService.HandleRemoteAuthentication<IUserGoogleInfo>( c, payload =>
                 {
-                    payload.GoogleAccountId = c.Principal.FindFirst( "AccountId" ).Value;
+                    payload.GoogleAccountId = c.Principal.FindFirst( ClaimTypes.NameIdentifier ).Value;
                 } );
             }
         }

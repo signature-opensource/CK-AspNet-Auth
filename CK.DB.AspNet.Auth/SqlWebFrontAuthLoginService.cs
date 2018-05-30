@@ -65,15 +65,7 @@ namespace CK.DB.AspNet.Auth
         {
             var c = ctx.GetSqlCallContext( monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
-            return await CreateUserLoginResultFromDatabase( c, r ); 
-        }
-
-        async Task<UserLoginResult> CreateUserLoginResultFromDatabase( ISqlCallContext ctx, LoginResult dbResult )
-        {
-            IUserInfo info = dbResult.IsSuccess
-                                ? _typeSystem.UserInfo.FromUserAuthInfo( await _authPackage.ReadUserAuthInfoAsync( ctx, 1, dbResult.UserId ) )
-                                : null;
-            return new UserLoginResult( info, dbResult.FailureCode, dbResult.FailureReason, dbResult.FailureCode == (int)KnownLoginFailureCode.UnregisteredUser );
+            return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r ); 
         }
 
         /// <summary>
@@ -108,7 +100,7 @@ namespace CK.DB.AspNet.Auth
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
             var c = ctx.GetSqlCallContext( monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
-            return await CreateUserLoginResultFromDatabase( c, r );
+            return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
         }
 
         IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )

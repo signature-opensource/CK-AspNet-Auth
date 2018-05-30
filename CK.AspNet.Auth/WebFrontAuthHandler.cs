@@ -157,9 +157,30 @@ namespace CK.AspNet.Auth
                                                 && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase ) );
             }
             var current = _authService.EnsureAuthenticationInfo( Context );
+            // We may test impersonation here: login is forbidden whenever the user is impersonated
+            // but since this check will be done by WebFrontAuthService.UnifiedLogin with an explicit
+            // error message returned, we don't handle this here.
 
             AuthenticationProperties p = new AuthenticationProperties();
             p.Items.Add( "WFA-S", scheme );
+
+            //// TODO: Dynamic scopes in AuthenticationProperties are handled ONLY by NetCore 2.1 framework.
+            ////       In 2.0, only "static" Options.Scopes are emitted.
+            //// The implemenation should rely on a new optional Service (like IWebFrontAuthDynamicScopeProvider).
+            ////
+            //class DynamicScopeChallenge
+            //{
+            //    // Default to "scope". Valid for OAuth. 
+            //    string ScopeKey = "scope";
+            //    IEnumerable<string> Scopes;
+            //}
+            //
+            //DynamicScopeChallenge dynamicScopes = _authService.GetDynamicScopes( scheme, current );
+            //if( dynamicScopes != null )
+            //{
+            //    p.Items.Add( dynamicScopes.ScopeKey, dynamicScopes.Scopes );
+            //}
+
             if( !current.IsNullOrNone() ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
             if( returnUrl != null ) p.Items.Add( "WFA-R", returnUrl );
             else if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, userData ) );
@@ -183,12 +204,15 @@ namespace CK.AspNet.Auth
                 ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
                 if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
+                    // The req.Payload my be null here. We map it to an empty object to preserve the invariant of the context.
+                    var payload = req.Payload ?? new Object();
                     var wfaSC = new WebFrontAuthLoginContext(
                                         Context,
                                         _authService,
                                         _typeSystem,
                                         WebFrontAuthLoginMode.UnsafeDirectLogin,
                                         req.Scheme,
+                                        payload,
                                         null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
@@ -198,7 +222,7 @@ namespace CK.AspNet.Auth
 
                     await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
                     {
-                        return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload, actualLogin );
+                        return _loginService.LoginAsync( Context, monitor, req.Scheme, payload, actualLogin );
                     } );
                 }
             }
@@ -272,6 +296,7 @@ namespace CK.AspNet.Auth
                     _typeSystem,
                     WebFrontAuthLoginMode.BasicLogin,
                     "Basic",
+                    Tuple.Create( req.UserName, req.Password ),
                     null,
                     "Basic",
                     _authService.EnsureAuthenticationInfo( Context ),
