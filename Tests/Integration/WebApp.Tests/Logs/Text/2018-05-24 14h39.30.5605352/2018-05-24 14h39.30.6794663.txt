@@ -1,0 +1,45 @@
+0~~~~                            ~~ Monitor: 2a167da0-c7e5-4377-a57f-54e391643f8f
+   2018-05-24 14h39.30.6234980 i Topic: CK.Monitoring.DispatcherSink
+   2018-05-24 14h39.30.6494834   > Initializing TextFile handler (MaxCountPerFile = 20000).
+   2018-05-24 14h39.30.6574798   < 
+1~~~~                            ~~ Monitor: f77e7d49-5d95-464d-aad8-b95e4e5f3b85
+   2018-05-24 14h39.35.2288166 i Folder 'C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\TestStores' has been cleaned up.
+   2018-05-24 14h39.35.2707937 i > Accessing null StObj map: invoking StObjMapLoading event.
+   2018-05-24 14h39.35.2907811 i | > Loading StObj map from CK.StObj.AutoAssembly.
+   2018-05-24 14h39.35.3407523 i | | > Loading dynamic 'CK.StObj.AutoAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.
+   2018-05-24 14h39.35.3817294 i | | | > Initializing CK.DB.Auth.Package : IAuthenticationDatabaseService
+   2018-05-24 14h39.35.3857269 i | | | <  | 1 conclusion:
+                                 | | |    | 3 providers: Google, Oidc, Basic
+   2018-05-24 14h39.35.3877256 i | | < 
+   2018-05-24 14h39.35.3877256 i | < 
+   2018-05-24 14h39.35.3877256 i < 
+2~~~~                            ~~ Monitor: 547c0ad0-cbcc-4c02-88c0-a0755b78122a
+   2018-05-24 14h39.36.2080286 i Done.
+3~~~~                            ~~ Monitor: 89d0b193-40c2-4b4c-b356-35e428fe11a8
+   2018-05-24 14h39.36.2420094 i Done.
+4~~~~                            ~~ Monitor: 582f387c-2f29-46e9-b445-091aee43d39b
+   2018-05-24 14h39.36.3579431 i Done.
+5~~~~                            ~~ Monitor: f53d3a6a-3864-4b9a-bd2f-8486f9f6b6bf
+   2018-05-24 14h39.36.5058553 i Done.
+6~~~~                            ~~ Monitor: 9e4f14b5-5c78-4409-9bc7-f0b45495baf8
+   2018-05-24 14h39.42.4677761 i Done.
+7~~~~                            ~~ Monitor: c0a7e388-f960-48cf-822a-67cf27c611b5
+   2018-05-24 14h39.42.5739490 i Done.
+8~~~~                            ~~ Monitor: a76aa06d-9b6d-42e9-b23c-6c1ccb47075d
+   2018-05-24 14h39.42.7289257 i Done.
+9~~~~                            ~~ Monitor: 8cfb8fb0-81a8-4195-af1e-9b40f249f450
+   2018-05-24 14h39.42.8858088 i Done.
+A~~~~                            ~~ Monitor: d0e26cdf-b799-4653-8735-9d8c615bbb16
+   2018-05-24 14h39.43.0344845 i Done.
+B~~~~                            ~~ Monitor: 8f9d5bfb-60c3-483b-98af-ba70d16f543b
+   2018-05-24 14h39.43.1734047 i Done.
+C~~~~                            ~~ Monitor: 43dd008c-4c7e-4f7d-a57f-24e52010047a
+   2018-05-24 14h39.43.3129868 i Done.
+1~ 2018-05-24 14h39.43.8910401   Successfully applied 'inject "set @FailureCode = 6; -- GloballyDisabledUser" into "CheckLoginFailure";'.
+   2018-05-24 14h39.43.8930402   > Parsing transformation result.
+   2018-05-24 14h39.43.9080301   < 
+D~~~~                            ~~ Monitor: 8a73064a-4179-4368-aefa-7ef19ecce834
+   2018-05-24 14h39.44.1928674 i Done.
+1~ 2018-05-24 14h39.44.2118583   Successfully applied 'inject "set @FailureCode = 6; -- GloballyDisabledUser" into "CheckLoginFailure";'.
+   2018-05-24 14h39.44.2118583   > Parsing transformation result.
+   2018-05-24 14h39.44.2118583   < 
