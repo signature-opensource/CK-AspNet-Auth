@@ -75,7 +75,7 @@ namespace WebApp
                 IActivityMonitor m = c.GetRequestMonitor();
                 ISqlCallContext sqlCtx = c.GetSqlCallContext();
                 var sqlCtx2 = c.GetSqlCallContext();
-                await c.Response.WriteAsync( $@"{{ ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null} }}" );
+                await c.Response.WriteAsync( $@"{{ ""IAmHere"": true, ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null} }}" );
                 return;
             }
             if( path.StartsWithSegments( "/quit" ) )
