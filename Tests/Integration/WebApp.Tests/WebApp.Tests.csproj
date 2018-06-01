@@ -4,7 +4,6 @@
     <TargetFramework>net461</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!--<PackageReference Include="System.Net.Http" Version="4.3.3" />-->
     <PackageReference Include="AngleSharp" Version="0.9.9" />
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTesterVersion)" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
@@ -12,7 +11,7 @@
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.Monitoring" Version="9.0.1-C0001-develop" />
+    <PackageReference Include="CK.Monitoring" Version="$(CKMonitoringVersion)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />

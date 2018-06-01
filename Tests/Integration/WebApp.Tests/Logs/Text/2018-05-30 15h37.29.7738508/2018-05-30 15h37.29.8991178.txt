@@ -1,0 +1,172 @@
+0~~~~                            ~~ Monitor: cbfbe7b1-ed96-4676-949d-380e73f1b83c
+   2018-05-30 15h37.29.8287508 i Topic: CK.Monitoring.DispatcherSink
+   2018-05-30 15h37.29.8731699   > Initializing TextFile handler (MaxCountPerFile = 20000).
+   2018-05-30 15h37.29.8816691   < 
+1~~~~                            ~~ Monitor: c5484c99-47ed-4d3a-8e4b-a29bf7b39958
+   2018-05-30 15h37.30.0180204 i Folder 'C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\TestStores' has been cleaned up.
+   2018-05-30 15h37.30.2717793 i Using default connection string: Server=.;Database=master;Integrated Security=SSPI
+   2018-05-30 15h37.31.7105047 i > Running DBSetup on Database:TEST_WEB_APP_AUTH, Collation:Latin1_General_100_BIN2, CompatibilityLevel:130.
+   2018-05-30 15h37.31.7309638 i | > Ensuring database 'Database:TEST_WEB_APP_AUTH, Collation:Latin1_General_100_BIN2, CompatibilityLevel:130'.
+   2018-05-30 15h37.32.6402752 i | <  | 1 conclusion:
+                                 |    | Database already exists, collation and compatiblity level match.
+   2018-05-30 15h37.32.7131420 i | > Running StObjSetup.
+   2018-05-30 15h37.32.8873141 i | | No 'CKSetup/DefaultBinPaths' configuration. Using current BinFolder.
+   2018-05-30 15h37.32.9996042 i | | > Running Setup on 'C:\Dev\LocalFeed\CI\CKSetupStore' for the first time.
+   2018-05-30 15h37.32.9996042 i | | | No 'CKSetup/AutoRegisterLocalComponentPaths' components specified.
+   2018-05-30 15h37.32.9996042 i | | < 
+   2018-05-30 15h37.33.0001094 i | | Using store 'C:\Dev\LocalFeed\CI\CKSetupStore'.
+   2018-05-30 15h37.33.0001094 i | | Using remote 'file:///C:/Dev/LocalFeed/CI/CKSetupStore'.
+   2018-05-30 15h37.33.3534466   | | Opened store with 2 components.
+   2018-05-30 15h37.33.3539455   | | Local store opened on : 'C:\Dev\LocalFeed\CI\CKSetupStore'.
+   2018-05-30 15h37.33.3978638   | | > Creating client remote store on 'file:///C:/Dev/LocalFeed/CI/CKSetupStore'.
+   2018-05-30 15h37.33.4028556   | | | Opened store with 2 components.
+   2018-05-30 15h37.33.4028556   | | | Local store opened on : 'C:\Dev\LocalFeed\CI\CKSetupStore'.
+   2018-05-30 15h37.33.4033545   | | < 
+   2018-05-30 15h37.33.4063488 i | | > Running Setup.
+   2018-05-30 15h37.33.4298053   | | | > Initializing SetupContext (ignoring signatures).
+   2018-05-30 15h37.33.7576967 i | | | | <Root>
+                                 | | | |     <CKSetup>
+                                 | | | |       <BinPaths>
+                                 | | | |         <BinPath>C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461</BinPath>
+                                 | | | |       </BinPaths>
+                                 | | | |       <Dependencies />
+                                 | | | |       <EngineAssemblyQualifiedName>CK.Setup.StObjEngine, CK.StObj.Engine</EngineAssemblyQualifiedName>
+                                 | | | |     </CKSetup>
+                                 | | | |     <Configuration>
+                                 | | | |       <AppContextAssemblyGeneratedDirectoryTarget>C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461</AppContextAssemblyGeneratedDirectoryTarget>
+                                 | | | |       <GenerateSourceFiles>true</GenerateSourceFiles>
+                                 | | | |       <Assemblies />
+                                 | | | |       <Types />
+                                 | | | |       <Aspect Type="CK.Setup.SetupableAspectConfiguration, CK.Setupable.Model" Version="1" />
+                                 | | | |       <Aspect Type="CK.Setup.SqlSetupAspectConfiguration, CK.SqlServer.Setup.Model">
+                                 | | | |         <Databases />
+                                 | | | |         <DefaultDatabaseConnectionString>Data Source=.;Initial Catalog=TEST_WEB_APP_AUTH;Integrated Security=True</DefaultDatabaseConnectionString>
+                                 | | | |         <GlobalResolution>true</GlobalResolution>
+                                 | | | |       </Aspect>
+                                 | | | |     </Configuration>
+                                 | | | |   </Root>
+   2018-05-30 15h37.33.7576967 i | | | | Configuration BasePath is empty: using current directory 'C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461'.
+   2018-05-30 15h37.33.7806548 i | | | | > Reading binary folders.
+   2018-05-30 15h37.33.8195854 i | | | | | > Reading files from 'C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461'.
+   2018-05-30 15h37.36.2667501 i | | | | | < 
+   2018-05-30 15h37.36.2692473 i | | | | <  | 1 conclusion:
+                                 | | | |    | 1 folders read.
+   2018-05-30 15h37.36.6156031 i | | | | Created temporary Working Directory: C:\Users\olivi\AppData\Local\Temp\CKSetup2018-05-30 15h37.36.6126083\.
+   2018-05-30 15h37.36.6161029   | | | < 
+   2018-05-30 15h37.36.6245874 i | | | > Resolving runtime support for 'C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461\'.
+   2018-05-30 15h37.36.6295773 i | | | | > Creating runtime dependencies resolver for C:\Dev\CK-AspNet-Projects\CK-AspNet-Auth\Tests\Integration\WebApp.Tests\bin\Debug\net461\.
+   2018-05-30 15h37.36.6485415 i | | | | | > Detecting runtimes for: CK.Setupable.Model/Net461, CK.SqlServer.Setup.Model/Net461, CK.StObj.Model/Net461
+   2018-05-30 15h37.36.7239015 i | | | | | | Multiple possible runtime: Net461, Net462, Net47.
+   2018-05-30 15h37.36.7343838 i | | | | | <  | 1 conclusion:
+                                 | | | | |    | Lowest selected runtime: Net461.
+   2018-05-30 15h37.36.8207211 i | | | | < 
+   2018-05-30 15h37.36.8227167 i | | | | > Initializing root dependencies.
+   2018-05-30 15h37.36.8396852   | | | | | Adding required dependency -> CK.Setupable.Runtime/6.0.1-C0006-local.
+   2018-05-30 15h37.36.8436805   | | | | | Adding required dependency -> CK.SqlServer.Setup.Runtime/6.0.1-C0006-local.
+   2018-05-30 15h37.36.8436805   | | | | | Adding required dependency -> CK.StObj.Runtime/6.0.1-C0006-local.
+   2018-05-30 15h37.36.8461732   | | | | | Adding required dependency -> CKSetup.Runner/6.0.1-C0008-local.
+   2018-05-30 15h37.36.8496669 i | | | | | > Using donwloader.
+   2018-05-30 15h37.36.8601475 i | | | | | | <Missing Runtime="Net461">
+                                 | | | | | |     <Dependency Name="CK.Setupable.Runtime" Version="6.0.1-C0006-local" />
+                                 | | | | | |     <Dependency Name="CK.SqlServer.Setup.Runtime" Version="6.0.1-C0006-local" />
+                                 | | | | | |     <Dependency Name="CK.StObj.Runtime" Version="6.0.1-C0006-local" />
+                                 | | | | | |     <Dependency Name="CKSetup.Runner" Version="6.0.1-C0008-local" />
+                                 | | | | | |   </Missing>
+   2018-05-30 15h37.36.8621444   | | | | | | > Creating client remote store on 'file:///C:/Dev/LocalFeed/Release/CKSetupStore'.
+   2018-05-30 15h37.36.8761173   | | | | | | | Opened store with 30 components.
+   2018-05-30 15h37.36.8761173   | | | | | | | Local store opened on : 'C:\Dev\LocalFeed\Release\CKSetupStore'.
+   2018-05-30 15h37.36.8761173   | | | | | | < 
+   2018-05-30 15h37.36.8776149 i | | | | | | > Using prototype store (file:///C:/Dev/LocalFeed/Release/CKSetupStore) first and then specified remote store (file:///C:/Dev/LocalFeed/CI/CKSetupStore) if needed.
+   2018-05-30 15h37.36.8831069   | | | | | | | > Download from store: file:///C:/Dev/LocalFeed/Release/CKSetupStore.
+   2018-05-30 15h37.36.8885962 i | | | | | | | | > Finding locally available components.
+   2018-05-30 15h37.36.8885962 i | | | | | | | | | > Resolving dependencies for Net461.
+   2018-05-30 15h37.36.8890951 W | | | | | | | | | | Not found: -> CK.Setupable.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.36.8895931 W | | | | | | | | | | Not found: -> CK.SqlServer.Setup.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.36.8895931 W | | | | | | | | | | Not found: -> CK.StObj.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.36.8895931 W | | | | | | | | | | Not found: -> CKSetup.Runner/6.0.1-C0008-local dependency.
+   2018-05-30 15h37.36.8895931 i | | | | | | | | | < 
+   2018-05-30 15h37.36.8895931 i | | | | | | | | < 
+   2018-05-30 15h37.36.8950828   | | | | | | | | > Creating client remote store on 'https://cksetup.invenietis.net/'.
+   2018-05-30 15h37.36.8975778   | | | | | | | | < 
+   2018-05-30 15h37.36.8975778 i | | | | | | | | > Requesting Prototype store to complete the export.
+   2018-05-30 15h37.36.8980767 i | | | | | | | | | > No remote store has been specified. Using prototype store only (https://cksetup.invenietis.net/).
+   2018-05-30 15h37.36.8980767   | | | | | | | | | | > Download from store: https://cksetup.invenietis.net/.
+   2018-05-30 15h37.47.3363420 i | | | | | | | | | | | > Starting import from https://cksetup.invenietis.net/.
+   2018-05-30 15h37.47.3373670 i | | | | | | | | | | | | > Starting components import.
+   2018-05-30 15h37.47.3383563 i | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.3456547 i | | | | | | | | | | | < 
+   2018-05-30 15h37.47.3456547   | | | | | | | | | | < 
+   2018-05-30 15h37.47.3456547 i | | | | | | | | | < 
+   2018-05-30 15h37.47.3456547 i | | | | | | | | < 
+   2018-05-30 15h37.47.3471385 i | | | | | | | | > Starting import from file:///C:/Dev/LocalFeed/Release/CKSetupStore.
+   2018-05-30 15h37.47.3471385 i | | | | | | | | | > Starting components import.
+   2018-05-30 15h37.47.3471385 i | | | | | | | | | < 
+   2018-05-30 15h37.47.3471385 i | | | | | | | | < 
+   2018-05-30 15h37.47.3471385   | | | | | | | < 
+   2018-05-30 15h37.47.3506317   | | | | | | | > Download from store: file:///C:/Dev/LocalFeed/CI/CKSetupStore.
+   2018-05-30 15h37.47.3506317 i | | | | | | | | > Finding locally available components.
+   2018-05-30 15h37.47.3506317 i | | | | | | | | | > Resolving dependencies for Net461.
+   2018-05-30 15h37.47.3506317 W | | | | | | | | | | Not found: -> CK.Setupable.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3506317 W | | | | | | | | | | Not found: -> CK.SqlServer.Setup.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3506317 W | | | | | | | | | | Not found: -> CK.StObj.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3506317 W | | | | | | | | | | Not found: -> CKSetup.Runner/6.0.1-C0008-local dependency.
+   2018-05-30 15h37.47.3506317 i | | | | | | | | | < 
+   2018-05-30 15h37.47.3506317 i | | | | | | | | < 
+   2018-05-30 15h37.47.3506317   | | | | | | | | > Creating client remote store on 'file:///C:/Dev/LocalFeed/Release/CKSetupStore'.
+   2018-05-30 15h37.47.3596146   | | | | | | | | | Opened store with 30 components.
+   2018-05-30 15h37.47.3596146   | | | | | | | | | Local store opened on : 'C:\Dev\LocalFeed\Release\CKSetupStore'.
+   2018-05-30 15h37.47.3596146   | | | | | | | | < 
+   2018-05-30 15h37.47.3596146 i | | | | | | | | > Requesting Prototype store to complete the export.
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | > No remote store has been specified. Using prototype store only (file:///C:/Dev/LocalFeed/Release/CKSetupStore).
+   2018-05-30 15h37.47.3596146   | | | | | | | | | | > Download from store: file:///C:/Dev/LocalFeed/Release/CKSetupStore.
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | > Finding locally available components.
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | | > Resolving dependencies for Net461.
+   2018-05-30 15h37.47.3596146 W | | | | | | | | | | | | | Not found: -> CK.Setupable.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3596146 W | | | | | | | | | | | | | Not found: -> CK.SqlServer.Setup.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3596146 W | | | | | | | | | | | | | Not found: -> CK.StObj.Runtime/6.0.1-C0006-local dependency.
+   2018-05-30 15h37.47.3596146 W | | | | | | | | | | | | | Not found: -> CKSetup.Runner/6.0.1-C0008-local dependency.
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | < 
+   2018-05-30 15h37.47.3596146   | | | | | | | | | | | > Creating client remote store on 'https://cksetup.invenietis.net/'.
+   2018-05-30 15h37.47.3596146   | | | | | | | | | | | < 
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | > Requesting Prototype store to complete the export.
+   2018-05-30 15h37.47.3596146 i | | | | | | | | | | | | > No remote store has been specified. Using prototype store only (https://cksetup.invenietis.net/).
+   2018-05-30 15h37.47.3596146   | | | | | | | | | | | | | > Download from store: https://cksetup.invenietis.net/.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | | | > Starting import from https://cksetup.invenietis.net/.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | | | | > Starting components import.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421   | | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | > Starting import from file:///C:/Dev/LocalFeed/Release/CKSetupStore.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | > Starting components import.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421   | | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | > Starting import from file:///C:/Dev/LocalFeed/CI/CKSetupStore.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | > Starting components import.
+   2018-05-30 15h37.47.4580421 i | | | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | | | < 
+   2018-05-30 15h37.47.4580421   | | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | | < 
+   2018-05-30 15h37.47.4580421 i | | | | | < 
+   2018-05-30 15h37.47.4595401 E | | | | | Missing required dependencies: -> CK.Setupable.Runtime/6.0.1-C0006-local, -> CK.SqlServer.Setup.Runtime/6.0.1-C0006-local, -> CK.StObj.Runtime/6.0.1-C0006-local, -> CKSetup.Runner/6.0.1-C0008-local.
+   2018-05-30 15h37.47.4595401 i | | | | < 
+   2018-05-30 15h37.47.4595401 i | | | < 
+   2018-05-30 15h37.47.4605384 i | | | > Deleting temporary Working Directory.
+   2018-05-30 15h37.47.4610364 i | | | < 
+   2018-05-30 15h37.47.4610364 i | | <  | 1 conclusion:
+                                 | |    | Failed
+   2018-05-30 15h37.47.4625344 i | | > Closing Store.
+   2018-05-30 15h37.47.4635322 i | | | > Closing Store.
+   2018-05-30 15h37.47.4885038 i | | | < 
+   2018-05-30 15h37.47.4885038 i | | < 
+   2018-05-30 15h37.47.4885038 i | | > Closing Store.
+   2018-05-30 15h37.47.4885038 i | | | > Closing Store.
+   2018-05-30 15h37.47.4890032 i | | | < 
+   2018-05-30 15h37.47.4890032 i | | < 
+   2018-05-30 15h37.47.4890032 i | < 
+   2018-05-30 15h37.47.4890032 i < 

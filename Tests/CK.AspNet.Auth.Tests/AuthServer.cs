@@ -29,7 +29,7 @@ namespace CK.AspNet.Auth.Tests
             Action<IServiceCollection> configureServices = null,
             Action<IApplicationBuilder> configureApplication = null )
         {
-            var b = WebHostBuilderFactory.Create( null, null,
+            var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
