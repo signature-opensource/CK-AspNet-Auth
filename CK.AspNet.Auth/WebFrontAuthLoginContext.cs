@@ -22,7 +22,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext
+    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext, IWebFrontAuthAutoCreateAccountContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
@@ -38,17 +38,20 @@ namespace CK.AspNet.Auth
             IAuthenticationTypeSystem typeSystem,
             WebFrontAuthLoginMode loginMode,
             string callingScheme,
+            object payload,
             AuthenticationProperties authProps,
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
             string returnUrl,
             List<KeyValuePair<string, StringValues>> userData )
         {
+            Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null );
             HttpContext = ctx;
             _authenticationService = authService;
             AuthenticationTypeSystem = typeSystem;
             LoginMode = loginMode;
             CallingScheme = callingScheme;
+            Payload = payload;
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
@@ -95,6 +98,12 @@ namespace CK.AspNet.Auth
         /// This is usually the same as the <see cref="InitialScheme"/>.
         /// </summary>
         public string CallingScheme { get; }
+
+        /// <summary>
+        /// Gets the provider payload (type is provider dependent).
+        /// This is never null but may be an empty object when unsafe login is used with no payload.
+        /// </summary>
+        public object Payload { get; }
 
         /// <summary>
         /// Gets the current authentication when .webfront/c/starLogin has been called

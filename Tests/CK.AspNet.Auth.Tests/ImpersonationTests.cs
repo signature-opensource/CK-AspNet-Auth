@@ -17,7 +17,7 @@ namespace CK.AspNet.Auth.Tests
         [Test]
         public async Task when_no_impersonation_service_is_registered_404_NotFound()
         {
-            using( var s = new AuthServer( ) )
+            using( var s = new AuthServer() )
             {
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );

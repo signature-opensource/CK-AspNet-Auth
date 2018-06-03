@@ -85,7 +85,9 @@ namespace WebApp
             await WriteHtmlAsync( c.Response, async r =>
             {
                 await r.WriteAsync( "<h1>Actions</h1>" );
-                await r.WriteAsync( @"<a href=""/.webfront/c/startLogin?scheme=oidc"">Login via OpenIdConnect</a><br>" );
+                await r.WriteAsync( @"Login via Google - <a href=""/.webfront/c/startLogin?scheme=Google&returnUrl="">[inline]</a> <a href=""/.webfront/c/startLogin?scheme=Google"">[popup]</a><br>" );
+                await r.WriteAsync( @"Login via OpenIdConnect <a href=""/.webfront/c/startLogin?scheme=oidc&returnUrl="">[inline]</a> <a href=""/.webfront/c/startLogin?scheme=oidc"">[popup]</a><br>" );
+                await r.WriteAsync( @"<a href=""/.webfront/c/refreh"">Refresh</a> <a href=""/.webfront/c/refreh?shemes"">Refresh with schemes</a><br>" );
                 await r.WriteAsync( @"<a href=""/.webfront/c/logout"">Logout</a><br>" );
             } );
         }

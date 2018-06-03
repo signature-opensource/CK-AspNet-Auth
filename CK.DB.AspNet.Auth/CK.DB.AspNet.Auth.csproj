@@ -16,4 +16,8 @@
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="obj\" />
+  </ItemGroup>
+
 </Project>
