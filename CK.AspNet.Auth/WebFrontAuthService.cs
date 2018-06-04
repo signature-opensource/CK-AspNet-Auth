@@ -393,7 +393,7 @@ namespace CK.AspNet.Auth
                                 initialScheme,
                                 initialAuth,
                                 returnUrl,
-                                callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}/",
+                                callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}",
                                 userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
