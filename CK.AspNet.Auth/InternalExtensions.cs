@@ -44,9 +44,8 @@ namespace CK.AspNet.Auth
             return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
         }
 
-        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o )
+        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string callerSchemeAndHost )
         {
-            var req = @this.HttpContext.Request;
             @this.StatusCode = StatusCodes.Status200OK;
             @this.ContentType = "text/html";
             var oS = o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}";
@@ -59,7 +58,7 @@ namespace CK.AspNet.Auth
 <body>
 <script>
 (function(){{
-window.opener.postMessage( {{""WFA"": ""WFA"", ""data"": {oS} }}, '{req.Scheme}://{req.Host}/');
+window.opener.postMessage( {{""WFA"": ""WFA"", ""data"": {oS} }}, '{callerSchemeAndHost}/');
 window.close();
 }})();
 </script>

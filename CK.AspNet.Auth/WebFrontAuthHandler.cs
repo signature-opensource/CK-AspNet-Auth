@@ -163,6 +163,7 @@ namespace CK.AspNet.Auth
 
             AuthenticationProperties p = new AuthenticationProperties();
             p.Items.Add( "WFA-S", scheme );
+            p.Items.Add( "WFA-H", $"{Request.Scheme}://{Request.Host}" );
 
             //// TODO: Dynamic scopes in AuthenticationProperties are handled ONLY by NetCore 2.1 framework.
             ////       In 2.0, only "static" Options.Scopes are emitted.
@@ -216,6 +217,7 @@ namespace CK.AspNet.Auth
                                         null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
+                                        null,
                                         null,
                                         req.UserData.ToList()
                                         );
@@ -300,6 +302,7 @@ namespace CK.AspNet.Auth
                     null,
                     "Basic",
                     _authService.EnsureAuthenticationInfo( Context ),
+                    null,
                     null,
                     req.UserData.ToList()
                     );
