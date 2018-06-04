@@ -145,11 +145,14 @@ namespace CK.AspNet.Auth
                 return true;
             }
             string returnUrl = Request.Query["returnUrl"];
-            string callerOrigin = Request.Form["callerOrigin"];
-            if( callerOrigin == null ) callerOrigin = Request.Query["callerOrigin"];
+            string callerOrigin = Request.Query["callerOrigin"];
 
             IEnumerable<KeyValuePair<string, StringValues>> userData;
-            if( HttpMethods.IsPost( Request.Method ) ) userData = Request.Form;
+            if( HttpMethods.IsPost( Request.Method ) )
+            {
+                if( callerOrigin == null ) callerOrigin = Request.Form["callerOrigin"];
+                userData = Request.Form;
+            }
             else userData = Request.Query;
             userData = userData.Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
