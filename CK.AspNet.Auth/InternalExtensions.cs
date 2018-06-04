@@ -44,7 +44,7 @@ namespace CK.AspNet.Auth
             return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
         }
 
-        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string callerSchemeAndHost )
+        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string callerOrigin )
         {
             @this.StatusCode = StatusCodes.Status200OK;
             @this.ContentType = "text/html";
@@ -58,7 +58,7 @@ namespace CK.AspNet.Auth
 <body>
 <script>
 (function(){{
-window.opener.postMessage( {{""WFA"": ""WFA"", ""data"": {oS} }}, '{callerSchemeAndHost}/');
+window.opener.postMessage( {{""WFA"": ""WFA"", ""data"": {oS} }}, '{callerOrigin}');
 window.close();
 }})();
 </script>
@@ -71,7 +71,7 @@ window.close();
         static string GetBreachPadding()
         {
             Random random = new Random();
-            byte[] data = new byte[random.Next( 64, 256 )];
+            byte[] data = new byte[random.Next( 10, 256 )];
             random.NextBytes( data );
             return Convert.ToBase64String( data );
         }
