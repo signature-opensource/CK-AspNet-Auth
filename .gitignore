@@ -258,3 +258,4 @@ Back/Tests/Integration/WebApp/WebAppLogs/
 TestResult.*.xml
 Logs/
 CKSetupWorkingDir/
+/Tests/Integration/WebApp.Tests/Logs
