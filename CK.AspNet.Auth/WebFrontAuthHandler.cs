@@ -145,17 +145,18 @@ namespace CK.AspNet.Auth
                 return true;
             }
             string returnUrl = Request.Query["returnUrl"];
-            IEnumerable<KeyValuePair<string, StringValues>> userData = null;
+            string callerOrigin = Request.Query["callerOrigin"];
+
+            IEnumerable<KeyValuePair<string, StringValues>> userData;
             if( HttpMethods.IsPost( Request.Method ) )
             {
+                if( callerOrigin == null ) callerOrigin = Request.Form["callerOrigin"];
                 userData = Request.Form;
             }
-            else
-            {
-                userData = Request.Query
-                                    .Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
-                                                && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase ) );
-            }
+            else userData = Request.Query;
+            userData = userData.Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
+                                            && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
+                                            && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase ) );
             var current = _authService.EnsureAuthenticationInfo( Context );
             // We may test impersonation here: login is forbidden whenever the user is impersonated
             // but since this check will be done by WebFrontAuthService.UnifiedLogin with an explicit
@@ -181,6 +182,7 @@ namespace CK.AspNet.Auth
             //    p.Items.Add( dynamicScopes.ScopeKey, dynamicScopes.Scopes );
             //}
 
+            if( !String.IsNullOrWhiteSpace( callerOrigin ) ) p.Items.Add( "WFA-O", callerOrigin );
             if( !current.IsNullOrNone() ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
             if( returnUrl != null ) p.Items.Add( "WFA-R", returnUrl );
             else if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, userData ) );
@@ -216,6 +218,7 @@ namespace CK.AspNet.Auth
                                         null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
+                                        null,
                                         null,
                                         req.UserData.ToList()
                                         );
@@ -300,6 +303,7 @@ namespace CK.AspNet.Auth
                     null,
                     "Basic",
                     _authService.EnsureAuthenticationInfo( Context ),
+                    null,
                     null,
                     req.UserData.ToList()
                     );

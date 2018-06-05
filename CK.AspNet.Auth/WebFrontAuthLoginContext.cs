@@ -43,6 +43,7 @@ namespace CK.AspNet.Auth
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
             string returnUrl,
+            string callerOrigin,
             List<KeyValuePair<string, StringValues>> userData )
         {
             Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null );
@@ -56,6 +57,7 @@ namespace CK.AspNet.Auth
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
             ReturnUrl = returnUrl;
+            CallerOrigin = callerOrigin;
             UserData = userData;
         }
 
@@ -86,6 +88,13 @@ namespace CK.AspNet.Auth
         /// Null otherwise.
         /// </summary>
         public string ReturnUrl { get; }
+
+        /// <summary>
+        /// Gets the caller scheme and host.
+        /// Not null only if '/c/startLogin' has been called.
+        /// If startLogin has been called without 'callerOrigin' parameter, this defaults to the request's scheme and host.
+        /// </summary>
+        public string CallerOrigin { get; }
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
@@ -227,7 +236,7 @@ namespace CK.AspNet.Auth
             if( ReturnUrl != null )
             {
                 // "inline" mode.
-                var caller = new Uri( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" );
+                var caller = new Uri( CallerOrigin );
                 var target = new Uri( caller, ReturnUrl );
                 HttpContext.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
@@ -238,7 +247,7 @@ namespace CK.AspNet.Auth
                             new JProperty( "callingScheme", CallingScheme ) );
             data.Add( UserDataToJProperty() );
             r.Response.Merge( data );
-            return HttpContext.Response.WriteWindowPostMessageAsync( r.Response );
+            return HttpContext.Response.WriteWindowPostMessageAsync( r.Response, CallerOrigin );
         }
 
         Task SendRemoteAuthenticationError()
@@ -259,12 +268,12 @@ namespace CK.AspNet.Auth
                 if( InitialScheme != null ) parameters = parameters.Add( "initialScheme", InitialScheme );
                 if( CallingScheme != null ) parameters = parameters.Add( "callingScheme", CallingScheme );
 
-                var caller = new Uri( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" );
+                var caller = new Uri( CallerOrigin );
                 var target = new Uri( caller, path + parameters.ToString() );
                 HttpContext.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
-            return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse() );
+            return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse(), CallerOrigin );
         }
 
         JObject CreateErrorResponse()
