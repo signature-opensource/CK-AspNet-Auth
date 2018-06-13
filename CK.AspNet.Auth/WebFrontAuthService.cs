@@ -365,11 +365,12 @@ namespace CK.AspNet.Auth
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
             var monitor = context.HttpContext.GetRequestMonitor();
-            string initialScheme, c, d, returnUrl;
+            string initialScheme, c, d, returnUrl, callerOrigin;
             context.Properties.Items.TryGetValue( "WFA-S", out initialScheme );
             context.Properties.Items.TryGetValue( "WFA-C", out c );
             context.Properties.Items.TryGetValue( "WFA-D", out d );
             context.Properties.Items.TryGetValue( "WFA-R", out returnUrl );
+            context.Properties.Items.TryGetValue( "WFA-O", out callerOrigin );
 
             IAuthenticationInfo initialAuth = c == null
                                         ? _typeSystem.AuthenticationInfo.None
@@ -392,6 +393,7 @@ namespace CK.AspNet.Auth
                                 initialScheme,
                                 initialAuth,
                                 returnUrl,
+                                callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}",
                                 userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();

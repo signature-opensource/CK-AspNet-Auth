@@ -256,3 +256,6 @@ Tests/Integration/WebApp/WebAppLogs/
 Tests/Integration/WebAppLogs/
 Back/Tests/Integration/WebApp/WebAppLogs/
 TestResult.*.xml
+Logs/
+CKSetupWorkingDir/
+/Tests/Integration/WebApp.Tests/Logs

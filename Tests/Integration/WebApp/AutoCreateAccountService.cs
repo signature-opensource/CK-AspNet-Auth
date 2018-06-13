@@ -29,16 +29,14 @@ namespace WebApp
         {
             //
             // This is for OpenIdConnectTests.Bob_login_on_webfront_returns_User_NoAutoRegistration test.
-            //
+            // Bob must not be created in the database.
             if( context.CallingScheme == "oidc" ) return null;
-            using( var ctx = new SqlStandardCallContext() )
-            {
-                int idUser = await _userTable.CreateUserAsync( ctx, 1, Guid.NewGuid().ToString() );
-                IGenericAuthenticationProvider p = _dbAuth.FindProvider( context.CallingScheme );
-                UCLResult dbResult = await p.CreateOrUpdateUserAsync( ctx, 1, idUser, context.Payload, UCLMode.CreateOnly | UCLMode.WithActualLogin );
-                if( dbResult.OperationResult != UCResult.Created ) return null;
-                return await _dbAuth.CreateUserLoginResultFromDatabase( ctx, _typeSystem, dbResult.LoginResult );
-            }
+            ISqlCallContext ctx = context.HttpContext.GetSqlCallContext();
+            int idUser = await _userTable.CreateUserAsync( ctx, 1, Guid.NewGuid().ToString() );
+            IGenericAuthenticationProvider p = _dbAuth.FindProvider( context.CallingScheme );
+            UCLResult dbResult = await p.CreateOrUpdateUserAsync( ctx, 1, idUser, context.Payload, UCLMode.CreateOnly | UCLMode.WithActualLogin );
+            if( dbResult.OperationResult != UCResult.Created ) return null;
+            return await _dbAuth.CreateUserLoginResultFromDatabase( ctx, _typeSystem, dbResult.LoginResult );
         }
     }
 }

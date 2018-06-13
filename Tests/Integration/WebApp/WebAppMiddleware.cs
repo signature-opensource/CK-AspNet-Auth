@@ -18,6 +18,7 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using CK.Auth;
 using Microsoft.AspNetCore.Hosting;
+using CK.Core;
 
 namespace WebApp
 {
@@ -71,8 +72,10 @@ namespace WebApp
             {
                 c.Response.StatusCode = StatusCodes.Status200OK;
                 c.Response.ContentType = "application/json";
-                JObject o = JObject.Parse( @"{ ""IAmHere"": true }" );
-                await c.Response.WriteAsync( o.ToString() );
+                IActivityMonitor m = c.GetRequestMonitor();
+                ISqlCallContext sqlCtx = c.GetSqlCallContext();
+                var sqlCtx2 = c.GetSqlCallContext();
+                await c.Response.WriteAsync( $@"{{ ""IAmHere"": true, ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null} }}" );
                 return;
             }
             if( path.StartsWithSegments( "/quit" ) )
@@ -87,8 +90,10 @@ namespace WebApp
                 await r.WriteAsync( "<h1>Actions</h1>" );
                 await r.WriteAsync( @"Login via Google - <a href=""/.webfront/c/startLogin?scheme=Google&returnUrl="">[inline]</a> <a href=""/.webfront/c/startLogin?scheme=Google"">[popup]</a><br>" );
                 await r.WriteAsync( @"Login via OpenIdConnect <a href=""/.webfront/c/startLogin?scheme=oidc&returnUrl="">[inline]</a> <a href=""/.webfront/c/startLogin?scheme=oidc"">[popup]</a><br>" );
-                await r.WriteAsync( @"<a href=""/.webfront/c/refreh"">Refresh</a> <a href=""/.webfront/c/refreh?shemes"">Refresh with schemes</a><br>" );
-                await r.WriteAsync( @"<a href=""/.webfront/c/logout"">Logout</a><br>" );
+                await r.WriteAsync( @"<a href=""/.webfront/c/refresh"">[Refresh]</a> <a href=""/.webfront/c/refresh?shemes"">[Refresh with schemes]</a><br>" );
+                await r.WriteAsync( @"<a href=""/.webfront/c/logout"">[Logout]</a><br>" );
+                await r.WriteAsync( @"<a href=""/test"">[Test]</a><br>" );
+                await r.WriteAsync( @"<a href=""/quit"">[Quit]</a><br>" );
             } );
         }
 
