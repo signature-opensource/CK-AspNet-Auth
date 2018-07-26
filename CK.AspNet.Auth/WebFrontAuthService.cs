@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,6 +12,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using System.Globalization;
+using System.Linq;
 
 namespace CK.AspNet.Auth
 {
@@ -51,6 +52,7 @@ namespace CK.AspNet.Auth
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
         readonly IWebFrontAuthValidateLoginService _validateLoginService;
         readonly IWebFrontAuthAutoCreateAccountService _autoCreateAccountService;
+        readonly IWebFrontAuthDynamicScopeProvider _dynamicScopeProvider;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -61,19 +63,22 @@ namespace CK.AspNet.Auth
         /// <param name="options">Monitored options.</param>
         /// <param name="validateLoginService">Optional service that validates logins.</param>
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
+        /// <param name="dynamicScopeProvider">Optional service to suport scope augmentation.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
             IDataProtectionProvider dataProtectionProvider,
             IOptionsMonitor<WebFrontAuthOptions> options,
             IWebFrontAuthValidateLoginService validateLoginService = null,
-            IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null )
+            IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null,
+            IWebFrontAuthDynamicScopeProvider dynamicScopeProvider = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
             _options = options;
             _validateLoginService = validateLoginService;
             _autoCreateAccountService = autoCreateAccountService;
+            _dynamicScopeProvider = dynamicScopeProvider;
 
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
@@ -321,6 +326,84 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
+        /// Centralized way to return an error in 
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="returnUrl"></param>
+        /// <param name="callerOrigin"></param>
+        /// <param name="errorId"></param>
+        /// <param name="errorText"></param>
+        /// <param name="initialScheme"></param>
+        /// <param name="callingScheme"></param>
+        /// <param name="userData"></param>
+        /// <param name="failedLogin"></param>
+        /// <returns></returns>
+        internal Task SendRemoteAuthenticationError(
+            HttpContext c,
+            string returnUrl,
+            string callerOrigin,
+            string errorId,
+            string errorText,
+            string initialScheme = null,
+            string callingScheme = null,
+            IEnumerable<KeyValuePair<string, StringValues>> userData = null,
+            UserLoginResult failedLogin = null )
+        {
+            if( returnUrl != null )
+            {
+                int idxQuery = returnUrl.IndexOf( '?' );
+                var path = idxQuery > 0
+                            ? returnUrl.Substring( 0, idxQuery )
+                            : string.Empty;
+                var parameters = idxQuery > 0
+                                    ? new QueryString( returnUrl.Substring( idxQuery ) )
+                                    : new QueryString();
+                parameters = parameters.Add( "errorId", errorId )
+                                       .Add( "errorText", errorText );
+                int loginFailureCode = failedLogin?.LoginFailureCode ?? 0;
+                if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
+                if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );
+                if( callingScheme != null ) parameters = parameters.Add( "callingScheme", callingScheme );
+
+                var caller = new Uri( callerOrigin );
+                var target = new Uri( caller, path + parameters.ToString() );
+                c.Response.Redirect( target.ToString() );
+                return Task.CompletedTask;
+            }
+            JObject errObj = CreateErrorAuthResponse( c, errorId, errorText, initialScheme, callingScheme );
+            return c.Response.WriteWindowPostMessageAsync( errObj, callerOrigin );
+        }
+
+        /// <summary>
+        /// Creates a JSON response error object.
+        /// </summary>
+        /// <param name="c">The context.</param>
+        /// <param name="errorId">The error identifier.</param>
+        /// <param name="errorText">The error text.</param>
+        /// <param name="initialScheme">The initial scheme.</param>
+        /// <param name="callingScheme">The calling scheme.</param>
+        /// <param name="userData">The user data.</param>
+        /// <param name="failedLogin">Optional failed login.</param>
+        /// <returns>A {info,token,refreshable} object with error fields inside.</returns>
+        internal JObject CreateErrorAuthResponse(
+                        HttpContext c,
+                        string errorId,
+                        string errorText,
+                        string initialScheme,
+                        string callingScheme,
+                        IEnumerable<KeyValuePair<string, StringValues>> userData = null,
+                        UserLoginResult failedLogin = null )
+        {
+            var response = CreateAuthResponse( c, null, false, failedLogin );
+            response.Add( new JProperty( "errorId", errorId ) );
+            response.Add( new JProperty( "errorText", errorText ) );
+            if( initialScheme != null ) response.Add( new JProperty( "initialScheme", initialScheme ) );
+            if( callingScheme != null ) response.Add( new JProperty( "callingScheme", callingScheme ) );
+            if( userData != null ) response.Add( userData.ToJProperty() );
+            return response;
+        }
+
+        /// <summary>
         /// Creates a JSON response object.
         /// </summary>
         /// <param name="c">The context.</param>
@@ -348,6 +431,21 @@ namespace CK.AspNet.Auth
         {
             var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
             return binding == null ? null : Convert.ToBase64String( binding );
+        }
+
+        internal async Task OnHandlerStartLogin( IActivityMonitor m, WebFrontAuthStartLoginContext startContext )
+        {
+            try
+            {
+                if( _dynamicScopeProvider != null )
+                {
+                    startContext.DynamicScopes = await _dynamicScopeProvider.GetScopesAsync( m, startContext );
+                }
+            }
+            catch( Exception ex )
+            {
+                startContext.SetError( ex.GetType().FullName, ex.Message ?? "Exception has null message!" );
+            }
         }
 
         /// <summary>
