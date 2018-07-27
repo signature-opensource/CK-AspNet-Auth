@@ -205,17 +205,23 @@ namespace CK.AspNet.Auth
                         authInfo = _typeSystem.AuthenticationInfo.Create( info );
                     }
                 }
-                if( authInfo == null ) authInfo = _typeSystem.AuthenticationInfo.None;
-                TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
-                TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                if( authInfo.Level >= AuthLevel.Normal
-                    && _cookieMode == AuthenticationCookieMode.RootPath
-                    && halfSlidingExpirationTime > TimeSpan.Zero
-                    && authInfo.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                if( authInfo == null )
                 {
-                    var authInfo2 = authInfo.SetExpires( DateTime.UtcNow + slidingExpirationTime );
-                    SetCookies( c, authInfo = authInfo2 );
+                    authInfo = _typeSystem.AuthenticationInfo.None;
+                }
+                else
+                {
+                    TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+                    TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
+                    // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+                    if( authInfo.Level >= AuthLevel.Normal
+                        && _cookieMode == AuthenticationCookieMode.RootPath
+                        && halfSlidingExpirationTime > TimeSpan.Zero
+                        && authInfo.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                    {
+                        var authInfo2 = authInfo.SetExpires( DateTime.UtcNow + slidingExpirationTime );
+                        SetCookies( c, authInfo = authInfo2 );
+                    }
                 }
             }
             catch( Exception ex )
@@ -370,7 +376,7 @@ namespace CK.AspNet.Auth
                 c.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
-            JObject errObj = CreateErrorAuthResponse( c, errorId, errorText, initialScheme, callingScheme );
+            JObject errObj = CreateErrorAuthResponse( c, errorId, errorText, initialScheme, callingScheme, userData, failedLogin );
             return c.Response.WriteWindowPostMessageAsync( errObj, callerOrigin );
         }
 
@@ -382,8 +388,8 @@ namespace CK.AspNet.Auth
         /// <param name="errorText">The error text.</param>
         /// <param name="initialScheme">The initial scheme.</param>
         /// <param name="callingScheme">The calling scheme.</param>
-        /// <param name="userData">The user data.</param>
-        /// <param name="failedLogin">Optional failed login.</param>
+        /// <param name="userData">Optional user data (can be null).</param>
+        /// <param name="failedLogin">Optional failed login (can be null).</param>
         /// <returns>A {info,token,refreshable} object with error fields inside.</returns>
         internal JObject CreateErrorAuthResponse(
                         HttpContext c,
@@ -391,8 +397,8 @@ namespace CK.AspNet.Auth
                         string errorText,
                         string initialScheme,
                         string callingScheme,
-                        IEnumerable<KeyValuePair<string, StringValues>> userData = null,
-                        UserLoginResult failedLogin = null )
+                        IEnumerable<KeyValuePair<string, StringValues>> userData,
+                        UserLoginResult failedLogin )
         {
             var response = CreateAuthResponse( c, null, false, failedLogin );
             response.Add( new JProperty( "errorId", errorId ) );

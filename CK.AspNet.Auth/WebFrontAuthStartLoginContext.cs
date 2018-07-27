@@ -99,6 +99,9 @@ namespace CK.AspNet.Auth
             _errorText = errorMessage;
         }
 
+        /// <summary>
+        /// Captures dynamic scopes from optional IWebFrontAuthDynamicScopeProvider.GetScopesAsync call.
+        /// </summary>
         internal string[] DynamicScopes;
 
         internal Task SendError()

@@ -180,9 +180,9 @@ namespace CK.AspNet.Auth
                 AuthenticationProperties p = new AuthenticationProperties();
                 p.Items.Add( "WFA-S", startContext.Scheme );
                 if( !String.IsNullOrWhiteSpace( startContext.CallerOrigin ) ) p.Items.Add( "WFA-O", startContext.CallerOrigin );
-                if( current.Level == AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
+                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
                 if( startContext.ReturnUrl != null ) p.Items.Add( "WFA-R", startContext.ReturnUrl );
-                else if( startContext.UserData.Count == 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
+                else if( startContext.UserData.Count != 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
                 if( startContext.DynamicScopes != null )
                 {
                     p.Parameters.Add( "scope", startContext.DynamicScopes );

@@ -6,26 +6,26 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static CK.Testing.StObjMapTestHelper;
+using static CK.Testing.DBSetupTestHelper;
 
 namespace WebApp.Tests
 {
-    [SetUpFixture]
-    public class GlobalTeardown
-    {
-        [TearDown]
-        public void StopServers()
-        {
-            WebAppHelper.WebAppProcess.StopAndWaitForExit();
-            WebAppHelper.IdServerProcess.StopAndWaitForExit();
-        }
-    }
-
     static class WebAppHelper
     {
         static TestClient _client;
 
         static public readonly IAuthenticationTypeSystem AuthTypeSystem = new StdAuthenticationTypeSystem();
+
+        static WebAppHelper()
+        {
+            AppDomain.CurrentDomain.DomainUnload += StopServers;
+        }
+
+        static void StopServers( object sender, EventArgs e )
+        {
+            WebAppProcess.StopAndWaitForExit();
+            IdServerProcess.StopAndWaitForExit();
+        }
 
         public static ExternalProcess WebAppProcess = new ExternalProcess(
             pI =>
@@ -46,7 +46,8 @@ namespace WebApp.Tests
                 pI.Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" );
                 pI.CreateNoWindow = true;
                 pI.UseShellExecute = false;
-            } );
+            },
+            p => _client?.Get( "/quit" ) );
 
         static public async Task<TestClient> GetRunningTestClient()
         {
