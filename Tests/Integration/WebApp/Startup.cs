@@ -68,11 +68,7 @@ namespace WebApp
             }
         }
 
-        public void Configure(
-            IApplicationBuilder app,
-            IHostingEnvironment env,
-            ILoggerFactory loggerFactory,
-            IWebFrontAuthAutoCreateAccountService forceTheServiceResolution )
+        public void Configure( IApplicationBuilder app )
         {
             app.UseRequestMonitor();
             app.UseAuthentication();
