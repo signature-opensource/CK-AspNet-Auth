@@ -221,14 +221,15 @@ namespace CK.AspNet.Auth
         Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
         {
             Debug.Assert( r.Info != null );
-            if( UserData != null ) r.Response.Add( UserDataToJProperty() );
+            if( UserData != null ) r.Response.Add( UserData.ToJProperty() );
             return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
         }
 
         Task SendDirectAuthenticationError()
         {
             int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
-            return HttpContext.Response.WriteAsync( CreateErrorResponse(), code );
+            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
+            return HttpContext.Response.WriteAsync( errObj, code );
         }
 
         Task SendRemoteAuthenticationSuccess( WebFrontAuthService.LoginResult r )
@@ -245,55 +246,23 @@ namespace CK.AspNet.Auth
             var data = new JObject(
                             new JProperty( "initialScheme", InitialScheme ),
                             new JProperty( "callingScheme", CallingScheme ) );
-            data.Add( UserDataToJProperty() );
+            data.Add( UserData.ToJProperty() );
             r.Response.Merge( data );
             return HttpContext.Response.WriteWindowPostMessageAsync( r.Response, CallerOrigin );
         }
 
         Task SendRemoteAuthenticationError()
         {
-            if( ReturnUrl != null )
-            {
-                int idxQuery = ReturnUrl.IndexOf( '?' );
-                var path = idxQuery > 0
-                            ? ReturnUrl.Substring( 0, idxQuery )
-                            : string.Empty;
-                var parameters = idxQuery > 0
-                                    ? new QueryString( ReturnUrl.Substring(idxQuery))
-                                    : new QueryString();
-                parameters = parameters.Add( "errorId", _errorId )
-                                       .Add( "errorText", _errorText );
-                int loginFailureCode = _failedLogin?.LoginFailureCode ?? 0;
-                if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
-                if( InitialScheme != null ) parameters = parameters.Add( "initialScheme", InitialScheme );
-                if( CallingScheme != null ) parameters = parameters.Add( "callingScheme", CallingScheme );
-
-                var caller = new Uri( CallerOrigin );
-                var target = new Uri( caller, path + parameters.ToString() );
-                HttpContext.Response.Redirect( target.ToString() );
-                return Task.CompletedTask;
-            }
-            return HttpContext.Response.WriteWindowPostMessageAsync( CreateErrorResponse(), CallerOrigin );
-        }
-
-        JObject CreateErrorResponse()
-        {
-            var response = _authenticationService.CreateAuthResponse( HttpContext, null, false, _failedLogin );
-            response.Add( new JProperty( "errorId", _errorId ) );
-            response.Add( new JProperty( "errorText", _errorText ) );
-            if( InitialScheme != null ) response.Add( new JProperty( "initialScheme", InitialScheme ) );
-            if( CallingScheme != null ) response.Add( new JProperty( "callingScheme", CallingScheme ) );
-            if( UserData != null ) response.Add( UserDataToJProperty() );
-            return response;
-        }
-
-        JProperty UserDataToJProperty()
-        {
-            return new JProperty( "userData",
-                            new JObject( UserData.Select( d => new JProperty( d.Key,
-                                                                              d.Value.Count == 1
-                                                                                ? (JToken)d.Value.ToString()
-                                                                                : new JArray( d.Value ) ) ) ) );
+            return _authenticationService.SendRemoteAuthenticationError(
+                        HttpContext,
+                        ReturnUrl,
+                        CallerOrigin,
+                        _errorId,
+                        _errorText,
+                        InitialScheme,
+                        CallingScheme,
+                        UserData,
+                        _failedLogin );
         }
     }
 

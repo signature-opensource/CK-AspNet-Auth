@@ -47,6 +47,8 @@ namespace IdServer
                         {
                             IdentityServerConstants.StandardScopes.OpenId,
                             IdentityServerConstants.StandardScopes.Profile,
+                            "scope:test",
+                            "MyThing"
                         },
 
                         // Secret for client authentication

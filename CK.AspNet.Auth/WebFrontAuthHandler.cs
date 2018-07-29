@@ -69,7 +69,7 @@ namespace CK.AspNet.Auth
                     }
                     else if( cBased.Value == "/startLogin" )
                     {
-                        return HandleStartLogin();
+                        return HandleStartLogin( Context.GetRequestMonitor() );
                     }
                     else if( cBased.Value == "/unsafeDirectLogin" )
                     {
@@ -136,7 +136,7 @@ namespace CK.AspNet.Auth
             return Task.FromResult( true );
         }
 
-        async Task<bool> HandleStartLogin()
+        async Task<bool> HandleStartLogin( IActivityMonitor monitor )
         {
             string scheme = Request.Query["scheme"];
             if( scheme == null )
@@ -158,13 +158,42 @@ namespace CK.AspNet.Auth
                                             && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase ) );
             var current = _authService.EnsureAuthenticationInfo( Context );
-            // We may test impersonation here: login is forbidden whenever the user is impersonated
-            // but since this check will be done by WebFrontAuthService.UnifiedLogin with an explicit
-            // error message returned, we don't handle this here.
+            Debug.Assert( current != null );
+            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, current, userData, returnUrl, callerOrigin );
+            // We test impersonation here: login is forbidden whenever the user is impersonated.
+            // This check will also be done by WebFrontAuthService.UnifiedLogin.
+            if( current.IsImpersonated )
+            {
+                startContext.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
+                monitor.Error( $"Login is not allowed while impersonation is active: {current.ActualUser.UserId} impersonated into {current.User.UserId}.", WebFrontAuthService.WebFrontAuthMonitorTag );
+            }
+            else
+            {
+                await _authService.OnHandlerStartLogin( monitor, startContext );
+            }
+            if( startContext.HasError )
+            {
+                await startContext.SendError();
+            }
+            else
+            {
+                AuthenticationProperties p = new AuthenticationProperties();
+                p.Items.Add( "WFA-S", startContext.Scheme );
+                if( !String.IsNullOrWhiteSpace( startContext.CallerOrigin ) ) p.Items.Add( "WFA-O", startContext.CallerOrigin );
+                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
+                if( startContext.ReturnUrl != null ) p.Items.Add( "WFA-R", startContext.ReturnUrl );
+                else if( startContext.UserData.Count != 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
+                if( startContext.DynamicScopes != null )
+                {
+                    p.Parameters.Add( "scope", startContext.DynamicScopes );
+                }
+                await Context.ChallengeAsync( scheme, p );
+            }
+            return true;
 
-            AuthenticationProperties p = new AuthenticationProperties();
-            p.Items.Add( "WFA-S", scheme );
 
+            // Dynamic scopes in AuthenticationProperties are handled ONLY since NetCore 2.1.
+            // In 2.0, only "static" Options.Scopes are emitted.
             //// TODO: Dynamic scopes in AuthenticationProperties are handled ONLY by NetCore 2.1 framework.
             ////       In 2.0, only "static" Options.Scopes are emitted.
             //// The implemenation should rely on a new optional Service (like IWebFrontAuthDynamicScopeProvider).
@@ -182,12 +211,6 @@ namespace CK.AspNet.Auth
             //    p.Items.Add( dynamicScopes.ScopeKey, dynamicScopes.Scopes );
             //}
 
-            if( !String.IsNullOrWhiteSpace( callerOrigin ) ) p.Items.Add( "WFA-O", callerOrigin );
-            if( !current.IsNullOrNone() ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
-            if( returnUrl != null ) p.Items.Add( "WFA-R", returnUrl );
-            else if( userData.Any() ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, userData ) );
-            await Context.ChallengeAsync( scheme, p );
-            return true;
         }
 
         #region Unsafe Direct Login

@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +14,15 @@ namespace CK.AspNet.Auth
 {
     static class InternalExtensions
     {
+        static public JProperty ToJProperty( this IEnumerable<KeyValuePair< string,StringValues>> @this, string name = "userData" )
+        {
+            return new JProperty( name,
+                            new JObject( @this.Select( d => new JProperty( d.Key,
+                                                                              d.Value.Count == 1
+                                                                                ? (JToken)d.Value.ToString()
+                                                                                : new JArray( d.Value ) ) ) ) );
+        }
+
         static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
         {
             @this.Headers[HeaderNames.CacheControl] = "no-cache";
