@@ -58,5 +58,24 @@ namespace CK.AspNet.Auth
         /// </summary>
         IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
 
+        /// <summary>
+        /// Sets an error and always returns null to easily return
+        /// from <see cref="IWebFrontAuthAutoCreateAccountService.CreateAccountAndLoginAsync"/> method.
+        /// </summary>
+        /// <param name="errorId">Error identifier (a dotted identifier string). Must not be null or empty.</param>
+        /// <param name="errorText">The optional error message in clear text (typically in english).</param>
+        /// <returns>Always null.</returns>
+        UserLoginResult SetError( string errorId, string errorText = null );
+
+        /// <summary>
+        /// Sets an error and always returns null to easily return
+        /// from <see cref="IWebFrontAuthAutoCreateAccountService.CreateAccountAndLoginAsync"/> method.
+        /// The returned error has "errorId" set to the full name of the exception
+        /// and the "errorText" is the <see cref="Exception.Message"/>.
+        /// Can be called multiple times: new error information replaces the previous one.
+        /// </summary>
+        /// <param name="ex">The exception. Can not be null./param>
+        UserLoginResult SetError( Exception ex );
+
     }
 }

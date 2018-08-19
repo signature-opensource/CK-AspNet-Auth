@@ -132,28 +132,33 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets whether SetError or SetSuccessfulLogin methods have been called.
         /// </summary>
-        public bool IsHandled => _errorText != null || _successfulLogin != null;
+        public bool IsHandled => _errorId != null || _successfulLogin != null;
 
         /// <summary>
         /// Gets whether an error has already been set.
         /// </summary>
-        public bool HasError => _errorText != null;
+        public bool HasError => _errorId != null;
 
         /// <summary>
         /// Sets an error message.
-        /// The returned error contains the <paramref name="errorId"/> and <paramref name="errorMessage"/>, the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>
-        /// and <see cref="UserData"/>.
+        /// The returned error contains the <paramref name="errorId"/> and <paramref name="errorText"/>,
+        /// the <see cref="InitialScheme"/>, <see cref="CallingScheme"/> and <see cref="UserData"/>.
         /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
-        /// <param name="errorId">Error identifier (a dotted identifier string).</param>
-        /// <param name="errorMessage">The error message in clear text.</param>
-        public void SetError( string errorId, string errorMessage )
+        /// <param name="errorId">Error identifier (a dotted identifier string). Must not be null or empty.</param>
+        /// <param name="errorText">The optional error message in clear text (typically in english).</param>
+        public void SetError( string errorId, string errorText = null )
         {
             if( string.IsNullOrWhiteSpace( errorId ) ) throw new ArgumentNullException( nameof( errorId ) );
-            if( string.IsNullOrWhiteSpace( errorMessage ) ) throw new ArgumentNullException( nameof( errorMessage ) );
             _errorId = errorId;
-            _errorText = errorMessage;
+            _errorText = errorText;
             _failedLogin = null;
+        }
+
+        UserLoginResult IWebFrontAuthAutoCreateAccountContext.SetError( string errorId, string errorText )
+        {
+            SetError( errorId, errorText );
+            return null;
         }
 
         /// <summary>
@@ -171,6 +176,12 @@ namespace CK.AspNet.Auth
             if( ex is ArgumentException ) _httpErrorCode = StatusCodes.Status400BadRequest;
             else _httpErrorCode = 0;
             _failedLogin = null;
+        }
+
+        UserLoginResult IWebFrontAuthAutoCreateAccountContext.SetError( Exception ex )
+        {
+            SetError( ex );
+            return null;
         }
 
         /// <summary>
@@ -199,14 +210,14 @@ namespace CK.AspNet.Auth
         public void SetSuccessfulLogin( UserLoginResult successResult )
         {
             if( successResult == null || !successResult.IsSuccess ) throw new ArgumentException( "Must be a login success.", nameof(successResult) );
-            if( _errorText != null ) throw new InvalidOperationException( $"An error ({_errorText}) has been already set." );
+            if( _errorId != null ) throw new InvalidOperationException( $"An error ({_errorId}) has been already set." );
             _successfulLogin = successResult;
         }
 
         internal Task SendResponse()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
-            if( _errorText != null )
+            if( _errorId != null )
             {
                 return LoginMode == WebFrontAuthLoginMode.StartLogin
                         ? SendRemoteAuthenticationError()
