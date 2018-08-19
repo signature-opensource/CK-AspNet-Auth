@@ -66,13 +66,13 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Cancels the login and sets an error message.
-        /// The returned error contains the <paramref name="errorId"/> and <paramref name="errorMessage"/>, the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>
-        /// and <see cref="UserData"/>.
+        /// The returned error contains the <paramref name="errorId"/>, the <see cref="InitialScheme"/>,
+        /// <see cref="CallingScheme"/>, <see cref="UserData"/> and optionally the <paramref name="errorText"/>.
         /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
-        /// <param name="errorId">Error identifier (a dotted identifier string).</param>
-        /// <param name="errorMessage">The error message in clear text.</param>
-        void SetError( string errorId, string errorMessage );
+        /// <param name="errorId">Error identifier (a dotted identifier string). Can not be null or empty.</param>
+        /// <param name="errorText">The error message in clear text.</param>
+        void SetError( string errorId, string errorText );
 
         /// <summary>
         /// Cancels the login and sets an error message.
@@ -80,7 +80,7 @@ namespace CK.AspNet.Auth
         /// and the "errorText" is the <see cref="Exception.Message"/>.
         /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
-        /// <param name="ex">The exception.</param>
+        /// <param name="ex">The exception. Can not be null.</param>
         void SetError( Exception ex );
     }
 }
