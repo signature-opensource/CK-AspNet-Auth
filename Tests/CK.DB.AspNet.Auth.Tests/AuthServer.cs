@@ -23,7 +23,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
-                    services.AddStObjMap( TestHelper.StObjMap.Default );
+                    services.AddStObjMap( TestHelper.StObjMap );
                     services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
                     configureServices?.Invoke( services );
                 },
