@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTesterVersion)" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBVersion)" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBUserUserPasswordVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
   </ItemGroup>
   <ItemGroup>
