@@ -12,7 +12,7 @@
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
     <CKDatabaseVersion>7.1.1-C0016-local</CKDatabaseVersion>
-    <CKDBVersion>2.0.2-C0007-local</CKDBVersion>
+    <CKDBVersion>2.0.2-a00-00-0003-local</CKDBVersion>
     <CKActivityMonitorVersion>10.1.1-C0005-local</CKActivityMonitorVersion>
     <CKMonitoringVersion>9.1.1-C0007-local</CKMonitoringVersion>
     <CKAspNetVersion>2.1.2-C0005-local</CKAspNetVersion>
