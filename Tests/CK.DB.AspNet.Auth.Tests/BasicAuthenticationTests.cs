@@ -70,8 +70,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( false )]
         public async Task basic_authentication_via_generic_wrapper_on_a_created_user( bool allowed )
         {
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var auth = TestHelper.StObjMap.Default.Obtain<IAuthenticationDatabaseService>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var auth = TestHelper.StObjMap.StObjs.Obtain<IAuthenticationDatabaseService>();
             var basic = auth.FindProvider( "Basic" );
    
             using( var ctx = new SqlStandardCallContext() )
@@ -122,8 +122,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass" )]
         public async Task basic_authentication_on_user( string userName, string password )
         {
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
             {
@@ -226,8 +226,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login( string userName, string password, bool okInEvil )
         {
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( null, services =>
             {
@@ -293,8 +293,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login( string userName, string password, bool okInEvil )
         {
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.Default.Obtain<IBasicAuthenticationProvider>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( null, services =>
             {

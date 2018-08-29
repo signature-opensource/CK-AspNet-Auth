@@ -52,8 +52,8 @@ namespace WebApp.Tests
 
         public static void BobSetup()
         {
-            var oidc = TestHelper.StObjMap.Default.Obtain<UserOidcTable>();
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
+            var oidc = TestHelper.StObjMap.StObjs.Obtain<UserOidcTable>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             using( var ctx = new SqlStandardCallContext() )
             {
                 var bob = oidc.FindKnownUserInfo( ctx, "", "Bob_is_totally_unknown" );
@@ -69,10 +69,10 @@ namespace WebApp.Tests
 
         public static void AliceSetup()
         {
-            var oidc = TestHelper.StObjMap.Default.Obtain<UserOidcTable>();
-            var google = TestHelper.StObjMap.Default.Obtain<UserGoogleTable>();
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var userPwd = TestHelper.StObjMap.Default.Obtain<UserPasswordTable>();
+            var oidc = TestHelper.StObjMap.StObjs.Obtain<UserOidcTable>();
+            var google = TestHelper.StObjMap.StObjs.Obtain<UserGoogleTable>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var userPwd = TestHelper.StObjMap.StObjs.Obtain<UserPasswordTable>();
             using( var ctx = new SqlStandardCallContext() )
             {
                 int id = user.FindByName( ctx, "alice" );
@@ -97,10 +97,10 @@ namespace WebApp.Tests
 
         public static void CarolSetup()
         {
-            var oidc = TestHelper.StObjMap.Default.Obtain<UserOidcTable>();
-            var google = TestHelper.StObjMap.Default.Obtain<UserGoogleTable>();
-            var user = TestHelper.StObjMap.Default.Obtain<UserTable>();
-            var userPwd = TestHelper.StObjMap.Default.Obtain<UserPasswordTable>();
+            var oidc = TestHelper.StObjMap.StObjs.Obtain<UserOidcTable>();
+            var google = TestHelper.StObjMap.StObjs.Obtain<UserGoogleTable>();
+            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
+            var userPwd = TestHelper.StObjMap.StObjs.Obtain<UserPasswordTable>();
             using( var ctx = new SqlStandardCallContext() )
             {
                 int id = user.FindByName( ctx, "carol" );
@@ -123,7 +123,7 @@ namespace WebApp.Tests
 
         public static IDisposable TemporaryDisableAllLogin()
         {
-            var db = TestHelper.StObjMap.Default.Obtain<SqlDefaultDatabase>();
+            var db = TestHelper.StObjMap.StObjs.Obtain<SqlDefaultDatabase>();
             return db.TemporaryTransform( @"
                             create transformer on CK.sAuthUserOnLogin
                             as

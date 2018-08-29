@@ -364,8 +364,11 @@ namespace CK.AspNet.Auth
                 var parameters = idxQuery > 0
                                     ? new QueryString( returnUrl.Substring( idxQuery ) )
                                     : new QueryString();
-                parameters = parameters.Add( "errorId", errorId )
-                                       .Add( "errorText", errorText );
+                parameters = parameters.Add( "errorId", errorId );
+                if( !String.IsNullOrWhiteSpace( errorText ) && errorText != errorId )
+                {
+                    parameters = parameters.Add( "errorText", errorText );
+                }
                 int loginFailureCode = failedLogin?.LoginFailureCode ?? 0;
                 if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
                 if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );
@@ -385,7 +388,7 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="c">The context.</param>
         /// <param name="errorId">The error identifier.</param>
-        /// <param name="errorText">The error text.</param>
+        /// <param name="errorText">The error text. This can be null (<paramref name="errorId"/> is the key).</param>
         /// <param name="initialScheme">The initial scheme.</param>
         /// <param name="callingScheme">The calling scheme.</param>
         /// <param name="userData">Optional user data (can be null).</param>
@@ -402,7 +405,10 @@ namespace CK.AspNet.Auth
         {
             var response = CreateAuthResponse( c, null, false, failedLogin );
             response.Add( new JProperty( "errorId", errorId ) );
-            response.Add( new JProperty( "errorText", errorText ) );
+            if( !String.IsNullOrWhiteSpace( errorText ) && errorText != errorId )
+            {
+                response.Add( new JProperty( "errorText", errorText ) );
+            }
             if( initialScheme != null ) response.Add( new JProperty( "initialScheme", initialScheme ) );
             if( callingScheme != null ) response.Add( new JProperty( "callingScheme", callingScheme ) );
             if( userData != null ) response.Add( userData.ToJProperty() );
