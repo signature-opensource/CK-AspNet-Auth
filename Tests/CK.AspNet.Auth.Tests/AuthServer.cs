@@ -2,6 +2,7 @@ using CK.AspNet.Tester;
 using CK.Auth;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -45,6 +46,7 @@ namespace CK.AspNet.Auth.Tests
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
                 } );
+            b.UseMonitoring();
             Server = new TestServer( b );
             Client = new TestServerClient( Server );
         }

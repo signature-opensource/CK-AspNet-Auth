@@ -51,7 +51,7 @@ namespace WebApp
                     } );
                 } )
                 .AddWebFrontAuth();
-            services.AddStObjMap( "CK.StObj.AutoAssembly" );
+            services.AddCKDatabase( "CK.StObj.AutoAssembly" );
             services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
             services.AddSingleton<IWebFrontAuthAutoCreateAccountService,AutoCreateAccountService>();
         }
