@@ -47,6 +47,8 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
+
         public Task<bool> HandleRequestAsync()
         {
             PathString remainder;
@@ -63,17 +65,17 @@ namespace CK.AspNet.Auth
                     {
                         if( _loginService.HasBasicLogin )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }
                     else if( cBased.Value == "/startLogin" )
                     {
-                        return HandleStartLogin( Context.GetRequestMonitor() );
+                        return HandleStartLogin( GetRequestMonitor( Context ) );
                     }
                     else if( cBased.Value == "/unsafeDirectLogin" )
                     {
-                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( Context.GetRequestMonitor() );
+                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( GetRequestMonitor( Context ) );
                         Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                     }
                     else if( cBased.Value == "/logout" )
@@ -84,7 +86,7 @@ namespace CK.AspNet.Auth
                     {
                         if( _impersonationService != null )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }

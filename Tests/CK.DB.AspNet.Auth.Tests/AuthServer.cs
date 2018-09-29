@@ -2,6 +2,7 @@ using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -23,7 +24,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
-                    services.AddStObjMap( TestHelper.StObjMap );
+                    services.AddCKDatabase( TestHelper.StObjMap );
                     services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
                     configureServices?.Invoke( services );
                 },
@@ -35,6 +36,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );
                 } );
+            b.UseMonitoring();
             Server = new TestServer( b );
             Client = new TestServerClient( Server );
         }
