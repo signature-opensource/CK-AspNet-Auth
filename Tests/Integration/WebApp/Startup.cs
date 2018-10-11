@@ -52,8 +52,8 @@ namespace WebApp
                 } )
                 .AddWebFrontAuth();
             services.AddCKDatabase( "CK.StObj.AutoAssembly" );
-            services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
-            services.AddSingleton<IWebFrontAuthAutoCreateAccountService,AutoCreateAccountService>();
+            //services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
+            //services.AddSingleton<IWebFrontAuthAutoCreateAccountService,AutoCreateAccountService>();
         }
 
         class OAuthEventHandler : OAuthEvents

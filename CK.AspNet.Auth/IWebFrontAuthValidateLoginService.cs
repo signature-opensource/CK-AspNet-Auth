@@ -12,7 +12,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Optional service that, when registered, enables login validations.
     /// </summary>
-    public interface IWebFrontAuthValidateLoginService
+    public interface IWebFrontAuthValidateLoginService : ISingletonAmbientService
     {
         /// <summary>
         /// Called for each login. Any error set on the <paramref name="context"/> cancels the login.

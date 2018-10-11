@@ -11,7 +11,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Optional service that can handle dynamic scopes.
     /// </summary>
-    public interface IWebFrontAuthDynamicScopeProvider
+    public interface IWebFrontAuthDynamicScopeProvider : ISingletonAmbientService
     {
         /// <summary>
         /// Called at the start of the external login flow.

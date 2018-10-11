@@ -30,7 +30,6 @@ namespace WebApp
                 } )
                 .ConfigureAppConfiguration( c => c.AddJsonFile( "appsettings.json", true, true ) )
                 .UseMonitoring()
-                .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
 

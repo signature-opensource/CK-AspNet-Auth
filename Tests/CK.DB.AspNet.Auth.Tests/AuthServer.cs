@@ -25,7 +25,6 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
                     services.AddCKDatabase( TestHelper.StObjMap );
-                    services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
                     configureServices?.Invoke( services );
                 },
                 app =>
