@@ -13,8 +13,10 @@ namespace CK.AspNet.Auth
     /// Captures initial login request information and provides a context to interact with the flow
     /// before challenging the actual remote authentication.
     /// </summary>
-    public class WebFrontAuthStartLoginContext
+    public sealed class WebFrontAuthStartLoginContext
     {
+        readonly WebFrontAuthService _webFrontAuthService;
+
         string _errorId;
         string _errorText;
 
@@ -33,7 +35,7 @@ namespace CK.AspNet.Auth
             Debug.Assert( current != null );
             Debug.Assert( userData != null );
             HttpContext = ctx;
-            WebFrontAuthService = authService;
+            _webFrontAuthService = authService;
             Scheme = scheme;
             Current = current;
             UserData = new Dictionary<string, StringValues>();
@@ -46,11 +48,6 @@ namespace CK.AspNet.Auth
         /// Gets the http context.
         /// </summary>
         public HttpContext HttpContext { get; }
-
-        /// <summary>
-        /// Gets the authentication service.
-        /// </summary>
-        public WebFrontAuthService WebFrontAuthService { get; }
 
         /// <summary>
         /// Gets the current authentication.
@@ -107,7 +104,7 @@ namespace CK.AspNet.Auth
         internal Task SendError()
         {
             Debug.Assert( HasError );
-            return WebFrontAuthService.SendRemoteAuthenticationError(
+            return _webFrontAuthService.SendRemoteAuthenticationError(
                         HttpContext,
                         ReturnUrl,
                         CallerOrigin,

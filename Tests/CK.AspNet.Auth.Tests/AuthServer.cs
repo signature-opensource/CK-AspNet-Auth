@@ -23,7 +23,6 @@ namespace CK.AspNet.Auth.Tests
         public const string TokenExplainUri = "/.webfront/token";
 
         IAuthenticationTypeSystem _typeSystem;
-        WebFrontAuthService _authService;
 
         public AuthServer(
             Action<WebFrontAuthOptions> options = null,
@@ -33,6 +32,7 @@ namespace CK.AspNet.Auth.Tests
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
+                    services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddAuthentication().AddWebFrontAuth( options );
                     services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();
                     configureServices?.Invoke( services );
@@ -41,7 +41,6 @@ namespace CK.AspNet.Auth.Tests
                 {
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
-                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );

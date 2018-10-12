@@ -12,6 +12,9 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Optional service that, when registered, enables login validations.
     /// </summary>
+    /// <remarks>
+    /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
+    /// </remarks>
     public interface IWebFrontAuthValidateLoginService : ISingletonAmbientService
     {
         /// <summary>

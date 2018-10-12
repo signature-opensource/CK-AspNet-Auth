@@ -18,9 +18,11 @@ using System.Linq;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Implementation of the authentication service.
+    /// Sealed implementation of the actual authentication service.
+    /// This implementation is made internal: <see cref="Microsoft.Extensions.DependencyInjection.WebFrontAuthExtensions.AddWebFrontAuth" />
+    /// registers it as a singleton.
     /// </summary>
-    public sealed class WebFrontAuthService
+    sealed class WebFrontAuthService
     {
         /// <summary>
         /// The tag used for logs emitted related to Web Front Authentication or any

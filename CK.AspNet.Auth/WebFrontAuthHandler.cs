@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace CK.AspNet.Auth
 {
-    class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
+    sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
     {
         readonly static PathString _cSegmentPath = "/c";
 

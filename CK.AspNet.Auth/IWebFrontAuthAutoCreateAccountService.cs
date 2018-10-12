@@ -17,6 +17,9 @@ namespace CK.AspNet.Auth
     /// required to actually create the account and log in the user.
     /// Also, not all schemes should be systematically supported, nor all <see cref="IWebFrontAuthAutoCreateAccountContext.LoginMode"/>.
     /// </summary>
+    /// <remarks>
+    /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
+    /// </remarks>
     public interface IWebFrontAuthAutoCreateAccountService : CK.Auth.ISingletonAmbientService
     {
         /// <summary>

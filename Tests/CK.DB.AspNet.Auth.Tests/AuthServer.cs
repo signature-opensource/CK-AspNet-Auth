@@ -13,7 +13,6 @@ namespace CK.DB.AspNet.Auth.Tests
     class AuthServer : IDisposable
     {
         IAuthenticationTypeSystem _typeSystem;
-        WebFrontAuthService _authService;
 
         public AuthServer(
             Action<WebFrontAuthOptions> options = null,
@@ -31,7 +30,6 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
-                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );
                 } );
@@ -39,8 +37,6 @@ namespace CK.DB.AspNet.Auth.Tests
             Server = new TestServer( b );
             Client = new TestServerClient( Server );
         }
-
-        public WebFrontAuthService AuthService => _authService;
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
 

@@ -25,7 +25,6 @@ namespace WebApp
     public class WebAppMiddleware
     {
         readonly RequestDelegate _next;
-        readonly WebFrontAuthService _authService;
         readonly UserTable _userTable;
         readonly UserPasswordTable _pwdTable;
         readonly IAuthenticationTypeSystem _typeSystem;
@@ -33,14 +32,12 @@ namespace WebApp
 
         public WebAppMiddleware( 
             RequestDelegate next,
-            WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
             UserPasswordTable pwdTable,
             UserTable userTable,
             IApplicationLifetime appLifetime )
         {
             _next = next;
-            _authService = authService;
             _pwdTable = pwdTable;
             _userTable = userTable;
             _typeSystem = typeSystem;
