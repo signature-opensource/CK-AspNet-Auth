@@ -19,10 +19,9 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Sealed implementation of the actual authentication service.
-    /// This implementation is made internal: <see cref="Microsoft.Extensions.DependencyInjection.WebFrontAuthExtensions.AddWebFrontAuth" />
-    /// registers it as a singleton.
+    /// This implementation is registered as a singleton by <see cref="Microsoft.Extensions.DependencyInjection.WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />.
     /// </summary>
-    sealed class WebFrontAuthService
+    public sealed class WebFrontAuthService
     {
         /// <summary>
         /// The tag used for logs emitted related to Web Front Authentication or any
