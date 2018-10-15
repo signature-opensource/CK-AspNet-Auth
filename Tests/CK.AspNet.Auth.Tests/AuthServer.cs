@@ -2,6 +2,7 @@ using CK.AspNet.Tester;
 using CK.Auth;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,6 @@ namespace CK.AspNet.Auth.Tests
         public const string TokenExplainUri = "/.webfront/token";
 
         IAuthenticationTypeSystem _typeSystem;
-        WebFrontAuthService _authService;
 
         public AuthServer(
             Action<WebFrontAuthOptions> options = null,
@@ -32,6 +32,7 @@ namespace CK.AspNet.Auth.Tests
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
+                    services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddAuthentication().AddWebFrontAuth( options );
                     services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();
                     configureServices?.Invoke( services );
@@ -40,11 +41,11 @@ namespace CK.AspNet.Auth.Tests
                 {
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
-                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
                 } );
+            b.UseMonitoring();
             Server = new TestServer( b );
             Client = new TestServerClient( Server );
         }

@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -12,7 +12,10 @@ namespace CK.AspNet.Auth
     /// Optional service that controls user impersonation either by user identifier or user name.
     /// Impersonation is not an actual login, it must have no visible impact on the impersonated user data.
     /// </summary>
-    public interface IWebFrontAuthImpersonationService
+    /// <remarks>
+    /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
+    /// </remarks>
+    public interface IWebFrontAuthImpersonationService : CK.Auth.StObjSupport.ISingletonAmbientService
     {
         /// <summary>
         /// Attempts to impersonate the current user into another one.

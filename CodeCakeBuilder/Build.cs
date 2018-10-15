@@ -65,6 +65,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
+                     Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
                      Cake.CleanDirectories( releasesDir );
                  } );
 
@@ -109,7 +110,7 @@ namespace CodeCake
             Task( "Integration-Testing" )
                 .IsDependentOn( "Build-Integration-Projects" )
                 .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
-                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'Y', 'N' ) == 'Y' )
+                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'N', 'Y' ) == 'Y' )
                 .Does( () =>
                 {
                     var testProjects = projects

@@ -73,14 +73,26 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var auth = TestHelper.StObjMap.StObjs.Obtain<IAuthenticationDatabaseService>();
             var basic = auth.FindProvider( "Basic" );
-   
+
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( options: null, configureServices: services =>
             {
+                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is automatically
+                // registered in the DI container, we must remove it.
+                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
+                // is not automatically registered.
+#if NET461
+                if( !allowed )
+                {
+                    int idx = services.IndexOf( s => s.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
+                    services.RemoveAt( idx );
+                }
+#else
                 if( allowed )
                 {
                     services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
                 }
+#endif
             } ) )
             {
                 string userName = Guid.NewGuid().ToString();
@@ -160,7 +172,12 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             using( var server = new AuthServer( options: null, configureServices: services =>
             {
+                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is
+                // automatically registered in the DI container.
+                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add it.
+#if !NET461
                 services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
+#endif
             } ) )
             {
                 // Missing userName or userId.
@@ -201,12 +218,12 @@ namespace CK.DB.AspNet.Auth.Tests
         /// <summary>
         /// Client calls login with userData that contains a Zone.
         /// </summary>
-        class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
+        public class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
         {
             public Task ValidateLoginAsync( IActivityMonitor monitor, IUserInfo loggedInUser, IWebFrontAuthValidateLoginContext context )
             {
                 if( loggedInUser.UserName == "Paula"
-                    && context.UserData.Any( kv => kv.Key == "zone" && kv.Value == "<&>vil") )
+                    && context.UserData.Any( kv => kv.Key == "zone" && kv.Value == "<&>vil" ) )
                 {
                     context.SetError( "Validation", "Paula must not go in the <&>vil Zone!" );
                 }
@@ -214,7 +231,7 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
-        class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
+        public class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
         {
             public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
             {
@@ -231,8 +248,13 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( null, services =>
             {
+                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower and NoEvilZoneForPaula are
+                // automatically registered in the DI container.
+                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add them.
+#if !NET461
                 services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+#endif
             } ) )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
@@ -298,7 +320,12 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( null, services =>
             {
+                // In Net461, the StObjMap is done on this /bin: NoEvilZoneForPaula is
+                // automatically registered in the DI container.
+                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add it.
+#if !NET461
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+#endif
             } ) )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
@@ -323,32 +350,32 @@ namespace CK.DB.AspNet.Auth.Tests
                 }
 
                 {
-// Zone is "<&>vil".
-var payload = new JObject(
-                    new JProperty( "userName", userName ),
-                    new JProperty( "password", password ),
-                    new JProperty( "userData", new JObject(
-                            new JProperty( "zone", "<&>vil" ) ) ) );
-HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
-if( okInEvil ) // When userName is "Albert".
-{
-    c.Info.Level.Should().Be( AuthLevel.Normal );
-    c.Info.User.UserId.Should().Be( idUser );
-    c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
-    c.Token.Should().NotBeNullOrWhiteSpace();
-    c.ErrorId.Should().BeNull();
-    c.ErrorText.Should().BeNull();
-    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
-}
-else  // When userName is "Paula".
-{
-    c.Info.Should().BeNull();
-    c.Token.Should().BeNull();
-    c.ErrorId.Should().Be( "Validation" );
-    c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
-    c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
-}
+                    // Zone is "<&>vil".
+                    var payload = new JObject(
+                                        new JProperty( "userName", userName ),
+                                        new JProperty( "password", password ),
+                                        new JProperty( "userData", new JObject(
+                                                new JProperty( "zone", "<&>vil" ) ) ) );
+                    HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+                    if( okInEvil ) // When userName is "Albert".
+                    {
+                        c.Info.Level.Should().Be( AuthLevel.Normal );
+                        c.Info.User.UserId.Should().Be( idUser );
+                        c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
+                        c.Token.Should().NotBeNullOrWhiteSpace();
+                        c.ErrorId.Should().BeNull();
+                        c.ErrorText.Should().BeNull();
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
+                    else  // When userName is "Paula".
+                    {
+                        c.Info.Should().BeNull();
+                        c.Token.Should().BeNull();
+                        c.ErrorId.Should().Be( "Validation" );
+                        c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
+                        c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
+                    }
                 }
             }
         }
