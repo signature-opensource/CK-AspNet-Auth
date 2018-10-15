@@ -11,7 +11,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Interface to the backend login service.
     /// </summary>
-    public interface IWebFrontAuthLoginService : ISingletonAmbientService
+    public interface IWebFrontAuthLoginService : CK.Auth.StObjSupport.ISingletonAmbientService
     {
         /// <summary>
         /// Gets whether <see cref="BasicLoginAsync"/> is supported.

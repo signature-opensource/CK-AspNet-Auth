@@ -15,7 +15,7 @@ namespace CK.AspNet.Auth
     /// <remarks>
     /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
     /// </remarks>
-    public interface IWebFrontAuthValidateLoginService : ISingletonAmbientService
+    public interface IWebFrontAuthValidateLoginService : CK.Auth.StObjSupport.ISingletonAmbientService
     {
         /// <summary>
         /// Called for each login. Any error set on the <paramref name="context"/> cancels the login.

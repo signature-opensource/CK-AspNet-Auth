@@ -15,7 +15,7 @@ namespace CK.AspNet.Auth
     /// <remarks>
     /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
     /// </remarks>
-    public interface IWebFrontAuthImpersonationService : ISingletonAmbientService
+    public interface IWebFrontAuthImpersonationService : CK.Auth.StObjSupport.ISingletonAmbientService
     {
         /// <summary>
         /// Attempts to impersonate the current user into another one.
