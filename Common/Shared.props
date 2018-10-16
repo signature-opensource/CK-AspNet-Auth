@@ -11,14 +11,14 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>8.0.1--0024-local</CKDatabaseVersion>
-    <CKDBVersion>3.0.1--0011-local</CKDBVersion>
-    <CKActivityMonitorVersion>10.1.2--0008-local</CKActivityMonitorVersion>
-    <CKMonitoringVersion>9.1.2--0007-local</CKMonitoringVersion>
-    <CKAspNetVersion>2.1.3--0009-local</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.6.3--0006-local</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>2.1.3--0002-local</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>3.0.1--0011-local</CKDBUserUserPasswordVersion>
+    <CKDatabaseVersion>8.0.1--0030-develop</CKDatabaseVersion>
+    <CKDBVersion>3.0.1--0016-develop</CKDBVersion>
+    <CKActivityMonitorVersion>10.1.2--0014-develop</CKActivityMonitorVersion>
+    <CKMonitoringVersion>9.1.2--0012-develop</CKMonitoringVersion>
+    <CKAspNetVersion>2.1.3--0014-develop</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.6.3--0009-develop</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>2.1.3--0005-develop</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>3.0.1--0016-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!-- Reproducible builds. See: http://blog.paranoidcoding.com/2016/04/05/deterministic-builds-in-roslyn.html
         On appveyor, the clone folder MUST be set to the solution path in the CK-World.
