@@ -334,12 +334,19 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="c">The current Http context.</param>
         /// <param name="u">The user info to login.</param>
+        /// <param name="callingScheme">The calling scheme.</param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u )
+        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme )
         {
             IAuthenticationInfo authInfo = u.IsSuccess
                                             ? _typeSystem.AuthenticationInfo.Create( u.UserInfo, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
                                             : null;
+
+            IDictionary<string, TimeSpan> scts = CurrentOptions.SchemesCriticalTimeSpan;
+            if( scts != null && scts.TryGetValue( callingScheme, out var criticalTimeSpan ) && criticalTimeSpan > TimeSpan.Zero )
+            {
+                authInfo = authInfo.SetCriticalExpires( DateTime.UtcNow + criticalTimeSpan );
+            }
             JObject response = CreateAuthResponse( c, authInfo, authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, u );
             SetCookies( c, authInfo );
             return new LoginResult( response, authInfo );

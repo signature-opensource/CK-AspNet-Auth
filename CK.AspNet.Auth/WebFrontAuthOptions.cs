@@ -146,6 +146,10 @@ namespace CK.AspNet.Auth
         /// </summary>
         public string BearerHeaderName { get; set; } = "Authorization";
 
-
+        /// <summary>
+        /// Defines the initial critical time span when logged in through each schemes.
+        /// It is null by default: no schemes elevate a critical authentication level.
+        /// </summary>
+        public IDictionary<string, TimeSpan> SchemesCriticalTimeSpan { get; set; }
     }
 }
