@@ -14,6 +14,7 @@ using System.Net.Http;
 using FluentAssertions;
 using CK.Auth;
 using CK.AspNet.Auth;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
