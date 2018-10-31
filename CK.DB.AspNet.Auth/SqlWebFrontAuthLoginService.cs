@@ -18,6 +18,8 @@ namespace CK.DB.AspNet.Auth
 
     /// <summary>
     /// Implements <see cref="IWebFrontAuthLoginService"/> bounds to a <see cref="IAuthenticationDatabaseService"/>.
+    /// This class may be specialized (and since it is a ISingletonAmbientService, its specialization will
+    /// be automatically selected).
     /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
     {
@@ -41,12 +43,12 @@ namespace CK.DB.AspNet.Auth
         /// <summary>
         /// Gets whether the basic authentication is available.
         /// </summary>
-        public bool HasBasicLogin => _authPackage.BasicProvider != null;
+        public virtual bool HasBasicLogin => _authPackage.BasicProvider != null;
 
         /// <summary>
         /// Gets the existing providers's name.
         /// </summary>
-        public IReadOnlyList<string> Providers => _providers;
+        public virtual IReadOnlyList<string> Providers => _providers;
 
         /// <summary>
         /// Attempts to login. If it fails, null is returned. <see cref="HasBasicLogin"/> must be true for this
@@ -61,7 +63,7 @@ namespace CK.DB.AspNet.Auth
         /// only checks are done.
         /// </param>
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
-        public async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
+        public virtual async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
             var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
@@ -77,7 +79,7 @@ namespace CK.DB.AspNet.Auth
         /// <param name="monitor">The activity monitor to use.</param>
         /// <param name="scheme">The login scheme (either the provider name to use or starts with the provider name and a dot).</param>
         /// <returns>A new, empty, provider dependent login payload.</returns>
-        public object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
+        public virtual object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
         {
             return FindProvider( scheme, mustHavePayload: true ).CreatePayload();
         }
@@ -96,7 +98,7 @@ namespace CK.DB.AspNet.Auth
         /// only checks are done.
         /// </param>
         /// <returns>The login result.</returns>
-        public async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
+        public virtual async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
             var c = ctx.RequestServices.GetService<ISqlCallContext>();
@@ -105,7 +107,40 @@ namespace CK.DB.AspNet.Auth
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
         }
 
-        IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )
+        /// <summary>
+        /// Refreshes a <see cref="IAuthenticationInfo"/> by reading the actual user and the impersonated user if any.
+        /// </summary>
+        /// <param name="ctx">The current http context.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="current">The current authentication info that should be refreshed. Can be null (None authentication is returned).</param>
+        /// <param name="newExpires">New expiration date (can be the same as the current's one).</param>
+        /// <returns>The refreshed information. Never null but may be the None authentication info.</returns>
+        public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
+        {
+            if( current.IsNullOrNone() ) return _typeSystem.AuthenticationInfo.None;
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
+            IUserAuthInfo dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
+            IUserInfo actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
+            IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires );
+            if( !refreshed.IsNullOrNone() && current.IsImpersonated )
+            {
+                IUserAuthInfo dbUser = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeUser.UserId, current.UnsafeUser.UserId );
+                IUserInfo user = _typeSystem.UserInfo.FromUserAuthInfo( dbUser ) ?? _typeSystem.UserInfo.Anonymous;
+                refreshed = refreshed.Impersonate( user );
+            }
+            return refreshed;
+        }
+
+        /// <summary>
+        /// Returns a provider that may be required to be able to create a payload
+        /// (it must be a <see cref="IGenericAuthenticationProvider{T}"/>) or throws an exception
+        /// if it can't be found.
+        /// </summary>
+        /// <param name="scheme">The scheme to find.</param>
+        /// <param name="mustHavePayload">True if the provider must handle payload. An <see cref="ArgumentException"/>
+        /// is thrown if this is not the case.</param>
+        /// <returns>The provider.</returns>
+        protected virtual IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )
         {
             IGenericAuthenticationProvider p = _authPackage.FindProvider( scheme );
             if( p == null ) throw new ArgumentException( $"Unable to find a database provider for scheme '{scheme}'. Available: {_providers.Concatenate()}.", nameof( scheme ) );

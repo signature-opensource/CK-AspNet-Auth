@@ -51,7 +51,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task impersonate_can_be_called_with_userId_instead_of_uerName()
+        public async Task impersonate_can_be_called_with_userId_instead_of_userName()
         {
             using( var s = new AuthServer( configureServices: services =>
             {

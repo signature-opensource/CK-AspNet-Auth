@@ -33,5 +33,10 @@ namespace CK.AspNet.Auth.Tests
         {
             throw new NotSupportedException();
         }
+
+        public Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
+        {
+            throw new NotSupportedException();
+        }
     }
 }

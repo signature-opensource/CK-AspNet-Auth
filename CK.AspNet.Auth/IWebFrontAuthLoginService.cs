@@ -64,5 +64,16 @@ namespace CK.AspNet.Auth
         /// </param>
         /// <returns>A non null <see cref="UserLoginResult"/>.</returns>
         Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true );
+
+        /// <summary>
+        /// Refreshes a <see cref="IAuthenticationInfo"/> by reading the actual user and the impersonated user if any.
+        /// </summary>
+        /// <param name="ctx">The current http context.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="current">The current authentication info that should be refreshed. Can be null (None authentication is returned).</param>
+        /// <param name="newExpires">New expiration date (can be the same as the current's one).</param>
+        /// <returns>The refreshed information. Never null but may be the None authentication info.</returns>
+        Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires );
+
     }
 }
