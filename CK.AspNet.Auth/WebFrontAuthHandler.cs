@@ -392,18 +392,30 @@ namespace CK.AspNet.Auth
                 List<KeyValuePair<string, object>> param;
                 if( m.MatchJSONObject( out object val )
                     && (param = val as List<KeyValuePair<string, object>>) != null
-                    && param.Count == 1
-                    && param[0].Value is string userNameOrId )
+                    && param.Count == 1 )
                 {
                     if( param[0].Key == "userName" )
                     {
-                        userName = userNameOrId;
-                        return true;
+                        if( param[0].Value is string n )
+                        {
+                            userName = n;
+                            return true;
+                        }
                     }
                     if( param[0].Key == "userId" )
                     {
-                        userId = Int32.Parse( userNameOrId, CultureInfo.InvariantCulture );
-                        return true;
+                        if( param[0].Value is string n )
+                        {
+                            if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
+                            {
+                                return true;
+                            }
+                        }
+                        else if( param[0].Value is double d )
+                        {
+                            userId = (int)d;
+                            return true;
+                        }
                     }
                 }
                 Response.StatusCode = StatusCodes.Status400BadRequest;

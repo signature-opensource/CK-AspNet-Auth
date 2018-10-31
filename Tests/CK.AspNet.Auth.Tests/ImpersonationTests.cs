@@ -92,7 +92,7 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( @"{""name"":""n""}" )]
         [TestCase( @"{""id"":3}" )]
         [TestCase( @"{""userName"":3}" )]
-        [TestCase( @"{""userId"": ""3""}" )]
+        [TestCase( @"{""userId"": ""36bis""}" )]
         [TestCase( @"{""userName"":""Robert"",""userId"":3}" )]
         public async Task impersonate_with_invalid_body_fails_with_400_BadRequest( string body )
         {
