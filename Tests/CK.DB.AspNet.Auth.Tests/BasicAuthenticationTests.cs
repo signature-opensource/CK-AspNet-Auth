@@ -28,44 +28,6 @@ namespace CK.DB.AspNet.Auth.Tests
         const string logoutUri = "/.webfront/c/logout";
         const string tokenExplainUri = "/.webfront/token";
 
-        class RefreshResponse
-        {
-            public IAuthenticationInfo Info { get; set; }
-
-            public string Token { get; set; }
-
-            public bool Refreshable { get; set; }
-
-            public IList<KeyValuePair<string, string>> UserData { get; } = new List<KeyValuePair<string, string>>();
-
-            public string ErrorId { get; set; }
-
-            public string ErrorText { get; set; }
-
-            public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
-            {
-                JObject o = JObject.Parse( json );
-                var r = new RefreshResponse();
-                if( o["info"].Type == JTokenType.Object )
-                {
-                    r.Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"] );
-                }
-                r.Token = (string)o["token"];
-                r.Refreshable = (bool)o["refreshable"];
-                JObject userData = (JObject)o["userData"];
-                if( userData != null )
-                {
-                    foreach( var kv in userData )
-                    {
-                        r.UserData.Add( new KeyValuePair<string, string>( kv.Key, (string)kv.Value ) );
-                    }
-                }
-                r.ErrorId = (string)o["errorId"];
-                r.ErrorText = (string)o["errorText"];
-                return r;
-            }
-        }
-
         [TestCase( true )]
         [TestCase( false )]
         public async Task basic_authentication_via_generic_wrapper_on_a_created_user( bool allowed )
@@ -79,7 +41,7 @@ namespace CK.DB.AspNet.Auth.Tests
             {
                 // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is automatically
                 // registered in the DI container, we must remove it.
-                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
+                // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
                 // is not automatically registered.
 #if NET461
                 if( !allowed )
@@ -106,7 +68,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     if( allowed )
                     {
                         authBasic.EnsureSuccessStatusCode();
-                        var c = RefreshResponse.Parse( server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result );
+                        var c = AuthResponse.Parse( server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result );
                         c.Info.Level.Should().Be( AuthLevel.Normal );
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -123,7 +85,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
                     HttpResponseMessage authFailed = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
-                    var c = RefreshResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
+                    var c = AuthResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
                     c.Info.Should().BeNull();
                     c.Token.Should().BeNull();
                 }
@@ -148,7 +110,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", password ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -160,7 +122,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", "failed" + password ) );
                     HttpResponseMessage authFailed = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
                     c.Info.Should().BeNull();
                     c.Token.Should().BeNull();
                 }
@@ -187,7 +149,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                                     new JObject( new JProperty( "password", "pass" ) ) ) );
                     HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
                     r.ErrorText.Should().Contain( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string" );
                 }
@@ -198,7 +160,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                                     new JObject( new JProperty( "userId", "3712" ) ) ) );
                     HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
                     r.ErrorText.Should().Contain( "Invalid payload. Missing 'Password' -> string entry." );
                 }
@@ -208,7 +170,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                              new JProperty( "payload", null ) );
                     HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-                    RefreshResponse r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+                    AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
                     r.ErrorText.Should().Contain( "Invalid payload. It must be either a Tuple<int,string>, a Tuple<string,string> or a IDictionary<string,object> or IEnumerable<KeyValuePair<string,object>> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
                 }
@@ -271,7 +233,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -288,7 +250,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userData",
                                             new JObject( new JProperty( "zone", "<&>vil" ) ) ) );
                     HttpResponseMessage auth = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil )
                     {
                         c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -341,7 +303,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -357,7 +319,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "<&>vil" ) ) ) );
                     HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
-                    var c = RefreshResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
+                    var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil ) // When userName is "Albert".
                     {
                         c.Info.Level.Should().Be( AuthLevel.Normal );

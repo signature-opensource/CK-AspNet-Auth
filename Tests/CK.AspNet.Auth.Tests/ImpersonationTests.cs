@@ -51,7 +51,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task impersonate_can_be_called_with_userId_instead_of_uerName()
+        public async Task impersonate_can_be_called_with_userId_instead_of_userName()
         {
             using( var s = new AuthServer( configureServices: services =>
             {
@@ -92,7 +92,7 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( @"{""name"":""n""}" )]
         [TestCase( @"{""id"":3}" )]
         [TestCase( @"{""userName"":3}" )]
-        [TestCase( @"{""userId"": ""3""}" )]
+        [TestCase( @"{""userId"": ""36bis""}" )]
         [TestCase( @"{""userName"":""Robert"",""userId"":3}" )]
         public async Task impersonate_with_invalid_body_fails_with_400_BadRequest( string body )
         {

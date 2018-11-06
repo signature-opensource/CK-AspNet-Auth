@@ -1,7 +1,10 @@
 using CK.AspNet.Auth;
 using CK.Auth;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -12,6 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         /// <summary>
         /// Adds the WebFrontAuth authentication services without options configuration.
+        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency and requires
+        /// hostBuilder.<see cref="Microsoft.AspNetCore.Hosting.WebHostBuilderCKAspNetExtensions.UseScopedHttpContext(AspNetCore.Hosting.IWebHostBuilder)">UseScopedHttpContext()</see> to be defined.
         /// </summary>
         /// <param name="this">This Authentication builder.</param>
         /// <returns>Authentication builder to enable fluent syntax.</returns>
@@ -22,6 +27,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Adds the WebFrontAuth authentication services with options configuration.
+        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency and requires
+        /// hostBuilder.<see cref="Microsoft.AspNetCore.Hosting.WebHostBuilderCKAspNetExtensions.UseScopedHttpContext(AspNetCore.Hosting.IWebHostBuilder)">UseScopedHttpContext()</see> to be defined.
         /// </summary>
         /// <param name="this">This Authentication builder.</param>
         /// <param name="configure">Configuration action.</param>
@@ -30,6 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             @this.Services.AddSingleton<WebFrontAuthService>();
             @this.AddScheme<WebFrontAuthOptions, WebFrontAuthHandler>( WebFrontAuthOptions.OnlyAuthenticationScheme, "Web Front Authentication", configure );
+            @this.Services.TryAddScoped( sp => sp.GetRequiredService<CK.AspNet.ScopedHttpContext>().HttpContext.WebFrontAuthenticate() );
             return @this;
         }
     }
