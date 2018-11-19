@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>8.0.1--0058-local</CKDatabaseVersion>
-    <CKDBVersion>3.0.1--0037-local</CKDBVersion>
-    <CKActivityMonitorVersion>10.1.2--0040-local</CKActivityMonitorVersion>
-    <CKMonitoringVersion>9.1.2--0039-local</CKMonitoringVersion>
-    <CKAspNetVersion>2.1.3--0038-local</CKAspNetVersion>
+    <CKDatabaseVersion>8.0.1--0059-local</CKDatabaseVersion>
+    <CKDBVersion>3.0.1--0038-local</CKDBVersion>
+    <CKActivityMonitorVersion>10.1.2--0041-local</CKActivityMonitorVersion>
+    <CKMonitoringVersion>9.1.2--0040-local</CKMonitoringVersion>
+    <CKAspNetVersion>2.1.3--0039-local</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.6.3--0021-local</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>2.1.3--0017-local</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>3.0.1--0036-local</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>3.0.1--0037-local</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup Condition=" '$(CakeBuild)' == 'true' ">
