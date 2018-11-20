@@ -137,11 +137,11 @@ namespace CK.AspNet.Auth
             return response;
         }
 
-        Task<bool> HandleLogout()
+        async Task<bool> HandleLogout()
         {
             _authService.Logout( Context );
-            Context.Response.StatusCode = StatusCodes.Status200OK;
-            return Task.FromResult( true );
+            await Context.Response.WriteAsync( null, StatusCodes.Status200OK );
+            return true;
         }
 
         async Task<bool> HandleStartLogin( IActivityMonitor monitor )

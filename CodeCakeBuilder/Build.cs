@@ -84,7 +84,7 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    StandardUnitTests( globalInfo.BuildConfiguration,
+                    StandardUnitTests( globalInfo,
                                         projects
                                            .Where( p => p.Name.EndsWith( ".Tests" )
                                                         && !p.Path.Segments.Contains( "Integration" ) ) );
@@ -116,7 +116,7 @@ namespace CodeCake
                     var testProjects = projects
                                         .Where( p => p.Name.EndsWith( ".Tests" )
                                                     && p.Path.Segments.Contains( "Integration" ) );
-                    StandardUnitTests( globalInfo.BuildConfiguration, testProjects );
+                    StandardUnitTests( globalInfo, testProjects );
                 } );
 
 

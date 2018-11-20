@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\Common\Shared.props" />
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <OriginProjectName>CK.AspNet.Auth.Tests</OriginProjectName>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
