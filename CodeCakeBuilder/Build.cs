@@ -49,7 +49,7 @@ namespace CodeCake
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
             // This default global info will be replaced by Check-Repository task.
             // It is allocated here to ease debugging and/or manual work on complex build script.
-            CheckRepositoryInfo globalInfo = new CheckRepositoryInfo { Version = gitInfo.SafeNuGetVersion };
+            CheckRepositoryInfo globalInfo = new CheckRepositoryInfo( gitInfo, projectsToPublish );
 
             Task( "Check-Repository" )
                 .Does( () =>
@@ -84,7 +84,7 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    StandardUnitTests( globalInfo.BuildConfiguration,
+                    StandardUnitTests( globalInfo,
                                         projects
                                            .Where( p => p.Name.EndsWith( ".Tests" )
                                                         && !p.Path.Segments.Contains( "Integration" ) ) );
@@ -116,7 +116,7 @@ namespace CodeCake
                     var testProjects = projects
                                         .Where( p => p.Name.EndsWith( ".Tests" )
                                                     && p.Path.Segments.Contains( "Integration" ) );
-                    StandardUnitTests( globalInfo.BuildConfiguration, testProjects );
+                    StandardUnitTests( globalInfo, testProjects );
                 } );
 
 

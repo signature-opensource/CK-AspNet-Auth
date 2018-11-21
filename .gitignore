@@ -259,3 +259,8 @@ TestResult.*.xml
 Logs/
 CKSetupWorkingDir/
 /Tests/Integration/WebApp.Tests/Logs
+
+Tests/**/TestResult*.xml
+CodeCakeBuilder/UnitTestsDone.*.txt
+Tests/**/Logs/
+Tests/**/CKSetup-WorkingDir/
