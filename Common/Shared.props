@@ -5,9 +5,9 @@
     <CKDBVersion>3.0.1--0055-develop</CKDBVersion>
     <CKActivityMonitorVersion>10.1.2--0063-develop</CKActivityMonitorVersion>
     <CKMonitoringVersion>9.1.2--0065-develop</CKMonitoringVersion>
-    <CKAspNetVersion>2.1.3--0053-develop</CKAspNetVersion>
+    <CKAspNetVersion>2.1.3--0054-develop</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.6.3--0029-develop</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>2.1.3--0026-develop</CKAspNetTesterVersion>
+    <CKAspNetTesterVersion>2.1.3--0027-develop</CKAspNetTesterVersion>
     <CKDBUserUserPasswordVersion>3.0.1--0054-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
