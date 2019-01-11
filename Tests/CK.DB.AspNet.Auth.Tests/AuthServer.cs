@@ -2,6 +2,7 @@ using CK.AspNet.Auth;
 using CK.AspNet.Tester;
 using CK.Auth;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -12,7 +13,6 @@ namespace CK.DB.AspNet.Auth.Tests
     class AuthServer : IDisposable
     {
         IAuthenticationTypeSystem _typeSystem;
-        WebFrontAuthService _authService;
 
         public AuthServer(
             Action<WebFrontAuthOptions> options = null,
@@ -23,23 +23,21 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
-                    services.AddStObjMap( TestHelper.StObjMap );
-                    services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
+                    services.AddCKDatabase( TestHelper.StObjMap );
                     configureServices?.Invoke( services );
                 },
                 app =>
                 {
                     app.UseRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
-                    _authService = (WebFrontAuthService)app.ApplicationServices.GetService( typeof( WebFrontAuthService ) );
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );
                 } );
+            b.UseMonitoring();
+            b.UseScopedHttpContext();
             Server = new TestServer( b );
             Client = new TestServerClient( Server );
         }
-
-        public WebFrontAuthService AuthService => _authService;
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
 

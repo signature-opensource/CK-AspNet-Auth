@@ -18,9 +18,10 @@ using System.Linq;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Implementation of the authentication service.
+    /// Sealed implementation of the actual authentication service.
+    /// This implementation is registered as a singleton by <see cref="Microsoft.Extensions.DependencyInjection.WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />.
     /// </summary>
-    public class WebFrontAuthService
+    public sealed class WebFrontAuthService
     {
         /// <summary>
         /// The tag used for logs emitted related to Web Front Authentication or any
@@ -100,7 +101,20 @@ namespace CK.AspNet.Auth
         /// This must be used for configurations that can be changed dynamically like <see cref="WebFrontAuthOptions.ExpireTimeSpan"/>
         /// but not for non dynamic ones like <see cref="WebFrontAuthOptions.CookieMode"/>.
         /// </summary>
-        protected WebFrontAuthOptions CurrentOptions => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
+        internal WebFrontAuthOptions CurrentOptions => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
+
+        /// <summary>
+        /// Gets the monitor from the request service.
+        /// Must be called once and only once per request since a new ActivityMonitor is
+        /// created when hostBuilder.UseMonitoring() has not been used (the IActivityMonitor is not
+        /// available in the context).
+        /// </summary>
+        /// <param name="c">The http context.</param>
+        /// <returns>An activity monitor.</returns>
+        IActivityMonitor GetRequestMonitor( HttpContext c )
+        {
+            return c.RequestServices.GetService<IActivityMonitor>() ?? new ActivityMonitor( "WebFrontAuthService-Request" );
+        }
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )
         {
@@ -179,7 +193,7 @@ namespace CK.AspNet.Auth
         internal IAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c )
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( IAuthenticationInfo ) ) );
-            var monitor = c.GetRequestMonitor();
+            var monitor = GetRequestMonitor( c );
             IAuthenticationInfo authInfo = null;
             try
             {
@@ -320,12 +334,19 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="c">The current Http context.</param>
         /// <param name="u">The user info to login.</param>
+        /// <param name="callingScheme">The calling scheme.</param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u )
+        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme )
         {
             IAuthenticationInfo authInfo = u.IsSuccess
                                             ? _typeSystem.AuthenticationInfo.Create( u.UserInfo, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
                                             : null;
+
+            IDictionary<string, TimeSpan> scts = CurrentOptions.SchemesCriticalTimeSpan;
+            if( scts != null && scts.TryGetValue( callingScheme, out var criticalTimeSpan ) && criticalTimeSpan > TimeSpan.Zero )
+            {
+                authInfo = authInfo.SetCriticalExpires( DateTime.UtcNow + criticalTimeSpan );
+            }
             JObject response = CreateAuthResponse( c, authInfo, authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, u );
             SetCookies( c, authInfo );
             return new LoginResult( response, authInfo );
@@ -474,7 +495,7 @@ namespace CK.AspNet.Auth
         {
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
-            var monitor = context.HttpContext.GetRequestMonitor();
+            var monitor = GetRequestMonitor( context.HttpContext );
             string initialScheme, c, d, returnUrl, callerOrigin;
             context.Properties.Items.TryGetValue( "WFA-S", out initialScheme );
             context.Properties.Items.TryGetValue( "WFA-C", out c );

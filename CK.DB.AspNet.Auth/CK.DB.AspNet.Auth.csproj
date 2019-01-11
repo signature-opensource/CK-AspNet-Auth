@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\Common\Shared.props" />
 
@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.AspNet" Version="$(CKDatabaseVersion)" />
+    <PackageReference Include="CK.DB.DependencyInjection" Version="$(CKDatabaseVersion)" />
   </ItemGroup>
 
   <ItemGroup>

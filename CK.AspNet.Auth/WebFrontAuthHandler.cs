@@ -15,10 +15,11 @@ using System.Security.Claims;
 using CK.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
+using System.Globalization;
 
 namespace CK.AspNet.Auth
 {
-    class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
+    sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
     {
         readonly static PathString _cSegmentPath = "/c";
 
@@ -47,6 +48,8 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
+
         public Task<bool> HandleRequestAsync()
         {
             PathString remainder;
@@ -63,17 +66,17 @@ namespace CK.AspNet.Auth
                     {
                         if( _loginService.HasBasicLogin )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }
                     else if( cBased.Value == "/startLogin" )
                     {
-                        return HandleStartLogin( Context.GetRequestMonitor() );
+                        return HandleStartLogin( GetRequestMonitor( Context ) );
                     }
                     else if( cBased.Value == "/unsafeDirectLogin" )
                     {
-                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( Context.GetRequestMonitor() );
+                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( GetRequestMonitor( Context ) );
                         Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                     }
                     else if( cBased.Value == "/logout" )
@@ -84,7 +87,7 @@ namespace CK.AspNet.Auth
                     {
                         if( _impersonationService != null )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( Context.GetRequestMonitor() );
+                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }
@@ -98,12 +101,17 @@ namespace CK.AspNet.Auth
             return Task.FromResult( false );
         }
 
-        Task<bool> HandleRefresh()
+        async Task<bool> HandleRefresh()
         {
             IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
             Debug.Assert( authInfo != null );
+            if( Request.Query.Keys.Contains( "full" ) )
+            {
+                var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
+                authInfo = await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), authInfo, newExpires );
+            }
             JObject response = GetRefreshResponseAndSetCookies( authInfo, Request.Query.Keys.Contains( "schemes" ) );
-            return WriteResponseAsync( response );
+            return await WriteResponseAsync( response );
         }
 
         JObject GetRefreshResponseAndSetCookies( IAuthenticationInfo authInfo, bool addSchemes )
@@ -129,11 +137,11 @@ namespace CK.AspNet.Auth
             return response;
         }
 
-        Task<bool> HandleLogout()
+        async Task<bool> HandleLogout()
         {
             _authService.Logout( Context );
-            Context.Response.StatusCode = StatusCodes.Status200OK;
-            return Task.FromResult( true );
+            await Context.Response.WriteAsync( null, StatusCodes.Status200OK );
+            return true;
         }
 
         async Task<bool> HandleStartLogin( IActivityMonitor monitor )
@@ -190,27 +198,6 @@ namespace CK.AspNet.Auth
                 await Context.ChallengeAsync( scheme, p );
             }
             return true;
-
-
-            // Dynamic scopes in AuthenticationProperties are handled ONLY since NetCore 2.1.
-            // In 2.0, only "static" Options.Scopes are emitted.
-            //// TODO: Dynamic scopes in AuthenticationProperties are handled ONLY by NetCore 2.1 framework.
-            ////       In 2.0, only "static" Options.Scopes are emitted.
-            //// The implemenation should rely on a new optional Service (like IWebFrontAuthDynamicScopeProvider).
-            ////
-            //class DynamicScopeChallenge
-            //{
-            //    // Default to "scope". Valid for OAuth. 
-            //    string ScopeKey = "scope";
-            //    IEnumerable<string> Scopes;
-            //}
-            //
-            //DynamicScopeChallenge dynamicScopes = _authService.GetDynamicScopes( scheme, current );
-            //if( dynamicScopes != null )
-            //{
-            //    p.Items.Add( dynamicScopes.ScopeKey, dynamicScopes.Scopes );
-            //}
-
         }
 
         #region Unsafe Direct Login
@@ -407,15 +394,28 @@ namespace CK.AspNet.Auth
                     && (param = val as List<KeyValuePair<string, object>>) != null
                     && param.Count == 1 )
                 {
-                    if( param[0].Key == "userName" && param[0].Value is string )
+                    if( param[0].Key == "userName" )
                     {
-                        userName = (string)param[0].Value;
-                        return true;
+                        if( param[0].Value is string n )
+                        {
+                            userName = n;
+                            return true;
+                        }
                     }
-                    if( param[0].Key == "userId" && param[0].Value is double )
+                    if( param[0].Key == "userId" )
                     {
-                        userId = (int)(double)param[0].Value;
-                        return true;
+                        if( param[0].Value is string n )
+                        {
+                            if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
+                            {
+                                return true;
+                            }
+                        }
+                        else if( param[0].Value is double d )
+                        {
+                            userId = (int)d;
+                            return true;
+                        }
                     }
                 }
                 Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -451,6 +451,12 @@ namespace CK.AspNet.Auth
             return WriteResponseAsync( o );
         }
 
+        /// <summary>
+        /// Writes the JObject and always returns true.
+        /// </summary>
+        /// <param name="o">The object.</param>
+        /// <param name="code">The http status.</param>
+        /// <returns>Always true.</returns>
         async Task<bool> WriteResponseAsync( JObject o, int code = StatusCodes.Status200OK )
         {
             await Response.WriteAsync( o, code );

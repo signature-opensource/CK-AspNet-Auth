@@ -25,7 +25,6 @@ namespace WebApp
     public class WebAppMiddleware
     {
         readonly RequestDelegate _next;
-        readonly WebFrontAuthService _authService;
         readonly UserTable _userTable;
         readonly UserPasswordTable _pwdTable;
         readonly IAuthenticationTypeSystem _typeSystem;
@@ -33,14 +32,12 @@ namespace WebApp
 
         public WebAppMiddleware( 
             RequestDelegate next,
-            WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
             UserPasswordTable pwdTable,
             UserTable userTable,
             IApplicationLifetime appLifetime )
         {
             _next = next;
-            _authService = authService;
             _pwdTable = pwdTable;
             _userTable = userTable;
             _typeSystem = typeSystem;
@@ -72,10 +69,10 @@ namespace WebApp
             {
                 c.Response.StatusCode = StatusCodes.Status200OK;
                 c.Response.ContentType = "application/json";
-                IActivityMonitor m = c.GetRequestMonitor();
-                ISqlCallContext sqlCtx = c.GetSqlCallContext();
-                var sqlCtx2 = c.GetSqlCallContext();
-                await c.Response.WriteAsync( $@"{{ ""IAmHere"": true, ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null} }}" );
+                ISqlCallContext sqlCtx = c.RequestServices.GetService<ISqlCallContext>();
+                IActivityMonitor m = sqlCtx.Monitor;
+                IActivityMonitor reqMonitor = c.RequestServices.GetService<IActivityMonitor>();
+                await c.Response.WriteAsync( $@"{{ ""IAmHere"": true, ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null}, ""SqlCallContext.Monitor"": {m==reqMonitor} }}" );
                 return;
             }
             if( path.StartsWithSegments( "/quit" ) )
@@ -101,7 +98,7 @@ namespace WebApp
         {
             var b = await new StreamReader( req.Body ).ReadToEndAsync();
             var r = JObject.Parse( b );
-            ISqlCallContext ctx = c.GetSqlCallContext();
+            ISqlCallContext ctx = c.RequestServices.GetService<ISqlCallContext>();
             var userName = (string)r["userName"];
             int userId = await _userTable.CreateUserAsync( ctx, 1, userName );
             if( userId < 0 )

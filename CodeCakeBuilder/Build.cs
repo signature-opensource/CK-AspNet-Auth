@@ -49,7 +49,7 @@ namespace CodeCake
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
             // This default global info will be replaced by Check-Repository task.
             // It is allocated here to ease debugging and/or manual work on complex build script.
-            CheckRepositoryInfo globalInfo = new CheckRepositoryInfo { Version = gitInfo.SafeNuGetVersion };
+            CheckRepositoryInfo globalInfo = new CheckRepositoryInfo( gitInfo, projectsToPublish );
 
             Task( "Check-Repository" )
                 .Does( () =>
@@ -65,6 +65,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
+                     Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
                      Cake.CleanDirectories( releasesDir );
                  } );
 
@@ -83,7 +84,7 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    StandardUnitTests( globalInfo.BuildConfiguration,
+                    StandardUnitTests( globalInfo,
                                         projects
                                            .Where( p => p.Name.EndsWith( ".Tests" )
                                                         && !p.Path.Segments.Contains( "Integration" ) ) );
@@ -109,13 +110,13 @@ namespace CodeCake
             Task( "Integration-Testing" )
                 .IsDependentOn( "Build-Integration-Projects" )
                 .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
-                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'Y', 'N' ) == 'Y' )
+                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'N', 'Y' ) == 'Y' )
                 .Does( () =>
                 {
                     var testProjects = projects
                                         .Where( p => p.Name.EndsWith( ".Tests" )
                                                     && p.Path.Segments.Contains( "Integration" ) );
-                    StandardUnitTests( globalInfo.BuildConfiguration, testProjects );
+                    StandardUnitTests( globalInfo, testProjects );
                 } );
 
 

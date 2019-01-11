@@ -62,5 +62,10 @@ namespace CK.AspNet.Auth.Tests
             if( o == null ) throw new ArgumentException( "Invalid payload." );
             return BasicLoginAsync( ctx, monitor, (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value, (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value, actualLogin );
         }
+
+        public Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
+        {
+            throw new NotSupportedException( "Not tested." );
+        }
     }
 }

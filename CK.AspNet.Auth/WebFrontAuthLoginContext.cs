@@ -223,7 +223,7 @@ namespace CK.AspNet.Auth
                         ? SendRemoteAuthenticationError()
                         : SendDirectAuthenticationError();
             }
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme );
             return LoginMode == WebFrontAuthLoginMode.StartLogin
                     ? SendRemoteAuthenticationSuccess( r )
                     : SendDirectAuthenticationSuccess( r );

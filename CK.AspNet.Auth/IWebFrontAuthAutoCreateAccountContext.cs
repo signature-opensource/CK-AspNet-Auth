@@ -74,7 +74,7 @@ namespace CK.AspNet.Auth
         /// and the "errorText" is the <see cref="Exception.Message"/>.
         /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
-        /// <param name="ex">The exception. Can not be null./param>
+        /// <param name="ex">The exception. Can not be null.</param>
         UserLoginResult SetError( Exception ex );
 
     }
