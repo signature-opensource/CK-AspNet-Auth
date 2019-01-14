@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>0.0.0--023ht2v-local</CKDatabaseVersion>
-    <CKDBVersion>0.0.0--023htaw-local</CKDBVersion>
-    <CKActivityMonitorVersion>0.0.0--023hks0-local</CKActivityMonitorVersion>
-    <CKMonitoringVersion>0.0.0--023hl40-local</CKMonitoringVersion>
-    <CKAspNetVersion>0.0.0--023hl9r-local</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.0.0--023hk3e-local</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>0.0.0--023hk3d-local</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>0.0.0--023htax-local</CKDBUserUserPasswordVersion>
+    <CKDatabaseVersion>0.0.0--0240hsp-local</CKDatabaseVersion>
+    <CKDBVersion>0.0.0--0240hsq-local</CKDBVersion>
+    <CKActivityMonitorVersion>0.0.0--0240gf8-local</CKActivityMonitorVersion>
+    <CKMonitoringVersion>0.0.0--0240hs1-local</CKMonitoringVersion>
+    <CKAspNetVersion>0.0.0--0240hsn-local</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.0.0--023uqod-local</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>0.0.0--023uqoc-local</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>0.0.0--0240hsr-local</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup>
@@ -36,7 +36,7 @@
     <ProductName>CK</ProductName>
     <Company>Signature Code</Company>
     <Authors>Signature Code</Authors>
-    <Copyright>Copyright Invenietis 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
+    <Copyright>Copyright Signature-Code 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
     <RepositoryType>git</RepositoryType>
     <!--Removes annoying Pack warning: The package version ... uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients...-->
     <NoWarn>NU5105</NoWarn>
