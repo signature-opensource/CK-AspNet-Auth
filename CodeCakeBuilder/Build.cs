@@ -96,14 +96,15 @@ namespace CodeCake
                 {
                     // Use WebApp.Tests to generate the StObj assembly.
                     var webAppTests = projects.Single( p => p.Name == "WebApp.Tests" );
-                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + globalInfo.BuildConfiguration + "/net461/WebApp.Tests.dll" );
+                    var configuration = globalInfo.IsRelease ? "Release" : "Debug";
+                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/WebApp.Tests.dll" );
                     Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateStObjAssembly" } );
 
                     var webApp = projects.Single( p => p.Name == "WebApp" );
                     Cake.DotNetCoreBuild( webApp.Path.FullPath,
                          new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
                          {
-                             s.Configuration = globalInfo.BuildConfiguration;
+                             s.Configuration = configuration;
                          } ) );
                 } );
 
