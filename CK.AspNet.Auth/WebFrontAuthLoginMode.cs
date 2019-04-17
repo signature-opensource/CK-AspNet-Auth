@@ -10,6 +10,12 @@ namespace CK.AspNet.Auth
     public enum WebFrontAuthLoginMode
     {
         /// <summary>
+        /// No endpoint has been used.
+        /// This is the case when the authentication challenge has been called directly.
+        /// </summary>
+        None,
+
+        /// <summary>
         /// Identifies the '.webfront/c/basicLogin' endpoint.
         /// This is available only if the <see cref="IWebFrontAuthLoginService.HasBasicLogin"/> is true.
         /// </summary>
