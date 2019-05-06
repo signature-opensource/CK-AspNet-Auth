@@ -265,12 +265,6 @@ CodeCakeBuilder/UnitTestsDone.*.txt
 Tests/**/Logs/
 Tests/**/CKSetup-WorkingDir/
 
-/Clients/ck-aspnet-auth/spec/
-/Clients/ck-aspnet-auth/src
-/Clients/ck-aspnet-auth/index.d.ts
-/Clients/ck-aspnet-auth/index.js
-/Clients/ck-aspnet-auth/index.js.map
-
 # Dist directory
 dist
 
@@ -333,3 +327,9 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
+
+/Clients/webfrontauth/spec/
+/Clients/webfrontauth/src
+/Clients/webfrontauth/index.d.ts
+/Clients/webfrontauth/index.js
+/Clients/webfrontauth/index.js.map
