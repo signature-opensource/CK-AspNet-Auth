@@ -16,3 +16,4 @@ build_script:
 test: off
 install:
   - ps: ./CodeCakeBuilder/InstallCredentialProvider.ps1
+  - cmd: npm install -g npm@6.9.0

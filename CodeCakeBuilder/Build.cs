@@ -1,24 +1,13 @@
-using Cake.Common.Build;
-using Cake.Common.Diagnostics;
 using Cake.Common.IO;
 using Cake.Common.Solution;
 using Cake.Common.Tools.DotNetCore;
 using Cake.Common.Tools.DotNetCore.Build;
-using Cake.Common.Tools.DotNetCore.Pack;
-using Cake.Common.Tools.DotNetCore.Restore;
-using Cake.Common.Tools.DotNetCore.Test;
-using Cake.Common.Tools.NuGet;
-using Cake.Common.Tools.NuGet.Push;
+using Cake.Common.Tools.NUnit;
 using Cake.Core;
 using Cake.Core.Diagnostics;
-using Cake.Core.IO;
 using SimpleGitVersion;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using CK.Text;
-using Cake.Common.Tools.NUnit;
 
 namespace CodeCake
 {
@@ -45,6 +34,7 @@ namespace CodeCake
             SimpleRepositoryInfo gitInfo = Cake.GetSimpleRepositoryInfo();
             StandardGlobalInfo globalInfo = CreateStandardGlobalInfo( gitInfo )
                                                 .AddNuGet( projectsToPublish )
+                                                .AddNPM()
                                                 .SetCIBuildTag();
 
             Task( "Check-Repository" )
@@ -61,6 +51,7 @@ namespace CodeCake
                      Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
                      Cake.CleanDirectories( globalInfo.ReleasesFolder );
                      Cake.DeleteFiles( "Tests/**/TestResult*.xml" );
+                     globalInfo.GetNPMSolution().RunInstallAndClean( globalInfo, scriptMustExist: false );
                  } );
 
 
@@ -70,6 +61,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      StandardSolutionBuild( globalInfo, solutionFileName );
+                     globalInfo.GetNPMSolution().RunBuild( globalInfo );
                  } );
 
             Task( "Unit-Testing" )
@@ -81,7 +73,7 @@ namespace CodeCake
                     var testProjects = projects.Where( p => p.Name.EndsWith( ".Tests" )
                                                             && !p.Path.Segments.Contains( "Integration" ) );
                     StandardUnitTests( globalInfo, testProjects );
-
+                    globalInfo.GetNPMSolution().RunTest( globalInfo );
                 } );
 
             Task( "Build-Integration-Projects" )
@@ -122,6 +114,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      StandardCreateNuGetPackages( globalInfo );
+                     globalInfo.GetNPMSolution().RunPack( globalInfo );
                  } );
 
             Task( "Push-Packages" )
