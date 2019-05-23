@@ -1,6 +1,6 @@
 {
   "name": "@signature/webfrontauth",
-  "version": "0.12.0-alpha.2.0",
+  "version": "0.0.0-0",
   "description": "CK-AspNet-Auth-Client",
   "private": false,
   "scripts": {
@@ -29,6 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Invenietis/CK-AspNet-Auth-Client"
+    "url": "https://github.com/Invenietis/CK-AspNet-Auth.git",
+    "directory": "Clients/webfrontauth"
   }
 }
