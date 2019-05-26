@@ -8,10 +8,10 @@
     <PackageReference Include="Cake.Npm" Version="0.16.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="5.0.0" />
+    <PackageReference Include="NuGet.Protocol" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Credentials" Version="5.0.0" />
+    <PackageReference Include="NuGet.Credentials" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="TestResult.xml" />
