@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>10.0.1--0033-develop</CKDatabaseVersion>
-    <CKDBVersion>5.0.1--0025-develop</CKDBVersion>
-    <CKActivityMonitorVersion>11.0.3--0045-develop</CKActivityMonitorVersion>
-    <CKMonitoringVersion>10.0.3--0041-develop</CKMonitoringVersion>
-    <CKAspNetVersion>3.0.3--0034-develop</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.7.1--0023-develop</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>2.1.5--0000-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>5.0.1--0026-develop</CKDBUserUserPasswordVersion>
+    <CKDatabaseVersion>10.1.0</CKDatabaseVersion>
+    <CKDBVersion>5.1.0</CKDBVersion>
+    <CKActivityMonitorVersion>11.1.0</CKActivityMonitorVersion>
+    <CKMonitoringVersion>10.1.0</CKMonitoringVersion>
+    <CKAspNetVersion>3.1.0</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.7.1</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>2.1.4</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>5.1.0</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup>
