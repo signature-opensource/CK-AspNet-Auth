@@ -1,0 +1,1 @@
+export type Collector = (s: string) => void;

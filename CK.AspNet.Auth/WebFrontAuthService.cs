@@ -496,12 +496,22 @@ namespace CK.AspNet.Auth
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
             var monitor = GetRequestMonitor( context.HttpContext );
-            string initialScheme, c, d, returnUrl, callerOrigin;
-            context.Properties.Items.TryGetValue( "WFA-S", out initialScheme );
-            context.Properties.Items.TryGetValue( "WFA-C", out c );
-            context.Properties.Items.TryGetValue( "WFA-D", out d );
-            context.Properties.Items.TryGetValue( "WFA-R", out returnUrl );
-            context.Properties.Items.TryGetValue( "WFA-O", out callerOrigin );
+
+            // We don't have a "WFA-S" (initialScheme) when Authentication Challenge has
+            // been called directly: LoginMode is WebFrontAuthLoginMode.None
+            // and we steal the context.RedirectUri as being the final redirect url. 
+            string initialScheme, c = null, d = null, returnUrl = null, callerOrigin = null;
+            if( context.Properties.Items.TryGetValue( "WFA-S", out initialScheme ) )
+            {
+                context.Properties.Items.TryGetValue( "WFA-C", out c );
+                context.Properties.Items.TryGetValue( "WFA-D", out d );
+                context.Properties.Items.TryGetValue( "WFA-R", out returnUrl );
+                context.Properties.Items.TryGetValue( "WFA-O", out callerOrigin );
+            }
+            else
+            {
+                returnUrl = context.ReturnUri;
+            }
 
             IAuthenticationInfo initialAuth = c == null
                                         ? _typeSystem.AuthenticationInfo.None
@@ -517,7 +527,7 @@ namespace CK.AspNet.Auth
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
-                                WebFrontAuthLoginMode.StartLogin,
+                                initialScheme != null ? WebFrontAuthLoginMode.StartLogin : WebFrontAuthLoginMode.None,
                                 callingScheme,
                                 payload,
                                 context.Properties,

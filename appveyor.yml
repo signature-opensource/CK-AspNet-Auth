@@ -2,7 +2,7 @@
 version: build{build}
 image: Visual Studio 2017
 services: mssql2016
-clone_folder: C:\CK-World\CK-AspNet-Projects\CK-AspNet-Auth
+clone_folder: C:\CKli-World\CK-AspNet-Projects\CK-AspNet-Auth
 branches:
   only:
     - master
@@ -16,3 +16,4 @@ build_script:
 test: off
 install:
   - ps: ./CodeCakeBuilder/InstallCredentialProvider.ps1
+  - cmd: npm install -g npm@6.9.0

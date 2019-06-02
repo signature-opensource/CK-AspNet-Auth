@@ -30,14 +30,12 @@ namespace WebApp
             services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme )
                 .AddGoogle( "Google", options =>
                 {
-                    options.SignInScheme = WebFrontAuthOptions.OnlyAuthenticationScheme;
                     options.ClientId = "1012618945754-fi8rm641pdegaler2paqgto94gkpp9du.apps.googleusercontent.com";
                     options.ClientSecret = "vRALhloGWbPs7PJ5LzrTZwkH";
                     options.Events = new OAuthEventHandler();
                 } )
                 .AddOpenIdConnect( "oidc", options =>
                 {
-                    options.SignInScheme = WebFrontAuthOptions.OnlyAuthenticationScheme;
                     options.Authority = "http://localhost:5000";
                     options.RequireHttpsMetadata = false;
                     options.ClientId = "WebApp";

@@ -98,7 +98,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
-        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>. 
+        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// and null when LoginMode is <see cref="WebFrontAuthLoginMode.None"/>. 
         /// </summary>
         public string InitialScheme { get; }
 
@@ -219,14 +220,21 @@ namespace CK.AspNet.Auth
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorId != null )
             {
-                return LoginMode == WebFrontAuthLoginMode.StartLogin
-                        ? SendRemoteAuthenticationError()
-                        : SendDirectAuthenticationError();
+                if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
+                    || LoginMode == WebFrontAuthLoginMode.BasicLogin )
+                {
+                    return SendDirectAuthenticationError();
+                }
+                return SendRemoteAuthenticationError();
             }
             WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme );
-            return LoginMode == WebFrontAuthLoginMode.StartLogin
-                    ? SendRemoteAuthenticationSuccess( r )
-                    : SendDirectAuthenticationSuccess( r );
+
+            if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
+                || LoginMode == WebFrontAuthLoginMode.BasicLogin )
+            {
+                return SendDirectAuthenticationSuccess( r );
+            }
+            return SendRemoteAuthenticationSuccess( r );
         }
 
         Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
