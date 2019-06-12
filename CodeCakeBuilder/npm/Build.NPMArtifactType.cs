@@ -1,13 +1,6 @@
-using Cake.Core;
-using CK.Text;
 using CodeCake.Abstractions;
-using CSemVer;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CodeCake
 {
@@ -68,7 +61,7 @@ namespace CodeCake
             protected override IEnumerable<ArtifactFeed> GetRemoteFeeds()
             {
                 yield return new AzureNPMFeed( this, "Signature-OpenSource", "Default" );
-if( GlobalInfo.Version.PackageQuality >= PackageQuality.ReleaseCandidate ) yield return new NPMRemoteFeed( this, "NPMJS_ORG_PUSH_PAT", "https://registry.npmjs.org/", false );
+if( GlobalInfo.Version.PackageQuality >= CSemVer.PackageQuality.ReleaseCandidate ) yield return new NPMRemoteFeed( this, "NPMJS_ORG_PUSH_PAT", "https://registry.npmjs.org/", false );
 
             }
 
