@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>10.1.0</CKDatabaseVersion>
-    <CKDBVersion>5.1.0</CKDBVersion>
-    <CKActivityMonitorVersion>11.1.0</CKActivityMonitorVersion>
-    <CKMonitoringVersion>10.1.0</CKMonitoringVersion>
-    <CKAspNetVersion>3.1.0</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.7.1</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>2.1.4</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>5.1.0</CKDBUserUserPasswordVersion>
+    <CKDatabaseVersion>0.0.0--02bk71u-local</CKDatabaseVersion>
+    <CKDBVersion>0.0.0--02bke5g-local</CKDBVersion>
+    <CKActivityMonitorVersion>0.0.0--02biqfy-local</CKActivityMonitorVersion>
+    <CKMonitoringVersion>0.0.0--02biqfz-local</CKMonitoringVersion>
+    <CKAspNetVersion>0.0.0--02biqfz-local</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.0.0--02biqc1-local</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>0.0.0--02biqc1-local</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>0.0.0--02bkgd1-local</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup>
@@ -48,7 +48,7 @@
   <!--<ReproducibleBuilds>: See http://blog.paranoidcoding.com/2016/04/05/deterministic-builds-in-roslyn.html.-->
   <PropertyGroup Condition=" '$(CakeBuild)' == 'true' ">
     <Deterministic>true</Deterministic>
-    <PathMap>$(SolutionDir)=C:\CKli-World\CK-AspNet-Projects\CK-AspNet-Auth</PathMap>
+    <PathMap>'$(SolutionDir)'=C:\CKli-World\CK-AspNet-Projects\CK-AspNet-Auth</PathMap>
   </PropertyGroup>
   <!--</ReproducibleBuilds>-->
   <!--<ZeroVersion>: When not building from the CI, assemblies always use the ZeroVersion (see CSemVer.InformationalVersion).-->
