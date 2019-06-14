@@ -48,11 +48,11 @@ namespace CodeCake
                 .IsDependentOn( "Check-Repository" )
                 .Does( () =>
                  {
-                     //Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
-                     //Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
-                     //Cake.CleanDirectories( globalInfo.ReleasesFolder );
-                     //Cake.DeleteFiles( "Tests/**/TestResult*.xml" );
-                     //globalInfo.GetNPMSolution().RunInstallAndClean( globalInfo, scriptMustExist: false );
+                     Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
+                     Cake.CleanDirectories( projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
+                     Cake.CleanDirectories( globalInfo.ReleasesFolder );
+                     Cake.DeleteFiles( "Tests/**/TestResult*.xml" );
+                     globalInfo.GetNPMSolution().RunInstallAndClean( globalInfo, scriptMustExist: false );
                  } );
 
 
@@ -61,8 +61,8 @@ namespace CodeCake
                 .IsDependentOn( "Clean" )
                 .Does( () =>
                  {
-                     //StandardSolutionBuild( globalInfo, solutionFileName );
-                     //globalInfo.GetNPMSolution().RunBuild( globalInfo );
+                     StandardSolutionBuild( globalInfo, solutionFileName );
+                     globalInfo.GetNPMSolution().RunBuild( globalInfo );
                  } );
 
             Task( "Unit-Testing" )
@@ -71,10 +71,10 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    //var testProjects = projects.Where( p => p.Name.EndsWith( ".Tests" )
-                    //                                        && !p.Path.Segments.Contains( "Integration" ) );
-                    //StandardUnitTests( globalInfo, testProjects );
-                    //globalInfo.GetNPMSolution().RunTest( globalInfo );
+                    var testProjects = projects.Where( p => p.Name.EndsWith( ".Tests" )
+                                                            && !p.Path.Segments.Contains( "Integration" ) );
+                    StandardUnitTests( globalInfo, testProjects );
+                    globalInfo.GetNPMSolution().RunTest( globalInfo );
                 } );
 
             Task( "Build-Integration-Projects" )
