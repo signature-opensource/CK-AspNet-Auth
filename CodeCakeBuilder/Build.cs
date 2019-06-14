@@ -2,6 +2,7 @@ using Cake.Common.IO;
 using Cake.Common.Solution;
 using Cake.Common.Tools.DotNetCore;
 using Cake.Common.Tools.DotNetCore.Build;
+using Cake.Common.Tools.DotNetCore.Test;
 using Cake.Common.Tools.NUnit;
 using Cake.Core;
 using Cake.Core.Diagnostics;
@@ -82,15 +83,13 @@ namespace CodeCake
                 {
                     // Use WebApp.Tests to generate the StObj assembly.
                     var webAppTests = projects.Single( p => p.Name == "WebApp.Tests" );
-                    var configuration = globalInfo.IsRelease ? "Release" : "Debug";
-                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + configuration + "/net461/WebApp.Tests.dll" );
-                    Cake.NUnit( path.FullPath, new NUnitSettings() { Include = "GenerateStObjAssembly" } );
-
+                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + globalInfo.BuildConfiguration + "/net461/WebApp.Tests.dll" );
+                    Cake.NUnit3( path.FullPath, new NUnit3Settings{ Test = "WebApp.Tests.DBSetup.Generate_StObj_Assembly_Generated" } );
                     var webApp = projects.Single( p => p.Name == "WebApp" );
                     Cake.DotNetCoreBuild( webApp.Path.FullPath,
                          new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
                          {
-                             s.Configuration = configuration;
+                             s.Configuration = globalInfo.BuildConfiguration;
                          } ) );
                 } );
 

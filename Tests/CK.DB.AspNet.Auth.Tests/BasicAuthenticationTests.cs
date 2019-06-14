@@ -43,18 +43,11 @@ namespace CK.DB.AspNet.Auth.Tests
                 // registered in the DI container, we must remove it.
                 // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
                 // is not automatically registered.
-#if NET461
                 if( !allowed )
                 {
                     int idx = services.IndexOf( s => s.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
                     services.RemoveAt( idx );
                 }
-#else
-                if( allowed )
-                {
-                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
-                }
-#endif
             } ) )
             {
                 string userName = Guid.NewGuid().ToString();

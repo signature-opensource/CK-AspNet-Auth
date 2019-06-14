@@ -11,6 +11,8 @@ using IdentityServer4.Validation;
 using IdentityServer4.Models;
 using IdentityServer4;
 using IdentityServer4.Test;
+using Microsoft.AspNetCore.Authentication.Google;
+using System.Diagnostics;
 
 namespace IdServer
 {
@@ -21,7 +23,7 @@ namespace IdServer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddIdentityServer()
-                .AddTemporarySigningCredential()
+                .AddDeveloperSigningCredential()
                 .AddInMemoryIdentityResources(new List<IdentityResource>
                 {
                     new IdentityResources.OpenId(),
@@ -86,6 +88,15 @@ namespace IdServer
                     }
                 } );
             services.AddMvc();
+            services.AddAuthentication()
+                .AddGoogle( p =>
+                 {
+                     p.ClientId = "708996912208-9m4dkjb5hscn7cjrn5u0r4tbgkbj1fko.apps.googleusercontent.com";
+                     p.ClientSecret = "wdfPY6t8H8cecgjlxud__4Gh";
+                     p.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
+                     
+                 } );
+                
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
@@ -127,15 +138,6 @@ namespace IdServer
             } );
 
             app.UseIdentityServer();
-
-            app.UseGoogleAuthentication(new GoogleOptions
-            {
-                AuthenticationScheme = "Google",
-                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
-                ClientId = "708996912208-9m4dkjb5hscn7cjrn5u0r4tbgkbj1fko.apps.googleusercontent.com",
-                ClientSecret = "wdfPY6t8H8cecgjlxud__4Gh"
-            });
-
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();
         }
