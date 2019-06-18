@@ -24,7 +24,6 @@ namespace WebApp.Tests
         static void StopServers( object sender, EventArgs e )
         {
             WebAppProcess.StopAndWaitForExit();
-            IdServerProcess.StopAndWaitForExit();
         }
 
         public static ExternalProcess WebAppProcess = new ExternalProcess(
@@ -37,18 +36,6 @@ namespace WebApp.Tests
                 pI.UseShellExecute = false;
             },
             p => _client?.Get( "/quit" ) );
-
-        public static ExternalProcess IdServerProcess = new ExternalProcess(
-            pI =>
-            {
-                pI.WorkingDirectory = Path.Combine( TestHelper.SolutionFolder, "Tests", "Integration", "IdServer" );
-                pI.FileName = "dotnet";
-                pI.Arguments = '"' + Path.Combine( "bin", TestHelper.BuildConfiguration, "netcoreapp1.1", "IdServer.dll" );
-                pI.CreateNoWindow = true;
-                pI.UseShellExecute = false;
-            },
-            p => _client?.Get( "/quit" ) );
-
         static public async Task<TestClient> GetRunningTestClient()
         {
             if( _client == null )
@@ -56,7 +43,6 @@ namespace WebApp.Tests
                 _client = new TestClient( "http://localhost:4324/" );
             }
             WebAppProcess.EnsureRunning();
-            IdServerProcess.EnsureRunning();
             await WaitForWebAppAnswer();
             return _client;
         }
