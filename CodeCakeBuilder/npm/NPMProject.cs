@@ -71,10 +71,8 @@ namespace CodeCake
             {
                 foreach( KeyValuePair<string, JToken> keyValuePair in dependencies )
                 {
-                    var localProject = npmArtifactType?.Solution?.Projects.FirstOrDefault( x => x.PackageJson.Name == keyValuePair.Key )
-                        as NPMPublishedProject;
-
-                    if( localProject != null )
+                    if( npmArtifactType?.Solution?.Projects.FirstOrDefault( x => x.PackageJson.Name == keyValuePair.Key )
+                        is NPMPublishedProject localProject )
                     {
                         dependencies[keyValuePair.Key] = new JValue( "^" + localProject.ArtifactInstance.Version.ToNuGetPackageString() );
                     }
