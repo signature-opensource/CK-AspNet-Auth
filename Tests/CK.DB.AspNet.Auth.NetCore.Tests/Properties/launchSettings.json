@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "CK.DB.AspNet.Auth.NetCore.Tests": {
-      "commandName": "Project",
-      "commandLineArgs": "--wait"
-    }
-  }
-}

@@ -25,6 +25,7 @@ namespace CodeCake
             readonly string _savedPackageJson;
 
             public PackageVersionReplacer(
+                StandardGlobalInfo globalInfo,
                 NPMProject p,
                 SVersion version,
                 bool preparePack,
@@ -288,14 +289,14 @@ namespace CodeCake
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
         public void RunTest( bool scriptMustExist = true ) => RunScript( "test", scriptMustExist );
 
-        private protected IDisposable TemporarySetVersion( SVersion version )
+        private protected IDisposable TemporarySetVersion( StandardGlobalInfo globalInfo, SVersion version )
         {
-            return new PackageVersionReplacer( this, version, false, null );
+            return new PackageVersionReplacer( globalInfo, this, version, false, null );
         }
 
-        private protected IDisposable TemporaryPrePack( SVersion version, bool cleanupPackageJson, Action<JObject> packageJsonPreProcessor )
+        private protected IDisposable TemporaryPrePack( StandardGlobalInfo globalInfo, SVersion version, bool cleanupPackageJson, Action<JObject> packageJsonPreProcessor )
         {
-            return new PackageVersionReplacer( this, version, cleanupPackageJson, packageJsonPreProcessor );
+            return new PackageVersionReplacer( globalInfo, this, version, cleanupPackageJson, packageJsonPreProcessor );
         }
 
         #region .npmrc configuration

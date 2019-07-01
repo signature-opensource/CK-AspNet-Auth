@@ -25,11 +25,10 @@ namespace WebApp.Tests
 
         [Explicit]
         [Test]
-        public async Task close_WebApp_and_IdServer_servers()
+        public async Task close_WebApp_server()
         {
             var c = await WebAppHelper.GetRunningTestClient();
             WebAppHelper.WebAppProcess.StopAndWaitForExit();
-            WebAppHelper.IdServerProcess.StopAndWaitForExit();
         }
 
         // This unit test is called by the CodeCakeBuilder Build script (thanks to its category) before
