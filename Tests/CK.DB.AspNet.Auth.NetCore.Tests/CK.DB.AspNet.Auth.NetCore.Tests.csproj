@@ -10,7 +10,7 @@
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBUserUserPasswordVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
-    <PackageReference Include="NUnitLite" Version="3.11.0" />
+    <PackageReference Include="NUnitLite" Version="3.12.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
