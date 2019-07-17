@@ -30,7 +30,7 @@ namespace CodeCake
 
         private protected override void DoRunScript( string n )
         {
-            using( TemporarySetVersion( globalInfo, ArtifactInstance.Version ) )
+            using( TemporarySetVersion( ArtifactInstance.Version ) )
             {
                 base.DoRunScript( n );
             }
@@ -47,7 +47,7 @@ namespace CodeCake
         /// <param name="packageJsonPreProcessor">Optional package.json pre processor.</param>
         public void RunPack( bool cleanupPackageJson = true, Action<JObject> packageJsonPreProcessor = null )
         {
-            using( TemporaryPrePack( globalInfo, ArtifactInstance.Version, cleanupPackageJson, packageJsonPreProcessor ) )
+            using( TemporaryPrePack( ArtifactInstance.Version, cleanupPackageJson, packageJsonPreProcessor ) )
             {
                 GlobalInfo.Cake.NpmPack( new NpmPackSettings()
                 {
