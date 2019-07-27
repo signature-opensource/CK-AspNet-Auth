@@ -5,7 +5,7 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.9.9" />
+    <PackageReference Include="AngleSharp" Version="0.12.1" />
     <PackageReference Include="CK.AspNet.Tester" Version="$(CKAspNetTesterVersion)" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.Testing.DBSetup" Version="$(CKDatabaseVersion)" />
@@ -13,7 +13,7 @@
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.DB.User.UserOidc" Version="$(CKDBVersion)" />
     <PackageReference Include="CK.Monitoring" Version="$(CKMonitoringVersion)" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
   </ItemGroup>
