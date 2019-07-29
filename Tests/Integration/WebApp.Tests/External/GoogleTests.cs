@@ -1,18 +1,7 @@
-using AngleSharp;
-using AngleSharp.Dom.Html;
-using AngleSharp.Network.Default;
-using AngleSharp.Parser.Html;
-using CK.Auth;
-using FluentAssertions;
-using Newtonsoft.Json.Linq;
+using CK.AspNet.Tester;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
-using CK.Text;
-using CK.AspNet.Tester;
 using System.Threading.Tasks;
 
 namespace WebApp.Tests
