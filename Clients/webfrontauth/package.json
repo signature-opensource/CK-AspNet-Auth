@@ -21,7 +21,7 @@
     "axios-cookiejar-support": "0.4.1",
     "chai": "4.1.2",
     "mocha": "5.2.0",
-    "rimraf": "2.6.2",
+    "rimraf": ">=2.6.3",
     "typescript": "3.0.3"
   },
   "dependencies": {
