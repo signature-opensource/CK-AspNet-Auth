@@ -8,7 +8,7 @@
     <CKAspNetVersion>3.2.1--0002-develop</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.8.1--0000-develop</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>2.1.6--0000-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>5.2.1--0002-develop</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>5.2.1--0003-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup>
