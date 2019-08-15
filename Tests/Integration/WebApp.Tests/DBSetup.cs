@@ -5,7 +5,6 @@ using CK.DB.User.UserGoogle;
 using CK.DB.User.UserOidc;
 using CK.DB.User.UserPassword;
 using CK.SqlServer;
-using CK.SqlServer.Setup;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;

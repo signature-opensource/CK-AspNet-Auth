@@ -23,7 +23,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
-                    services.AddCKDatabase( TestHelper.StObjMap );
+                    services.AddCKDatabase( TestHelper.Monitor, TestHelper.StObjMap );
                     configureServices?.Invoke( services );
                 },
                 app =>
