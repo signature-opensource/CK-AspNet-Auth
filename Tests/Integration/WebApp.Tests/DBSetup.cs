@@ -22,21 +22,23 @@ namespace WebApp.Tests
             BobSetup();
         }
 
-        [Explicit]
         [Test]
+        [Explicit]
         public async Task close_WebApp_server()
         {
+            Assume.That( TestHelper.IsExplicitAllowed, "Press Ctrl key to allow this test to run." );
             var c = await WebAppHelper.GetRunningTestClient();
             WebAppHelper.WebAppProcess.StopAndWaitForExit();
         }
 
         // This unit test is called by the CodeCakeBuilder Build script (thanks to its category) before
         // running the WebApp.
+        [Test]
         [Explicit]
         [Category( "GenerateStObjAssembly" )]
-        [Test]
         public void Generate_StObj_Assembly_Generated()
         {
+            Assume.That( TestHelper.IsExplicitAllowed, "Press Ctrl key to allow this test to run." );
             Assert.That( TestHelper.RunDBSetup() != CKSetup.CKSetupRunResult.Failed, "DBSetup failed." );
             var source = TestHelper.BinFolder.AppendPart( TestHelper.GeneratedAssemblyName + ".dll" );
             var target = TestHelper.TestProjectFolder.Combine( "../WebApp/bin" )
