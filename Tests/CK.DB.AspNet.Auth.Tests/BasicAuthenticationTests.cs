@@ -32,8 +32,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( false )]
         public async Task basic_authentication_via_generic_wrapper_on_a_created_user( bool allowed )
         {
-            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
-            var auth = TestHelper.StObjMap.StObjs.Obtain<IAuthenticationDatabaseService>();
+            var user = TestHelper.AutomaticServices.GetRequiredService<UserTable>();
+            var auth = TestHelper.AutomaticServices.GetRequiredService<IAuthenticationDatabaseService>();
             var basic = auth.FindProvider( "Basic" );
 
             using( var ctx = new SqlStandardCallContext() )

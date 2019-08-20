@@ -164,6 +164,37 @@ namespace CodeCake
 
         public IReadOnlyCollection<ISolution> Solutions => _solutions;
 
+        #region Memory key support.
+
+        string MemoryFilePath => $"CodeCakeBuilder/MemoryKey.{GitInfo.CommitSha}.txt";
+
+        public void WriteCommitMemoryKey( NormalizedPath key )
+        {
+            if( GitInfo.IsValid ) File.AppendAllLines( MemoryFilePath, new[] { key.ToString() } );
+        }
+
+        public bool CheckCommitMemoryKey( NormalizedPath key )
+        {
+            bool done = File.Exists( MemoryFilePath )
+                        ? Array.IndexOf( File.ReadAllLines( MemoryFilePath ), key ) >= 0
+                        : false;
+            if( done )
+            {
+                if( !GitInfo.IsValid )
+                {
+                    Cake.Information( $"Dirty commit. Key exists but is ignored: {key}" );
+                    done = false;
+                }
+                else
+                {
+                    Cake.Information( $"Key exists on this commit: {key}" );
+                }
+            }
+            return done;
+        }
+
+        #endregion
+
         /// <summary>
         /// Simply calls <see cref="ArtifactType.PushAsync(IEnumerable{ArtifactPush})"/> on each <see cref="ArtifactTypes"/>
         /// with their correct typed artifacts.

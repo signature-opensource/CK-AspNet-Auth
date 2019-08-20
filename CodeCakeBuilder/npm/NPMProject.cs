@@ -286,7 +286,15 @@ namespace CodeCake
         /// throwing an exception.
         /// </param>
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
-        public void RunTest( bool scriptMustExist = true ) => RunScript( "test", scriptMustExist );
+        public void RunTest( bool scriptMustExist = true )
+        {
+            var key = DirectoryPath.AppendPart( "test" );
+            if( !GlobalInfo.CheckCommitMemoryKey( key ) )
+            {
+                RunScript( "test", scriptMustExist );
+                GlobalInfo.WriteCommitMemoryKey( key );
+            }
+        }
 
         private protected IDisposable TemporarySetVersion( SVersion version )
         {

@@ -127,32 +127,6 @@ namespace CodeCake
             {
                 testProjects = Projects.Where( p => p.Name.EndsWith( ".Tests" ) );
             }
-            string memoryFilePath = $"CodeCakeBuilder/UnitTestsDone.{_globalInfo.GitInfo.CommitSha}.txt";
-
-            void WriteTestDone( FilePath test )
-            {
-                if( _globalInfo.GitInfo.IsValid ) File.AppendAllLines( memoryFilePath, new[] { test.ToString() } );
-            }
-
-            bool CheckTestDone( FilePath test )
-            {
-                bool done = File.Exists( memoryFilePath )
-                            ? File.ReadAllLines( memoryFilePath ).Contains( test.ToString() )
-                            : false;
-                if( done )
-                {
-                    if( !_globalInfo.GitInfo.IsValid )
-                    {
-                        _globalInfo.Cake.Information( "Dirty commit: tests are run again (base commit tests were successful)." );
-                        done = false;
-                    }
-                    else
-                    {
-                        _globalInfo.Cake.Information( "Test already successful on this commit." );
-                    }
-                }
-                return done;
-            }
 
             foreach( SolutionProject project in testProjects )
             {
@@ -174,7 +148,7 @@ namespace CodeCake
                         if( File.Exists( testBinariesPath ) )
                         {
                             _globalInfo.Cake.Information( $"Testing via NUnitLite ({framework}): {testBinariesPath}" );
-                            if( !CheckTestDone( testBinariesPath ) )
+                            if( !_globalInfo.CheckCommitMemoryKey( testBinariesPath ) )
                             {
                                 _globalInfo.Cake.NUnit3( new[] { testBinariesPath }, new NUnit3Settings
                                 {
@@ -186,7 +160,7 @@ namespace CodeCake
                         {
                             testBinariesPath = fileWithoutExtension + ".dll";
                             _globalInfo.Cake.Information( $"Testing via NUnitLite ({framework}): {testBinariesPath}" );
-                            if( !CheckTestDone( testBinariesPath ) )
+                            if( !_globalInfo.CheckCommitMemoryKey( testBinariesPath ) )
                             {
                                 _globalInfo.Cake.DotNetCoreExecute( testBinariesPath );
                             }
@@ -197,7 +171,7 @@ namespace CodeCake
                         testBinariesPath = fileWithoutExtension + ".dll";
                         // VS Tests
                         _globalInfo.Cake.Information( $"Testing via VSTest ({framework}): {testBinariesPath}" );
-                        if( !CheckTestDone( testBinariesPath ) )
+                        if( !_globalInfo.CheckCommitMemoryKey( testBinariesPath ) )
                         {
                             _globalInfo.Cake.DotNetCoreTest( projectPath, new DotNetCoreTestSettings()
                             {
@@ -214,7 +188,7 @@ namespace CodeCake
                     {
                         testBinariesPath = fileWithoutExtension + ".dll";
                         _globalInfo.Cake.Information( "Testing via NUnit: {0}", testBinariesPath );
-                        if( !CheckTestDone( testBinariesPath ) )
+                        if( !_globalInfo.CheckCommitMemoryKey( testBinariesPath ) )
                         {
                             _globalInfo.Cake.NUnit( new[] { testBinariesPath }, new NUnitSettings()
                             {
@@ -224,7 +198,7 @@ namespace CodeCake
 
                         }
                     }
-                    WriteTestDone( testBinariesPath );
+                    _globalInfo.WriteCommitMemoryKey( testBinariesPath );
                 }
             }
         }
