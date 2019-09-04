@@ -27,11 +27,16 @@ export interface IUserSchemeInfo {
     readonly lastUsed: Date;
 }
 
-export interface IError {
-    readonly loginFailureCode: number;
-    readonly loginFailureReason: string;
+export type WebFrontAuthError = IResponseError & ILoginError;
+
+export interface IResponseError {
     readonly errorId: string;
     readonly errorReason: string;
+}
+
+export interface ILoginError {
+    readonly loginFailureCode: number;
+    readonly loginFailureReason: string;
 }
 
 export interface IAuthServiceConfiguration {

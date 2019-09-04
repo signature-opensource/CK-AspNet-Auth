@@ -6,7 +6,7 @@ import {
     IAuthenticationInfo,
     AuthLevel,
     IUserInfo,
-    IError,
+    WebFrontAuthError,
     IAuthServiceConfiguration
 } from '../../';
 import { AuthServiceConfiguration } from '../../src/index.private';
@@ -31,7 +31,7 @@ describe('AuthService', function() {
         schemes: []
     };
 
-    const noError: IError = {
+    const noError: WebFrontAuthError = {
         loginFailureCode: null,
         loginFailureReason: null,
         errorId: null,
