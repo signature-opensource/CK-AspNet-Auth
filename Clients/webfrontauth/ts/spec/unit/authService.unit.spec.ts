@@ -44,7 +44,7 @@ describe('AuthService', function() {
     before(function() {
         authService = new AuthService( { identityEndPoint: {} }, axios );
 
-        axios.defaults.timeout = 0;
+        axios.defaults.timeout = 0.1;
         requestInterceptorId = axios.interceptors.request.use((config: AxiosRequestConfig) => {
             config.url = `unitTest+${config.url}`;
             return config;
