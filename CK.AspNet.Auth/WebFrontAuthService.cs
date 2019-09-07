@@ -113,7 +113,7 @@ namespace CK.AspNet.Auth
         /// <returns>An activity monitor.</returns>
         IActivityMonitor GetRequestMonitor( HttpContext c )
         {
-            return c.RequestServices.GetService<IActivityMonitor>() ?? new ActivityMonitor( "WebFrontAuthService-Request" );
+            return c.RequestServices.GetService<IActivityMonitor>( false ) ?? new ActivityMonitor( "WebFrontAuthService-Request" );
         }
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )

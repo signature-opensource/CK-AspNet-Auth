@@ -48,7 +48,7 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
-        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>( false );
 
         public Task<bool> HandleRequestAsync()
         {
