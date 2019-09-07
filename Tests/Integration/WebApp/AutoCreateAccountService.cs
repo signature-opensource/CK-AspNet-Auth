@@ -31,7 +31,7 @@ namespace WebApp
             // This is for OpenIdConnectTests.Bob_login_on_webfront_returns_User_NoAutoRegistration test.
             // Bob must not be created in the database.
             if( context.CallingScheme == "oidc" ) return null;
-            ISqlCallContext ctx = context.HttpContext.RequestServices.GetService<ISqlCallContext>();
+            ISqlCallContext ctx = context.HttpContext.RequestServices.GetService<ISqlCallContext>( false );
             int idUser = await _userTable.CreateUserAsync( ctx, 1, Guid.NewGuid().ToString() );
             IGenericAuthenticationProvider p = _dbAuth.FindProvider( context.CallingScheme );
             UCLResult dbResult = await p.CreateOrUpdateUserAsync( ctx, 1, idUser, context.Payload, UCLMode.CreateOnly | UCLMode.WithActualLogin );
