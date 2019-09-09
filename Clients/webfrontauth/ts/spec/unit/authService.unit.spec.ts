@@ -81,268 +81,285 @@ describe('AuthService', function () {
         expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('/');
     });
 
-    it('should parse basicLogin response correctly.', async function () {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
-        }
+    context('when parsing server response', function () {
 
-        currentScenario = EScenario.Failure;
-        await authService.basicLogin('', '');
+        it('should parse basicLogin response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Albert',
+                schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
+            }
 
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
-            expect(authService.token).to.be.equal('');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
-                loginFailureCode: 4,
-                loginFailureReason: 'Invalid credentials.'
-            }));
-        }
+            currentScenario = EScenario.Failure;
+            await authService.basicLogin('', '');
 
-        currentScenario = EScenario.Unsafe;
-        await authService.basicLogin('', '');
+            let currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.None);
+                expect(authService.token).to.be.equal('');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
+                    loginFailureCode: 4,
+                    loginFailureReason: 'Invalid credentials.'
+                }));
+            }
 
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
+            currentScenario = EScenario.Unsafe;
+            await authService.basicLogin('', '');
 
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
 
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+        });
+
+        it('should parse refresh response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Albert',
+                schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
+            }
+
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+
+            await authService.refresh();
+            let currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+                expect(authService.version).to.be.equal('v0.0.0-alpha');
+            }
+
+            currentScenario = EScenario.Unsafe;
+            await authService.refresh();
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+
+            currentScenario = EScenario.Failure;
+            await authService.refresh();
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.None);
+                expect(authService.token).to.be.equal('');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
+                    loginFailureCode: 4,
+                    loginFailureReason: 'Invalid credentials.'
+                }));
+            }
+        });
+
+        it('should parse logout response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Albert',
+                schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
+            }
+
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+
+            let currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+
+            currentScenario = EScenario.Unsafe;
+            await authService.logout();
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+
+            currentScenario = EScenario.None;
+            await authService.logout(true);
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.None);
+                expect(authService.token).to.be.equal('');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+        });
+
+        it('should parse unsafeDirectLogin response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Albert',
+                schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
+            }
+
+            currentScenario = EScenario.Normal;
+            await authService.unsafeDirectLogin('', {});
+
+            let currentModel = authService.authenticationInfo;
+
+            {
+                expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+                expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+
+            currentScenario = EScenario.Error;
+            await authService.unsafeDirectLogin('', {});
+            currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.None);
+                expect(authService.token).to.be.equal('');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
+                    errorId: 'System.ArgumentException',
+                    errorReason: 'Invalid payload.'
+                }));
+            }
+        });
+
+        it('should parse impersonate response.', async function () {
+            const impersonatedLoginInfo: IUserInfo = {
+                userId: 3,
+                userName: 'Robert',
+                schemes: []
+            }
+
+            const impersonatorLoginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Albert',
+                schemes: [{ name: 'Basic', lastUsed: new Date('3000-07-28T16:33:26.2758228Z') }]
+            }
+
+            currentScenario = EScenario.Normal;
+            await authService.impersonate('');
+
+            let currentModel = authService.authenticationInfo;
+            {
+                expect(areUserInfoEquals(currentModel.user, impersonatedLoginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeUser, impersonatedLoginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.actualUser, impersonatorLoginInfo)).to.be.true;
+                expect(areUserInfoEquals(currentModel.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
+                expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+                expect(authService.token).to.be.equal('CfDJ…s4POjOs');
+                expect(authService.refreshable).to.be.equal(false);
+                expect(authService.currentError.error).to.equal(null);
+            }
+        });
+
     });
 
-    it('should parse refresh response correctly.', async function () {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
-        }
+    context('when authentication info changes', function () {
 
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
+        it('should call OnChange().', async function () {
+            let authenticationInfo: IAuthenticationInfo;
+            let token: string;
 
-        await authService.refresh();
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-            expect(authService.version).to.be.equal('v0.0.0-alpha');
-        }
+            const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
+            const updateToken = () => token = authService.token;
+            authService.addOnChange(updateAuthenticationInfo);
+            authService.addOnChange(updateToken);
 
-        currentScenario = EScenario.Unsafe;
-        await authService.refresh();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+            {
+                expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
+                expect(token).to.not.be.equal('');
+            }
 
-        currentScenario = EScenario.Failure;
-        await authService.refresh();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
-            expect(authService.token).to.be.equal('');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
-                loginFailureCode: 4,
-                loginFailureReason: 'Invalid credentials.'
-            }));
-        }
+            currentScenario = EScenario.None;
+            await authService.logout(true);
+            {
+                expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
+                expect(token).to.be.equal('');
+            }
+            authService.removeOnChange(updateAuthenticationInfo);
+
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+            {
+                expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
+                expect(token).to.not.be.equal('');
+            }
+        });
+
+        it('should contains the source as an Event parameter.', async function () {
+            const assertEventSource = (source: AuthService) => expect(source).to.deep.equal(authService);
+            authService.addOnChange(assertEventSource);
+
+            currentScenario = EScenario.Normal;
+            await authService.basicLogin('', '');
+        });
+
     });
 
-    it('should parse logout response correctly.', async function () {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
-        }
-
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
-
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
-
-        currentScenario = EScenario.Unsafe;
-        await authService.logout();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
-
-        currentScenario = EScenario.None;
-        await authService.logout(true);
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
-            expect(authService.token).to.be.equal('');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
-    });
-
-    it('should parse unsafeDirectLogin response correctly.', async function () {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
-        }
-
-        currentScenario = EScenario.Normal;
-        await authService.unsafeDirectLogin('', {});
-
-        let currentModel = authService.authenticationInfo;
-
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
-
-        currentScenario = EScenario.Error;
-        await authService.unsafeDirectLogin('', {});
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
-            expect(authService.token).to.be.equal('');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
-                errorId: 'System.ArgumentException',
-                errorReason: 'Invalid payload.'
-            }));
-        }
-    });
-
-    it('should parse impersonate response correctly.', async function () {
-        const impersonatedLoginInfo: IUserInfo = {
-            userId: 3,
-            userName: 'Robert',
-            schemes: []
-        }
-
-        const impersonatorLoginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [{ name: 'Basic', lastUsed: new Date('3000-07-28T16:33:26.2758228Z') }]
-        }
-
-        currentScenario = EScenario.Normal;
-        await authService.impersonate('');
-
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, impersonatorLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ…s4POjOs');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
-        }
-    });
-
-    it('should call OnChange() correctly.', async function () {
-        let authenticationInfo: IAuthenticationInfo;
-        let token: string;
-
-        const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
-        const updateToken = () => token = authService.token;
-        authService.addOnChange(updateAuthenticationInfo);
-        authService.addOnChange(updateToken);
-
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
-        {
-            expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
-            expect(token).to.not.be.equal('');
-        }
-
-        currentScenario = EScenario.None;
-        await authService.logout(true);
-        {
-            expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
-            expect(token).to.be.equal('');
-        }
-        authService.removeOnChange(updateAuthenticationInfo);
-
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
-        {
-            expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
-            expect(token).to.not.be.equal('');
-        }
-    });
 });

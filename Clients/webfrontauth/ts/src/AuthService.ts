@@ -23,7 +23,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _expTimer;
     private _cexpTimer;
 
-    private _subscribers: Set<() => void>;
+    private _subscribers: Set<(eventSource: AuthService) => void>;
 
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
     public get token(): string { return this._token; }
@@ -307,14 +307,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region onChange
 
     private onChange(): void {
-        this._subscribers.forEach(func => func());
+        this._subscribers.forEach(func => func(this));
     }
 
-    public addOnChange(func: () => void): void {
+    public addOnChange(func: (eventSource: AuthService) => void): void {
         if (func !== undefined && func !== null) { this._subscribers.add(func); }
     }
 
-    public removeOnChange(func: () => void): boolean {
+    public removeOnChange(func: (eventSource: AuthService) => void): boolean {
         return this._subscribers.delete(func);
     }
 
