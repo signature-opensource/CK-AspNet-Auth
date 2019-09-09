@@ -27,7 +27,14 @@ export interface IUserSchemeInfo {
     readonly lastUsed: Date;
 }
 
-export type WebFrontAuthError = IResponseError & ILoginError;
+export interface IWebFrontAuthError {
+    readonly type: string;
+    readonly errorId: string;
+    readonly errorReason: string;
+    readonly error: WellKnownError
+}
+
+export type WellKnownError = IResponseError | ILoginError;
 
 export interface IResponseError {
     readonly errorId: string;

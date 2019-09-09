@@ -6,14 +6,15 @@ import {
     IAuthenticationInfo,
     AuthLevel,
     IUserInfo,
-    WebFrontAuthError,
+    IWebFrontAuthError,
     IAuthServiceConfiguration
 } from '../../';
 import { AuthServiceConfiguration } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { responseJson } from '../helpers/sample-responses';
+import { WebFrontAuthError } from '../../src/index.extension';
 
-describe('AuthService', function() {
+describe('AuthService', function () {
     enum EScenario {
         Normal = 'Normal',
         Unsafe = 'Unsafe',
@@ -31,18 +32,11 @@ describe('AuthService', function() {
         schemes: []
     };
 
-    const noError: WebFrontAuthError = {
-        loginFailureCode: null,
-        loginFailureReason: null,
-        errorId: null,
-        errorReason: null
-    }
-
     let requestInterceptorId: number;
     let responseInterceptorId: number;
-    
-    before(function() {
-        authService = new AuthService( { identityEndPoint: {} }, axios );
+
+    before(function () {
+        authService = new AuthService({ identityEndPoint: {} }, axios);
 
         axios.defaults.timeout = 0.1;
         requestInterceptorId = axios.interceptors.request.use((config: AxiosRequestConfig) => {
@@ -65,18 +59,18 @@ describe('AuthService', function() {
         });
     });
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         currentScenario = EScenario.Normal;
         await authService.logout();
     });
 
-    after(function() {
+    after(function () {
         axios.interceptors.request.eject(requestInterceptorId);
         axios.interceptors.response.eject(responseInterceptorId);
         axios.defaults.timeout = 1000;
     });
 
-    it('should parse configuration object correctly.', function() {
+    it('should parse configuration object correctly.', function () {
         let configuration: IAuthServiceConfiguration = { identityEndPoint: { hostname: 'host', disableSsl: false, port: 12345 } };
 
         let authConfiguration: AuthServiceConfiguration = new AuthServiceConfiguration(configuration);
@@ -87,11 +81,11 @@ describe('AuthService', function() {
         expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('/');
     });
 
-    it('should parse basicLogin response correctly.', async function() {
+    it('should parse basicLogin response correctly.', async function () {
         const loginInfo: IUserInfo = {
             userId: 2,
             userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
+            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
         }
 
         currentScenario = EScenario.Failure;
@@ -106,13 +100,12 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( {
-                ...noError,
+            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
                 loginFailureCode: 4,
                 loginFailureReason: 'Invalid credentials.'
-            } );
+            }));
         }
-        
+
         currentScenario = EScenario.Unsafe;
         await authService.basicLogin('', '');
 
@@ -125,7 +118,7 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
 
         currentScenario = EScenario.Normal;
@@ -140,23 +133,23 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
     });
 
-    it('should parse refresh response correctly.', async function() {
+    it('should parse refresh response correctly.', async function () {
         const loginInfo: IUserInfo = {
             userId: 2,
             userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
+            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
         }
 
         currentScenario = EScenario.Normal;
         await authService.basicLogin('', '');
-        
+
         await authService.refresh();
         let currentModel = authService.authenticationInfo;
-        { 
+        {
             expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
             expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
             expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
@@ -164,7 +157,7 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
             expect(authService.version).to.be.equal('v0.0.0-alpha');
         }
 
@@ -179,7 +172,7 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
 
         currentScenario = EScenario.Failure;
@@ -193,19 +186,18 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( {
-                ...noError,
+            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
                 loginFailureCode: 4,
                 loginFailureReason: 'Invalid credentials.'
-            } );
+            }));
         }
     });
 
-    it('should parse logout response correctly.', async function() {
+    it('should parse logout response correctly.', async function () {
         const loginInfo: IUserInfo = {
             userId: 2,
             userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
+            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
         }
 
         currentScenario = EScenario.Normal;
@@ -220,7 +212,7 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
 
         currentScenario = EScenario.Unsafe;
@@ -234,8 +226,9 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
+            expect(authService.currentError.error).to.equal(null);
         }
-        
+
         currentScenario = EScenario.None;
         await authService.logout(true);
         currentModel = authService.authenticationInfo;
@@ -247,19 +240,20 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
+            expect(authService.currentError.error).to.equal(null);
         }
     });
 
-    it('should parse unsafeDirectLogin response correctly.', async function() {
+    it('should parse unsafeDirectLogin response correctly.', async function () {
         const loginInfo: IUserInfo = {
             userId: 2,
             userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
+            schemes: [{ name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') }]
         }
 
         currentScenario = EScenario.Normal;
         await authService.unsafeDirectLogin('', {});
-        
+
         let currentModel = authService.authenticationInfo;
 
         {
@@ -270,7 +264,7 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
 
         currentScenario = EScenario.Error;
@@ -284,28 +278,29 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( { 
-                ...noError, errorId: 'System.ArgumentException', errorReason: 'Invalid payload.'
-            } );
+            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
+                errorId: 'System.ArgumentException',
+                errorReason: 'Invalid payload.'
+            }));
         }
     });
 
-    it('should parse impersonate response correctly.', async function() {
-    const impersonatedLoginInfo: IUserInfo = {
-        userId: 3,
-        userName: 'Robert',
-        schemes: []
-    }
+    it('should parse impersonate response correctly.', async function () {
+        const impersonatedLoginInfo: IUserInfo = {
+            userId: 3,
+            userName: 'Robert',
+            schemes: []
+        }
 
-    const impersonatorLoginInfo: IUserInfo = {
-        userId: 2,
-        userName: 'Albert',
-        schemes: [ { name: 'Basic', lastUsed: new Date('3000-07-28T16:33:26.2758228Z') } ]
-    }
+        const impersonatorLoginInfo: IUserInfo = {
+            userId: 2,
+            userName: 'Albert',
+            schemes: [{ name: 'Basic', lastUsed: new Date('3000-07-28T16:33:26.2758228Z') }]
+        }
 
         currentScenario = EScenario.Normal;
         await authService.impersonate('');
-        
+
         let currentModel = authService.authenticationInfo;
         {
             expect(areUserInfoEquals(currentModel.user, impersonatedLoginInfo)).to.be.true;
@@ -315,21 +310,21 @@ describe('AuthService', function() {
             expect(currentModel.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ…s4POjOs');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
         }
     });
 
-    it('should call OnChange() correctly.', async function() {
+    it('should call OnChange() correctly.', async function () {
         let authenticationInfo: IAuthenticationInfo;
         let token: string;
-        
+
         const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
         const updateToken = () => token = authService.token;
-        authService.addOnChange(updateAuthenticationInfo); 
-        authService.addOnChange(updateToken); 
+        authService.addOnChange(updateAuthenticationInfo);
+        authService.addOnChange(updateToken);
 
         currentScenario = EScenario.Normal;
-        await authService.basicLogin('' , '');
+        await authService.basicLogin('', '');
         {
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
             expect(token).to.not.be.equal('');
@@ -342,9 +337,9 @@ describe('AuthService', function() {
             expect(token).to.be.equal('');
         }
         authService.removeOnChange(updateAuthenticationInfo);
-        
+
         currentScenario = EScenario.Normal;
-        await authService.basicLogin('' , '');
+        await authService.basicLogin('', '');
         {
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
             expect(token).to.not.be.equal('');

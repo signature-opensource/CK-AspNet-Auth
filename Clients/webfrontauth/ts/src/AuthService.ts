@@ -1,8 +1,10 @@
 import { AxiosResponse, AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, WebFrontAuthError } from './index';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
+import { AuthLevel, IWebFrontAuthError } from './authService.model.public';
+import { WebFrontAuthError } from './authService.model.extension';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -10,7 +12,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _token: string;
     private _refreshable: boolean;
     private _availableSchemes: string[];
-    private _retrievedError: WebFrontAuthError;
+    private _currentError: IWebFrontAuthError;
     private _version: string;
     private _configuration: AuthServiceConfiguration;
 
@@ -28,7 +30,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get refreshable(): boolean { return this._refreshable; }
     public get availableSchemes(): string[] { return this._availableSchemes; }
     public get version(): string { return this._version; }
-    public get errorCollector(): WebFrontAuthError { return this._retrievedError; }
+    public get currentError(): IWebFrontAuthError { return this._currentError; }
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }
@@ -36,13 +38,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
     public set popupDescriptor(popupDescriptor: PopupDescriptor) {
         if (popupDescriptor) { this._popupDescriptor = popupDescriptor; }
-    };
-
-    private readonly _noRetrievedError: WebFrontAuthError = {
-        loginFailureCode: null,
-        loginFailureReason: null,
-        errorId: null,
-        errorReason: null
     };
 
     //#region constructor
@@ -70,27 +65,32 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             window.addEventListener('message', this.onMessage(), false);
         }
 
-        this.handleError();
+        this.localDisconnect();
     }
 
     public static async createAsync<T extends IUserInfo = IUserInfo>(
         configuration: IAuthServiceConfiguration,
         axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>
+        typeSystem?: IAuthenticationInfoTypeSystem<T>,
+        throwOnError: boolean = true
     ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         try {
             await authService.refresh(true, true);
-            if( authService.errorCollector.errorId ) {
+            if (authService.currentError.errorId) {
                 console.error(
-                    'Encoutered error while refreshing during setup.',
-                    authService.errorCollector.errorId,
-                    authService.errorCollector.errorReason
+                    'Encoutered error while refreshing.',
+                    authService.currentError.errorId,
+                    authService.currentError.errorReason
                 );
+
+                if (throwOnError) {
+                    throw new Error('Setup did not complete successfully.');
+                }
             }
             return authService;
         } catch (error) {
-            console.error( error );
+            console.error(error);
             return authService;
         }
     }
@@ -139,20 +139,29 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
             return response.status === 200
                 ? this.parseResonse(response.data)
-                : this.handleError();
+                : this.localDisconnect();
         } catch (error) {
+            this.localDisconnect();
+
             const axiosError = error as AxiosError;
-            if( !(axiosError && axiosError.response) ) {
-                this.handleConnectionError();
+            if (!(axiosError && axiosError.response)) {
+                this._currentError = new WebFrontAuthError({
+                    errorId: 'HTTP.Status.408',
+                    errorReason: 'No connection could be made'
+                });
             } else {
-                this.handleResponseError(axiosError.response);
+                const errorResponse = axiosError.response;
+                this._currentError = new WebFrontAuthError({
+                    errorId: `HTTP.Status.${errorResponse.status}`,
+                    errorReason: 'No connection could be made'
+                });
             }
         }
     }
 
     private parseResonse(response: IWebFrontAuthResponse): void {
         if (!(response)) {
-            this.handleError();
+            this.localDisconnect();
             return;
         }
 
@@ -161,26 +170,24 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const errorId: string = response.errorId;
         const errorReason: string = response.errorText;
 
-        this._retrievedError = this._noRetrievedError;
+        this._currentError = WebFrontAuthError.NoError;
 
         if (loginFailureCode && loginFailureReason) {
-            this._retrievedError = {
-                ...this._retrievedError,
+            this._currentError = new WebFrontAuthError({
                 loginFailureCode: loginFailureCode,
                 loginFailureReason: loginFailureReason
-            };
+            });
         }
 
         if (errorId && errorReason) {
-            this._retrievedError = {
-                ...this._retrievedError,
+            this._currentError = new WebFrontAuthError({
                 errorId,
                 errorReason
-            };
+            });
         }
 
-        if (this._retrievedError !== this._noRetrievedError) {
-            this.handleError();
+        if (!!this._currentError.error) {
+            this.localDisconnect();
             return;
         }
 
@@ -188,7 +195,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if (response.schemes) { this._availableSchemes = response.schemes; }
 
         if (!response.info) {
-            this.handleError();
+            this.localDisconnect();
             return;
         }
 
@@ -196,28 +203,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = response.refreshable ? response.refreshable : false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info);
 
+
         this.onChange();
     }
 
-    private handleConnectionError(): void {
-        this.handleError();
-        this._retrievedError = {
-            ...this._noRetrievedError,
-            errorId: 'HTTP.Status.408',
-            errorReason: 'No connection could be made'
-        }
-    }
-
-    private handleResponseError(errorResponse: AxiosResponse): void {
-        this.handleError();
-        this._retrievedError = {
-            ...this._noRetrievedError,
-            errorId: `HTTP.Status.${errorResponse.status}`,
-            errorReason: errorResponse.statusText
-        }
-    }
-
-    private handleError(): void {
+    private localDisconnect(): void {
         this._token = '';
         this._refreshable = false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.none;
