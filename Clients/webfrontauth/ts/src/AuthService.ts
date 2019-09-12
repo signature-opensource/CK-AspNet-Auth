@@ -1,14 +1,12 @@
-import { AxiosResponse, AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
+import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration } from './index';
-import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor } from './index.extension';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, AuthLevel, IWebFrontAuthError } from './index';
+import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { AuthLevel, IWebFrontAuthError } from './authService.model.public';
-import { WebFrontAuthError } from './authService.model.extension';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
-    private _authenticationInfo: IAuthenticationInfo<T>;
+    private _authenticationInfo: IAuthenticationInfoImpl<T>;
     private _token: string;
     private _refreshable: boolean;
     private _availableSchemes: string[];
@@ -99,6 +97,53 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     //#region events
 
+    private readonly maxTimeout: number = 2147483647;
+
+    private setExpirationTimeout(): void {
+        const timeDifference = this._authenticationInfo.expires.getTime() - Date.now()
+
+        if (timeDifference > this.maxTimeout) {
+            this._expTimer = setTimeout(this.setExpirationTimeout, this.maxTimeout);
+        } else {
+            this._expTimer = setTimeout(() => {
+                if (this._refreshable) {
+                    this.refresh();
+                } else {
+                    this._authenticationInfo = this._authenticationInfo.setExpires(null);
+                    this.onChange();
+                }
+            }, timeDifference);
+        }
+    }
+
+    private setCriticialExpirationTimeout(): void {
+        const timeDifference = this._authenticationInfo.criticalExpires.getTime() - Date.now()
+
+        if (timeDifference > this.maxTimeout) {
+            this._cexpTimer = setTimeout(this.setCriticialExpirationTimeout, this.maxTimeout);
+        } else {
+            this._cexpTimer = setTimeout(() => {
+                if (this._refreshable) {
+                    this.refresh();
+                } else {
+                    this._authenticationInfo = this._authenticationInfo.setCriticalExpires(null);
+                    this.onChange();
+                }
+            }, timeDifference);
+        }
+    }
+
+    private clearTimeouts(): void {
+        if (this._expTimer !== null) {
+            clearTimeout(this._expTimer);
+            this._expTimer = null;
+        }
+        if (this._cexpTimer !== null) {
+            clearTimeout(this._cexpTimer);
+            this._cexpTimer = null;
+        }
+    }
+
     private onIntercept(): (value: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig> {
         return (config: AxiosRequestConfig) => {
             if (config.url.startsWith(this._configuration.webFrontAuthEndPoint) && this._token) {
@@ -129,6 +174,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> }
     ): Promise<void> {
         try {
+            this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
+
             const query = requestOptions.queries && requestOptions.queries.length
                 ? `?${requestOptions.queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
                 : '';
@@ -203,6 +250,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = response.refreshable ? response.refreshable : false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info);
 
+        if (this._authenticationInfo.expires) {
+            this.setExpirationTimeout();
+            if (this._authenticationInfo.criticalExpires) { this.setCriticialExpirationTimeout(); }
+        }
 
         this.onChange();
     }
@@ -211,14 +262,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._token = '';
         this._refreshable = false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.none;
-        if (this._expTimer !== null) {
-            clearTimeout(this._expTimer);
-            this._expTimer = null;
-        }
-        if (this._cexpTimer !== null) {
-            clearTimeout(this._cexpTimer);
-            this._cexpTimer = null;
-        }
+        this.clearTimeouts();
         this.onChange();
     }
 
