@@ -20,7 +20,7 @@ namespace CK.AspNet.Auth
     /// <remarks>
     /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
     /// </remarks>
-    public interface IWebFrontAuthAutoCreateAccountService : CK.Auth.StObjSupport.ISingletonAmbientService
+    public interface IWebFrontAuthAutoCreateAccountService : CK.Auth.StObjSupport.ISingletonAutoService
     {
         /// <summary>
         /// Called for each failed login when <see cref="UserLoginResult.IsUnregisteredUser"/> is true and when there is

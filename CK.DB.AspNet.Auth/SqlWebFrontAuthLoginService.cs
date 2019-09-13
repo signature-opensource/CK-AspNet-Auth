@@ -18,7 +18,7 @@ namespace CK.DB.AspNet.Auth
 
     /// <summary>
     /// Implements <see cref="IWebFrontAuthLoginService"/> bounds to a <see cref="IAuthenticationDatabaseService"/>.
-    /// This class may be specialized (and since it is a ISingletonAmbientService, its specialization will
+    /// This class may be specialized (and since it is a ISingletonAutoService, its specialization will
     /// be automatically selected).
     /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
