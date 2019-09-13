@@ -6,7 +6,7 @@
     <CKActivityMonitorVersion>11.1.3--0013-develop</CKActivityMonitorVersion>
     <CKMonitoringVersion>10.2.2--0016-develop</CKMonitoringVersion>
     <CKAspNetVersion>3.2.2--0012-develop</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.8.1--0008-develop</CKAuthAbstractionsVersion>
+    <CKAuthAbstractionsVersion>0.8.1--0009-develop</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>2.1.6--0008-develop</CKAspNetTesterVersion>
     <CKDBUserUserPasswordVersion>6.0.0-a00-00-0021-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
