@@ -5,7 +5,7 @@ import { NgxAuthModule } from './NgxAuthModule';
 
 @Injectable({ providedIn: NgxAuthModule })
 export class NgxAuthService<T extends IUserInfo = IUserInfo> {
-  constructor(private authService: AuthService<T>) {
+  constructor(public authService: AuthService<T>) {
     this.authService.addOnChange(() => {
       this._authenticationInfo$.next(this.authService.authenticationInfo);
     });

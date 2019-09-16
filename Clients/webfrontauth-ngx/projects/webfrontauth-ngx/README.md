@@ -18,6 +18,7 @@ The following features are exposed:
 - `AuthGuard`: An [Angular route guard](https://angular.io/guide/router#milestone-5-route-guards) that blocks routes when the user is not authenticated, or is no longer safely authenticated.
 - `AuthSchemeGuard`: An abstract class for an [Angular route guard](https://angular.io/guide/router#milestone-5-route-guards) that blocks routes depending on active authentication schemes.
 - The WFA `AuthService` can be injected into your components, or services.
+- `NgxAuthService`: A wrapper around `AuthService` that provides an `Observable<IUserInfo>` emitted every time authentication changes.
 
 ## Side effects
 
@@ -37,7 +38,7 @@ A simple configuration looks like this:
 
 ```ts
 import axios from 'axios';
-import { AuthServiceClientConfiguration, createAuthConfigUsingCurrentHost } from '@signature/webfrontauth-ngx';
+import { AXIOS, AuthServiceClientConfiguration, createAuthConfigUsingCurrentHost } from '@signature/webfrontauth-ngx';
 
 platformBrowserDynamic([
   {
@@ -54,11 +55,11 @@ platformBrowserDynamic([
     //useValue: new AuthServiceClientConfiguration('/login', myEndpoint)
   },
   {
-    provide: 'AxiosInstance',
+    provide: AXIOS,
     deps: [],
     useValue: axios.create(),
   },
 ]).bootstrapModule(AppModule)
 ```
 
-Optionally, you can use your own `IAuthenticationInfoTypeSystem<IUserInfo>` with the injection token `WFA_TYPESYSTEM`.
+Optionally, you can also provide `WFA_TYPESYSTEM` to use your own `IAuthenticationInfoTypeSystem<IUserInfo>`.
