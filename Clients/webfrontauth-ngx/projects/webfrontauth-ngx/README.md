@@ -7,7 +7,7 @@ Angular module and integration for WebFrontAuth (WFA) applications.
 - `npm i @signature/webfrontauth-ngx`
 - In the `imports` of your app module, add `NgxAuthModule.forRoot()`
 - In your `main.ts`, **configure the module before bootstrap (see Requirements below)**
-- Inject `AuthService` wherever you need it
+- Inject `NgxAuthService` and/or `AuthService` wherever you need it
 - If you need route protection, use `AuthGuard` and/or extend your own `AuthSchemeGuard` in your routes
 
 ## Features
