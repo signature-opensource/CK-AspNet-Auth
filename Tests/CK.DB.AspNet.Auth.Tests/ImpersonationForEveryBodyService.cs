@@ -25,7 +25,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         public async Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
         {
-            IUserAuthInfo dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetService<ISqlCallContext>( false ), 1, userId );
+            IUserAuthInfo dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetService<ISqlCallContext>(), 1, userId );
             return _typeSystem.UserInfo.FromUserAuthInfo( dbUser );
         }
 
