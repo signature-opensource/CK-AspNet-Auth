@@ -1,4 +1,4 @@
-import { NgModule, ModuleWithProviders, APP_INITIALIZER } from '@angular/core';
+import { NgModule, ModuleWithProviders, APP_INITIALIZER, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthService, IUserInfo } from '@signature/webfrontauth';
@@ -9,11 +9,13 @@ import { NgxAuthService } from './NgxAuthService';
 import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
 import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-system';
 import { AxiosInstance } from 'axios';
+import axios from 'axios';
+import { AXIOS, WFA_TYPESYSTEM } from './injectionTokens';
 
 export function authServiceFactory(
   authConfig: AuthServiceClientConfiguration,
   axiosInstance: AxiosInstance,
-  typeSystem: IAuthenticationInfoTypeSystem<IUserInfo>
+  typeSystem?: IAuthenticationInfoTypeSystem<IUserInfo>
 ): AuthService {
   return new AuthService(authConfig, axiosInstance, typeSystem);
 }
@@ -54,9 +56,9 @@ export class NgxAuthModule {
           provide: AuthService,
           useFactory: authServiceFactory,
           deps: [
-            AuthServiceClientConfiguration,
-            'AxiosInstance', // Manual injection
-            'IAuthenticationInfoTypeSystem' // Manual injection
+            AuthServiceClientConfiguration, // Manual injection from pre-bootstrap
+            AXIOS, // Injection from pre-bootstrap
+            [new Optional(), WFA_TYPESYSTEM], // Optional injection from pre-bootstrap
           ]
         },
         {

@@ -1,10 +1,10 @@
 {
-  "name": "@signature/ngx-webfrontauth-demo",
+  "name": "@signature/webfrontauth-ngx-demo",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build ngx-webfrontauth && ng build",
+    "build": "ng build webfrontauth-ngx && ng build",
     "test": "echo \"ng test temporarily disabled\" && exit 0",
     "lint": "ng lint",
     "e2e": "ng e2e"

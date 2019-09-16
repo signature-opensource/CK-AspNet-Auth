@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { IUserInfo, AuthService, IAuthenticationInfo } from '@signature/webfrontauth';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { NgxAuthModule } from './NgxAuthModule';
 
-@Injectable()
+@Injectable({ providedIn: NgxAuthModule })
 export class NgxAuthService<T extends IUserInfo = IUserInfo> {
   constructor(private authService: AuthService<T>) {
     this.authService.addOnChange(() => {

@@ -4,8 +4,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 import axios from 'axios';
-import { StdAuthenticationTypeSystem } from '@signature/webfrontauth/src/type-system';
-import { AuthServiceClientConfiguration, createFactoryUsingCurrentHost } from 'projects/ngx-webfrontauth/src/public-api';
+import { AuthServiceClientConfiguration, createAuthConfigUsingCurrentHost } from 'projects/webfrontauth-ngx/src/public-api';
 
 if (environment.production) {
   enableProdMode();
@@ -14,17 +13,12 @@ if (environment.production) {
 platformBrowserDynamic([
   {
     provide: AuthServiceClientConfiguration,
-    useFactory: createFactoryUsingCurrentHost('/login'),
+    useValue: createAuthConfigUsingCurrentHost('/login'),
     deps: [],
   },
   {
     provide: 'AxiosInstance',
     useValue: axios.create(),
-    deps: [],
-  },
-  {
-    provide: 'IAuthenticationInfoTypeSystem',
-    useValue: new StdAuthenticationTypeSystem(),
     deps: [],
   },
 ]).bootstrapModule(AppModule)

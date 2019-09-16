@@ -16,16 +16,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'ngx-webfrontauth-demo'`, () => {
+  it(`should have as title 'webfrontauth-ngx-demo'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('ngx-webfrontauth-demo');
+    expect(app.title).toEqual('webfrontauth-ngx-demo');
   });
 
   it('should render title', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('.content span').textContent).toContain('ngx-webfrontauth-demo app is running!');
+    expect(compiled.querySelector('.content span').textContent).toContain('webfrontauth-ngx-demo app is running!');
   });
 });

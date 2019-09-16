@@ -1,9 +1,10 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, Router, CanActivateChild } from '@angular/router';
 import { AuthService, AuthLevel } from '@signature/webfrontauth';
 import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
+import { NgxAuthModule } from 'dist/ngx-webfrontauth/public-api';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: NgxAuthModule })
 export class AuthGuard implements CanActivate, CanActivateChild {
 
   constructor(

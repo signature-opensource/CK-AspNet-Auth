@@ -51,7 +51,3 @@ export function createAuthConfigUsingCurrentHost(
   };
   return new AuthServiceClientConfiguration(loginPath, identityEndPoint);
 }
-
-export function createFactoryUsingCurrentHost( loginPath: string ): () => AuthServiceClientConfiguration {
-  return () => createAuthConfigUsingCurrentHost(loginPath);
-}

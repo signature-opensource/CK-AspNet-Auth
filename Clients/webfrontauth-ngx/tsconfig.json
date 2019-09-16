@@ -19,11 +19,11 @@
       "dom"
     ],
     "paths": {
-      "ngx-webfrontauth": [
-        "dist/ngx-webfrontauth"
+      "webfrontauth-ngx": [
+        "dist/webfrontauth-ngx"
       ],
-      "ngx-webfrontauth/*": [
-        "dist/ngx-webfrontauth/*"
+      "webfrontauth-ngx/*": [
+        "dist/webfrontauth-ngx/*"
       ]
     }
   },

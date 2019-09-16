@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpEvent, HttpHandler, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from '@signature/webfrontauth';
+import { NgxAuthModule } from './NgxAuthModule';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: NgxAuthModule })
 export class AuthInterceptor implements HttpInterceptor {
 
     constructor(
