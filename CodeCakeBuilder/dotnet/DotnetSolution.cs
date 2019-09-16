@@ -65,7 +65,7 @@ namespace CodeCake
         /// </param>
         /// <returns></returns>
         public static DotnetSolution FromSolutionInCurrentWorkingDirectory(
-            StandardGlobalInfo globalInfo)
+            StandardGlobalInfo globalInfo )
         {
             string solutionFileName = System.IO.Path.GetFileName(
                 globalInfo.Cake.GetFiles( "*.sln",
