@@ -15,7 +15,7 @@ namespace CK.AspNet.Auth
     /// <remarks>
     /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
     /// </remarks>
-    public interface IWebFrontAuthUnsafeDirectLoginAllowService : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthUnsafeDirectLoginAllowService : CK.Auth.StObjSupport.ISingletonAmbientService
     {
         /// <summary>
         /// Predicate function that may allow calls to '/c/unsafeDirectLogin' for a

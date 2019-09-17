@@ -261,6 +261,7 @@ CKSetupWorkingDir/
 /Tests/Integration/WebApp.Tests/Logs
 
 Tests/**/TestResult*.xml
+CodeCakeBuilder/UnitTestsDone.*.txt
 Tests/**/Logs/
 Tests/**/CKSetup-WorkingDir/
 
@@ -332,5 +333,3 @@ jspm_packages/
 /Clients/webfrontauth/index.d.ts
 /Clients/webfrontauth/index.js
 /Clients/webfrontauth/index.js.map
-
-CodeCakeBuilder/MemoryKey.*.txt

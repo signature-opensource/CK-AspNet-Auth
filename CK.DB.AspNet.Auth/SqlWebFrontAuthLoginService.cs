@@ -18,7 +18,7 @@ namespace CK.DB.AspNet.Auth
 
     /// <summary>
     /// Implements <see cref="IWebFrontAuthLoginService"/> bounds to a <see cref="IAuthenticationDatabaseService"/>.
-    /// This class may be specialized (and since it is a ISingletonAutoService, its specialization will
+    /// This class may be specialized (and since it is a ISingletonAmbientService, its specialization will
     /// be automatically selected).
     /// </summary>
     public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
@@ -65,7 +65,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
         public virtual async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r ); 
@@ -101,7 +101,7 @@ namespace CK.DB.AspNet.Auth
         public virtual async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
             IGenericAuthenticationProvider p = FindProvider( scheme, false );
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
@@ -118,7 +118,7 @@ namespace CK.DB.AspNet.Auth
         public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
         {
             if( current.IsNullOrNone() ) return _typeSystem.AuthenticationInfo.None;
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             IUserAuthInfo dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
             IUserInfo actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
             IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires );
