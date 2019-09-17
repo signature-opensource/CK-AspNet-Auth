@@ -2,9 +2,8 @@ import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, Router, CanActivateChild } from '@angular/router';
 import { AuthService, AuthLevel } from '@signature/webfrontauth';
 import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
-import { NgxAuthModule } from './NgxAuthModule';
 
-@Injectable({ providedIn: NgxAuthModule })
+@Injectable({ providedIn: 'root' }) // Service is provided in forRoot().
 export class AuthGuard implements CanActivate, CanActivateChild {
 
   constructor(

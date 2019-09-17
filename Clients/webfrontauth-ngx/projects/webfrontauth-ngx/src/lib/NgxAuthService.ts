@@ -1,19 +1,27 @@
 import { Injectable } from '@angular/core';
 import { IUserInfo, AuthService, IAuthenticationInfo } from '@signature/webfrontauth';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { NgxAuthModule } from './NgxAuthModule';
 
-@Injectable({ providedIn: NgxAuthModule })
+/**
+ * WebFrontAuth utility service for Angular.
+ *
+ * @description Exposes the current IAuthenticationInfo as an Observable, and the injected AuthService.
+ * @export
+ */
+@Injectable({ providedIn: 'root' }) // Service is provided in forRoot().
 export class NgxAuthService<T extends IUserInfo = IUserInfo> {
-  constructor(public authService: AuthService<T>) {
-    this.authService.addOnChange(() => {
-      this._authenticationInfo$.next(this.authService.authenticationInfo);
-    });
-    this._authenticationInfo$.next(this.authService.authenticationInfo);
-  }
+  private readonly _authenticationInfo: BehaviorSubject<IAuthenticationInfo<T>>;
 
-  private readonly _authenticationInfo$: BehaviorSubject<IAuthenticationInfo<T>>
-    = new BehaviorSubject(undefined);
-  public readonly authenticationInfo$: Observable<IAuthenticationInfo<T>>
-    = this._authenticationInfo$.asObservable();
+  /**
+   * An Observable emitting the current IAuthenticationInfo, and any new ones.
+   */
+  public readonly authenticationInfo$: Observable<IAuthenticationInfo<T>>;
+
+  constructor(public readonly authService: AuthService<T>) {
+    this._authenticationInfo = new BehaviorSubject(this.authService.authenticationInfo);
+    this.authenticationInfo$ = this._authenticationInfo.asObservable();
+
+    // Register on change event
+    this.authService.addOnChange(() => this._authenticationInfo.next(this.authService.authenticationInfo));
+  }
 }

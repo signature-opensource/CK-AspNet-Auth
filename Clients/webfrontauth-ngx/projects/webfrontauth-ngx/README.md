@@ -52,7 +52,7 @@ platformBrowserDynamic([
 
     // If your WFA host is on another machine or port:
     // Create your own `AuthServiceClientConfiguration` here.
-    //useValue: new AuthServiceClientConfiguration('/login', myEndpoint)
+    //useValue: new AuthServiceClientConfiguration(myEndpoint, '/login')
   },
   {
     provide: AXIOS,

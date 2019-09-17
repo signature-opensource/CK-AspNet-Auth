@@ -1,43 +1,34 @@
 import { IAuthServiceConfiguration, IEndPoint } from '@signature/webfrontauth';
 
-export class AuthServiceClientConfiguration
-  implements IAuthServiceConfiguration {
-  /**
-   * The route to the page used to log in.
-   * A query parameter called `returnUrl` is automatically provided.
-   */
-  public loginPath = '/login';
-
-  /**
-   * The configured identity endpoint.
-   */
-  public identityEndPoint: IEndPoint;
-
+/**
+ * WebFrontAuth configuration class.
+ *
+ * @export
+ */
+export class AuthServiceClientConfiguration implements IAuthServiceConfiguration {
   /**
    * Creates an instance of AuthServiceClientConfiguration using the provided login route and endpoint.
+   * @param identityEndPoint The identity endpoint to use in WebFrontAuth
+   * @param [loginPath='/login'] The route path WebFrontAuth should redirect to when authentication is required.
    */
-  constructor(loginPath: string, identityEndPoint: IEndPoint) {
-    const isHttps = window.location.protocol.toLowerCase() === 'https:';
-
+  constructor(
+    public readonly identityEndPoint: IEndPoint,
+    public readonly loginPath: string = '/login'
+  ) {
     this.loginPath = loginPath;
-    this.identityEndPoint = {
-      hostname: window.location.hostname,
-      port: window.location.port
-        ? Number(window.location.port)
-        : isHttps
-        ? 443
-        : 80,
-      disableSsl: !isHttps
-    };
+    this.identityEndPoint = identityEndPoint;
   }
 }
 
 /**
  * Creates an instance of AuthServiceClientConfiguration using the specified login route,
  * and the current host as identity endpoint.
+ *
+ * @export
+ * @param [loginPath='/login'] The route path WebFrontAuth should redirect to when authentication is required.
  */
 export function createAuthConfigUsingCurrentHost(
-  loginPath: string
+  loginPath: string = '/login'
 ): AuthServiceClientConfiguration {
   const isHttps = window.location.protocol.toLowerCase() === 'https:';
   const identityEndPoint: IEndPoint = {
@@ -45,9 +36,9 @@ export function createAuthConfigUsingCurrentHost(
     port: window.location.port
       ? Number(window.location.port)
       : isHttps
-      ? 443
-      : 80,
+        ? 443
+        : 80,
     disableSsl: !isHttps
   };
-  return new AuthServiceClientConfiguration(loginPath, identityEndPoint);
+  return new AuthServiceClientConfiguration(identityEndPoint, loginPath);
 }

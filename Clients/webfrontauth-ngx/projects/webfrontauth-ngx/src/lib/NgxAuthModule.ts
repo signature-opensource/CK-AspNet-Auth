@@ -2,14 +2,12 @@ import { NgModule, ModuleWithProviders, APP_INITIALIZER, Optional } from '@angul
 import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthService, IUserInfo } from '@signature/webfrontauth';
-
 import { AuthInterceptor } from './AuthInterceptor';
 import { AuthGuard } from './AuthGuard';
 import { NgxAuthService } from './NgxAuthService';
 import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
 import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-system';
 import { AxiosInstance } from 'axios';
-import axios from 'axios';
 import { AXIOS, WFA_TYPESYSTEM } from './injectionTokens';
 
 export function authServiceFactory(
@@ -20,34 +18,31 @@ export function authServiceFactory(
   return new AuthService(authConfig, axiosInstance, typeSystem);
 }
 
-export async function initializeAuthAsync(
-  authService: AuthService
-): Promise<void> {
-  console.log('Refreshing authentication...');
-  await authService.refresh(true, true);
-}
-
 export function initializeAuthFactory(
   authService: AuthService
 ): () => Promise<void> {
-  const f = () => initializeAuthAsync(authService);
+  const f = () => authService.refresh(true, true, true);
   // Do not return the lambda directly, or ngc will fail to AOT with a
   // `Lambda not supported` error.
   return f;
 }
 
 /**
- * Core Angular WebFrontAuth authentication modules.
- * REQUIRES THE FOLLOWING INJECTIONS:
- * - AuthServiceClientConfiguration
- * - AxiosInstance
- * - IAuthenticationInfoTypeSystem<IUserInfo>
+ * WebFrontAuth authentication module for Angular.
+ * Requires pre-bootstrap injection of AuthServiceClientConfiguration and AXIOS.
+ * Supports optional injection of WFA_TYPESYSTEM.
+ *
+ * @description Automatically refreshes authentication on init, and authenticates Angular's HttpClient.
  * @export
  */
 @NgModule({
   imports: [CommonModule]
 })
 export class NgxAuthModule {
+  /**
+   * Returns the module with its providers.
+   * Not for use in shared modules.
+   */
   public static forRoot(): ModuleWithProviders {
     return {
       ngModule: NgxAuthModule,
