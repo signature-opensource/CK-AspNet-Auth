@@ -5,6 +5,7 @@ using CK.Core;
 using CK.DB.Actor;
 using CK.DB.Auth;
 using CK.SqlServer;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;

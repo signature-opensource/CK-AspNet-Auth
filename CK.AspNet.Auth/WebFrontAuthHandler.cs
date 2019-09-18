@@ -16,6 +16,7 @@ using CK.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth
 {

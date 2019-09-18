@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using CK.Auth;
 using Microsoft.AspNetCore.Hosting;
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace WebApp
 {
