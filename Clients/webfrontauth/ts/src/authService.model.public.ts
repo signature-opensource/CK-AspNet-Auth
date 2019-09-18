@@ -31,10 +31,8 @@ export interface IWebFrontAuthError {
     readonly type: string;
     readonly errorId: string;
     readonly errorReason: string;
-    readonly error: WellKnownError
+    readonly error: IResponseError | ILoginError
 }
-
-export type WellKnownError = IResponseError | ILoginError;
 
 export interface IResponseError {
     readonly errorId: string;

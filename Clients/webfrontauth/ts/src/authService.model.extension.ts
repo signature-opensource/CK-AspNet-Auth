@@ -1,4 +1,4 @@
-import { IWebFrontAuthError, WellKnownError, IResponseError, ILoginError } from "./authService.model.public";
+import { IWebFrontAuthError, IResponseError, ILoginError } from "./authService.model.public";
 
 export type Collector = (s: string) => void;
 
@@ -7,7 +7,7 @@ export class WebFrontAuthError implements IWebFrontAuthError {
     public readonly errorId: string;
     public readonly errorReason: string;
 
-    constructor(public readonly error: WellKnownError) {
+    constructor(public readonly error: IResponseError | ILoginError) {
         if (this.isErrorType<IResponseError>(error)) {
             this.type = "Protocol";
             this.errorId = error.errorId;
@@ -21,7 +21,7 @@ export class WebFrontAuthError implements IWebFrontAuthError {
         }
     }
 
-    protected isErrorType<T extends WellKnownError>(error: WellKnownError): error is T {
+    protected isErrorType<T extends IResponseError | ILoginError>(error: IResponseError | ILoginError): error is T {
         return !!(error as T);
     }
 

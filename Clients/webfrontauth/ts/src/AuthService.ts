@@ -184,9 +184,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 requestOptions.body ? JSON.stringify(requestOptions.body) : {},
                 { withCredentials: true });
 
-            return response.status === 200
-                ? this.parseResonse(response.data)
-                : this.localDisconnect();
+            const status = response.status;
+            if (status === 200 ) {
+                this.parseResonse(response.data);
+            } else {
+                this.localDisconnect();
+                this._currentError = new WebFrontAuthError({
+                    errorId: `HTTP.Status.${status}`,
+                    errorReason: 'Unhandled success status'
+                });
+            }
         } catch (error) {
             this.localDisconnect();
 
@@ -200,7 +207,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 const errorResponse = axiosError.response;
                 this._currentError = new WebFrontAuthError({
                     errorId: `HTTP.Status.${errorResponse.status}`,
-                    errorReason: 'No connection could be made'
+                    errorReason: 'Server response error'
                 });
             }
         }
