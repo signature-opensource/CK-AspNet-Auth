@@ -69,7 +69,7 @@ namespace WebApp
 
         public void Configure( IApplicationBuilder app )
         {
-            app.UseRequestMonitor();
+            app.UseGuardRequestMonitor();
             app.UseAuthentication();
             app.UseMiddleware<WebAppMiddleware>();
         }

@@ -28,7 +28,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 },
                 app =>
                 {
-                    app.UseRequestMonitor();
+                    app.UseGuardRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );

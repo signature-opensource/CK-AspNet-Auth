@@ -39,7 +39,7 @@ namespace CK.AspNet.Auth.Tests
                 },
                 app =>
                 {
-                    app.UseRequestMonitor();
+                    app.UseGuardRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
