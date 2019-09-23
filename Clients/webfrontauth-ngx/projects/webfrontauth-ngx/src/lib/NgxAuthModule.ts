@@ -40,12 +40,16 @@ export function initializeAuthFactory(
 })
 export class NgxAuthModule {
   /**
-   * Returns the module with its providers, and registers its own classes
+   * Returns the module with its providers,
+   * and optionally registers its own classes
    * into HTTP_INTERCEPTORS and APP_INITIALIZER.
    * Not for use in shared modules.
+   *
+   * @param [addAutoProviders=true] **Defaults to true.** If true, `HTTP_INTERCEPTORS` and `APP_INITIALIZER` will be provided.
+   * **If false, your application will have to handle auth. refresh and token injection on its own**.
    */
-  public static forRoot(): ModuleWithProviders {
-    return {
+  public static forRoot( addAutoProviders: boolean = true ): ModuleWithProviders {
+    const moduleDef: ModuleWithProviders = {
       ngModule: NgxAuthModule,
       providers: [
         {
@@ -57,20 +61,23 @@ export class NgxAuthModule {
             [new Optional(), WFA_TYPESYSTEM], // Optional injection from pre-bootstrap
           ]
         },
-        {
-          provide: HTTP_INTERCEPTORS,
-          useClass: AuthInterceptor,
-          multi: true
-        },
-        {
-          provide: APP_INITIALIZER,
-          useFactory: initializeAuthFactory,
-          multi: true,
-          deps: [AuthService]
-        },
         AuthGuard,
         NgxAuthService
       ]
     };
+    if (addAutoProviders) {
+      moduleDef.providers.push({
+        provide: HTTP_INTERCEPTORS,
+        useClass: AuthInterceptor,
+        multi: true
+      });
+      moduleDef.providers.push({
+        provide: APP_INITIALIZER,
+        useFactory: initializeAuthFactory,
+        multi: true,
+        deps: [AuthService]
+      });
+    }
+    return moduleDef;
   }
 }
