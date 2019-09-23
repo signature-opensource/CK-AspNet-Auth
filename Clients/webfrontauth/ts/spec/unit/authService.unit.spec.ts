@@ -92,12 +92,11 @@ describe('AuthService', function () {
                 .build();
             await authService.basicLogin('', '');
 
-            let currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
@@ -111,12 +110,11 @@ describe('AuthService', function () {
                 .build();
             await authService.basicLogin('', '');
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, expectedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, expectedLoginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -129,12 +127,11 @@ describe('AuthService', function () {
                 .build();
             await authService.basicLogin('', '');
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, expectedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, expectedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, expectedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, expectedLoginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
             expect(authService.currentError.error).to.equal(null);
@@ -164,12 +161,11 @@ describe('AuthService', function () {
                 .build();
             await authService.refresh();
 
-            let currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -182,12 +178,11 @@ describe('AuthService', function () {
                 .build();
             await authService.refresh();
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -195,12 +190,11 @@ describe('AuthService', function () {
             serverResponse = emptyResponse;
             await authService.refresh();
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -221,12 +215,11 @@ describe('AuthService', function () {
                 .build();
             await authService.basicLogin('', '');
 
-            let currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
             expect(authService.currentError.error).to.be.equal(null);
@@ -239,12 +232,11 @@ describe('AuthService', function () {
                 .build();
             await authService.logout();
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.be.equal(null);
@@ -252,12 +244,11 @@ describe('AuthService', function () {
             serverResponse = emptyResponse;
             await authService.logout(true);
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.be.equal(null);
@@ -278,12 +269,11 @@ describe('AuthService', function () {
                 .build();
             await authService.unsafeDirectLogin('', {});
 
-            let currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -293,12 +283,11 @@ describe('AuthService', function () {
                 .build();
             await authService.unsafeDirectLogin('', {});
 
-            currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
@@ -329,12 +318,11 @@ describe('AuthService', function () {
                 .build();
             await authService.impersonate('');
 
-            let currentModel = authService.authenticationInfo;
-            expect(areUserInfoEquals(currentModel.user, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, impersonatorLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, impersonatedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, impersonatedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, impersonatorLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ…s4POjOs');
             expect(authService.refreshable).to.be.equal(false);
             expect(authService.currentError.error).to.equal(null);
@@ -397,6 +385,44 @@ describe('AuthService', function () {
             await authService.basicLogin('', '');
         });
 
+        /**
+         * NOTE
+         * Do not use async here. Otherwise an "method is overspecified" error will be throw.
+         * This error is thrown whenever a function returns a promise and uses the done callback.
+         * Since this test relies on events' callback, we call done() after the last expectation.
+         */
+        it('should start expires and critical expires respective timers', function (done) {
+
+            const expires = new Date();
+            expires.setMilliseconds(expires.getMilliseconds() + 100);
+            const criticalExpires = new Date();
+            criticalExpires.setMilliseconds(expires.getMilliseconds() + 100);
+
+            const assertCriticalExpiresDemoted = (source: AuthService) => {
+                expect(source.authenticationInfo.level === AuthLevel.Normal);
+                source.removeOnChange(assertCriticalExpiresDemoted);
+                source.addOnChange(assertExpiresDemoted);
+            }
+
+            const assertExpiresDemoted = (source: AuthService) => {
+                expect(source.authenticationInfo.level === AuthLevel.Unsafe);
+                source.removeOnChange(assertExpiresDemoted);
+                done();
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(expires)
+                .withCriticalExpires(criticalExpires)
+                .withToken('Cf0DEq...Fd10xRD')
+                .withRefreshable(false)
+                .build();
+
+            authService.basicLogin('', '').then(_ => {
+                expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Critical);
+                authService.addOnChange(assertCriticalExpiresDemoted);
+            });
+        });
     });
 
 });

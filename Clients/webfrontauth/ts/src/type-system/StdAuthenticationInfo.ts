@@ -70,12 +70,12 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     public checkExpiration(utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         utcNow = utcNow || new Date(Date.now());
         let level = this._level;
-        if (level < AuthLevel.Normal || (level == AuthLevel.Critical && this._criticalExpires.getTime() > utcNow.getTime())) {
+        if (level < AuthLevel.Normal || (level === AuthLevel.Critical && this._criticalExpires.getTime() > utcNow.getTime())) {
             return this;
         }
 
         if (this._expires.getTime() > utcNow.getTime()) {
-            if (level == AuthLevel.Normal) { return this; }
+            if (level === AuthLevel.Normal) { return this; }
             return this.clone(this._actualUser, this._user, this._expires, null, utcNow);
         }
 
@@ -83,13 +83,13 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     }
 
     public setExpires(expires: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        return expires.getTime() != this._expires.getTime()
-            ? this.clone(this._actualUser, this._user, expires, this._criticalExpires, utcNow)
-            : this.checkExpiration(utcNow);
+        return this.areDateEquals(expires, this._expires)
+            ? this.checkExpiration(utcNow)
+            : this.clone(this._actualUser, this._user, expires, this._criticalExpires, utcNow);
     }
 
     public setCriticalExpires(criticalExpires: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        if (criticalExpires.getTime() == this._criticalExpires.getTime()) { return this.checkExpiration(utcNow); }
+        if (this.areDateEquals(criticalExpires, this._criticalExpires)) { return this.checkExpiration(utcNow); }
 
         let newExpires: Date = this._expires;
         if (criticalExpires && (!newExpires || newExpires.getTime() < criticalExpires.getTime())) {
@@ -101,7 +101,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
 
     public impersonate(user: IUserInfo, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         user = user || this._typeSystem.userInfo.anonymous;
-        if (this._actualUser.userId == 0) throw new Error('Invalid Operation');
+        if (this._actualUser.userId === 0) throw new Error('Invalid Operation');
         return this._user != user
             ? this.clone(this._actualUser, user, this._expires, this._criticalExpires, utcNow)
             : this.checkExpiration(utcNow);
@@ -115,5 +115,9 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
 
     protected clone(actualUser: IUserInfo, user: IUserInfo, expires: Date, criticalExpires: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires, utcNow);
+    }
+
+    private areDateEquals(firstDate: Date, secondDate: Date): boolean {
+        return firstDate === secondDate || (firstDate && secondDate && firstDate.getTime() === secondDate.getTime());
     }
 }
