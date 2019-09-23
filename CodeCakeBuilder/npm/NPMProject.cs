@@ -15,30 +15,42 @@ namespace CodeCake
     public class NPMProject
     {
 
-        protected NPMProject( StandardGlobalInfo globalInfo, SimplePackageJsonFile json, NormalizedPath outputPath )
+        protected NPMProject(
+            StandardGlobalInfo globalInfo,
+            NPMSolution npmSolution,
+            SimplePackageJsonFile json,
+            NormalizedPath outputPath )
         {
             DirectoryPath = json.JsonFilePath.RemoveLastPart();
             PackageJson = json;
             OutputPath = outputPath;
             NPMRCPath = DirectoryPath.AppendPart( ".npmrc" );
             GlobalInfo = globalInfo;
+            NpmSolution = npmSolution;
         }
 
-        protected static NPMProject CreateNPMProject( StandardGlobalInfo globalInfo, SimplePackageJsonFile json, NormalizedPath outputPath )
+        protected static NPMProject CreateNPMProject(
+            StandardGlobalInfo globalInfo,
+            NPMSolution npmSolution,
+            SimplePackageJsonFile json,
+            NormalizedPath outputPath )
         {
-            return new NPMProject( globalInfo, json, outputPath );
+            return new NPMProject( globalInfo, npmSolution, json, outputPath );
         }
-
 
 
         public StandardGlobalInfo GlobalInfo { get; }
+
+        public NPMSolution NpmSolution { get; }
 
         public virtual bool IsPublished => false;
 
         public NormalizedPath DirectoryPath { get; }
 
         public SimplePackageJsonFile PackageJson { get; }
+
         public NormalizedPath OutputPath { get; }
+
         public NormalizedPath NPMRCPath { get; }
 
         /// <summary>
@@ -134,19 +146,25 @@ namespace CodeCake
         /// False to only emit a warning and return false if the script doesn't exist instead of
         /// throwing an exception.
         /// </param>
+        /// <param name="runInBuildDirectory">Whether the script should be run in <see cref="OutputPath"/> or <see cref="DirectoryPath"/> if false.</param>
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
-        public bool RunScript( string name, bool scriptMustExist = true )
+        public bool RunScript( string name, bool runInBuildDirectory, bool scriptMustExist = true )
         {
             string n = FindBestScript( name, scriptMustExist );
             if( n == null ) return false;
-            DoRunScript( n );
+            DoRunScript( n, runInBuildDirectory );
             return true;
         }
 
-        private protected virtual void DoRunScript( string n )
+        /// <summary>
+        /// Run a npm script.
+        /// </summary>
+        /// <param name="scriptName">The npm script to run.</param>
+        /// <param name="runInBuildDirectory">Whether the script should be run in <see cref="OutputPath"/> or <see cref="DirectoryPath"/> if false.</param>
+        private protected virtual void DoRunScript( string scriptName, bool runInBuildDirectory )
         {
             GlobalInfo.Cake.NpmRunScript(
-                    n,
+                    scriptName,
                     s => s
                         .WithLogLevel( NpmLogLevel.Info )
                         .FromPath( DirectoryPath.Path )
@@ -173,24 +191,24 @@ namespace CodeCake
         /// throwing an exception.
         /// </param>
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
-        public void RunTest( bool scriptMustExist = true )
+        public void RunTest()
         {
             var key = DirectoryPath.AppendPart( "test" );
             if( !GlobalInfo.CheckCommitMemoryKey( key ) )
             {
-                RunScript( "test", scriptMustExist );
+                RunScript( "test", false );
                 GlobalInfo.WriteCommitMemoryKey( key );
             }
         }
 
         private protected IDisposable TemporarySetVersion( SVersion version )
         {
-            return TempFileTextModification.TemporaryReplacePackageVersion( this, version, false, null );
+            return TempFileTextModification.TemporaryReplacePackageVersion(NpmSolution, PackageJson.JsonFilePath, version, false, null );
         }
 
         private protected IDisposable TemporaryPrePack( SVersion version, Action<JObject> packageJsonPreProcessor )
         {
-            return TempFileTextModification.TemporaryReplacePackageVersion( this, version, true, packageJsonPreProcessor );
+            return TempFileTextModification.TemporaryReplacePackageVersion(NpmSolution, OutputPath.AppendPart("package.json"), version, true, packageJsonPreProcessor );
         }
 
         #region .npmrc configuration

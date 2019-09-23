@@ -38,7 +38,7 @@ namespace CodeCake
                  {
                      globalInfo.GetDotnetSolution().Clean();
                      Cake.CleanDirectories( globalInfo.ReleasesFolder );
-                     globalInfo.GetNPMSolution().RunClean( scriptMustExist: false );
+                     globalInfo.GetNPMSolution().Clean();
                  } );
 
 
@@ -48,7 +48,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Build();
-                     globalInfo.GetNPMSolution().RunBuild();
+                     globalInfo.GetNPMSolution().Build();
                  } );
 
             Task( "Unit-Testing" )
@@ -61,7 +61,7 @@ namespace CodeCake
                                                             && !p.Path.Segments.Contains( "Integration" ) );
 
                     globalInfo.GetDotnetSolution().Test(testProjects);
-                    globalInfo.GetNPMSolution().RunTest();
+                    globalInfo.GetNPMSolution().Test();
                 } );
 
             Task( "Build-Integration-Projects" )

@@ -7,6 +7,7 @@ using Cake.Common.Tools.DotNetCore.Test;
 using Cake.Common.Tools.NUnit;
 using Cake.Core.IO;
 using CK.Text;
+using CodeCake.Abstractions;
 using SimpleGitVersion;
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace CodeCake
         }
     }
 
-    public partial class DotnetSolution : Abstractions.ICIWorkflow
+    public partial class DotnetSolution : ICIWorkflow
     {
         readonly StandardGlobalInfo _globalInfo;
         public readonly string SolutionFileName;
@@ -198,8 +199,8 @@ namespace CodeCake
             }
         }
 
-        void Abstractions.ICIWorkflow.Build() => Build();
+        void ICIWorkflow.Build() => Build();
 
-        void Abstractions.ICIWorkflow.Test() => Test();
+        void ICIWorkflow.Test() => Test();
     }
 }

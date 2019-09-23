@@ -49,7 +49,6 @@ namespace CodeCake
         /// <param name="packageJsonPreProcessor"></param>
         /// <returns></returns>
         public static IDisposable TemporaryReplacePackageVersion(
-            StandardGlobalInfo globalInfo,
             NPMSolution npmSolution,
             NormalizedPath jsonPath,
             SVersion version,
@@ -78,7 +77,7 @@ namespace CodeCake
                         JObject dependencies = (JObject)json[dependencyPropName];
                         foreach( KeyValuePair<string, JToken> keyValuePair in dependencies )
                         {
-                            if( npmSolution.SimpleProjects.FirstOrDefault( x => x.PackageJson.Name == keyValuePair.Key )
+                            if( npmSolution.AllPublishedProjects.FirstOrDefault( x => x.PackageJson.Name == keyValuePair.Key )
                                 is NPMPublishedProject localProject )
                             {
                                 dependencies[keyValuePair.Key] = new JValue( "^" + version );

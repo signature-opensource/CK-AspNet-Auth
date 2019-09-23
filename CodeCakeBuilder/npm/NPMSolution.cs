@@ -1,5 +1,6 @@
 using Cake.Npm;
 using CK.Text;
+using CodeCake.Abstractions;
 using CSemVer;
 using Newtonsoft.Json.Linq;
 using System;
@@ -55,67 +56,46 @@ namespace CodeCake
     /// <summary>
     /// Encapsulates a set of <see cref="NPMProject"/> that can be <see cref="NPMPublishedProject"/>.
     /// </summary>
-    public partial class NPMSolution : NPMCIWorkflow
+    public partial class NPMSolution : NPMProjectContainer, ICIWorkflow
     {
         readonly StandardGlobalInfo _globalInfo;
+        readonly List<AngularWorkspace> _angularWorkspaces;
 
         /// <summary>
         /// Initiaizes a new <see cref="NPMSolution" />.
         /// </summary>
         /// <param name="projects">Set of projects.</param>
-        NPMSolution( StandardGlobalInfo globalInfo, IEnumerable<NPMProject> projects, IEnumerable<AngularWorkspace> angularWorkspaces )
+        NPMSolution(
+            StandardGlobalInfo globalInfo )
+            : base()
         {
-            SimpleProjects = projects.ToArray();
-            SimplePublishedProjects = SimpleProjects.OfType<NPMPublishedProject>().ToArray();
             _globalInfo = globalInfo;
-            AngularWorkspaces = angularWorkspaces;
+            _angularWorkspaces = new List<AngularWorkspace>();
         }
 
-        /// <summary>
-        /// Gets all the NPM projects.
-        /// </summary>
-        public IReadOnlyList<NPMProject> SimpleProjects { get; }
+        public IEnumerable<AngularWorkspace> AngularWorkspaces => Containers.OfType<AngularWorkspace>();
 
-        /// <summary>
-        /// Gets the published projects.
-        /// </summary>
-        public IReadOnlyList<NPMPublishedProject> SimplePublishedProjects { get; }
-
-        public IEnumerable<NPMProject> AllProjects => SimpleProjects.Concat( AngularWorkspaces.SelectMany( p => p.Projects ) );
-
-
-        /// <summary>
-        /// Gets the Angular Worskpaces.
-        /// </summary>
-        public IEnumerable<AngularWorkspace> AngularWorkspaces { get; }
 
         /// <summary>
         /// Runs "npm ci" on all <see cref="SimpleProjects"/>.
         /// </summary>
-        protected override void RunNpmCI()
+        public void RunNpmCI()
         {
-            foreach( var p in SimpleProjects )
+            foreach( var p in AllProjects )
             {
                 p.RunNpmCi();
             }
-            foreach( var p in AngularWorkspaces )
-            {
-                p.RunNpmCI();
-            }
         }
 
-        protected override void RunClean()
+        public void Clean()
         {
-            foreach( var p in SimpleProjects )
-            {
-                p.RunClean();
-            }
-
-            foreach( var p in AngularWorkspaces )
+            foreach( var p in AllProjects )
             {
                 p.RunClean();
             }
         }
+
+
 
         /// <summary>
         /// Runs the 'build-debug', 'build-release' or 'build' script on all <see cref="SimpleProjects"/>.
@@ -125,21 +105,17 @@ namespace CodeCake
         /// False to only emit a warning and return false if the script doesn't exist instead of
         /// throwing an exception.
         /// </param>
-        public virtual void RunBuild( bool scriptMustExist = true )
+        public void Build()
         {
             foreach( var p in SimpleProjects )
             {
-                p.RunBuild( scriptMustExist );
+                p.RunBuild();
             }
-
             foreach( var p in AngularWorkspaces )
             {
                 p.Build();
             }
         }
-
-        public override void Build() => RunBuild( true );
-
 
         /// <summary>
         /// Runs the 'test' script on all <see cref="SimpleProjects"/>.
@@ -150,19 +126,13 @@ namespace CodeCake
         /// False to only emit a warning and return false if the script doesn't exist instead of
         /// throwing an exception.
         /// </param>
-        public virtual void RunTest( bool scriptMustExist = true )
+        public void Test()
         {
-            foreach( var p in SimpleProjects )
+            foreach( var p in AllProjects )
             {
-                p.RunTest( scriptMustExist );
-            }
-            foreach( var p in AngularWorkspaces )
-            {
-                p.Test();
+                p.RunTest();
             }
         }
-
-        public override void Test() => RunTest( true );
 
         /// <summary>
         /// Generates the .tgz file in the <see cref="StandardGlobalInfo.ReleasesFolder"/>
@@ -175,14 +145,9 @@ namespace CodeCake
         /// <param name="packageJsonPreProcessor">Optional package.json pre processor.</param>
         public void RunPack( Action<JObject> packageJsonPreProcessor = null )
         {
-            foreach( var p in SimplePublishedProjects )
+            foreach( var p in AllPublishedProjects )
             {
                 p.RunPack( packageJsonPreProcessor );
-            }
-
-            foreach( var p in AngularWorkspaces )
-            {
-
             }
         }
 
@@ -194,21 +159,24 @@ namespace CodeCake
         public static NPMSolution ReadFromNPMSolutionFile( StandardGlobalInfo globalInfo )
         {
             var document = XDocument.Load( "CodeCakeBuilder/NPMSolution.xml" ).Root;
-            var angularWorkspaces = document
-                            .Elements( "AngularWorkspace" )
-                            .Select( p => AngularWorkspace.Create( globalInfo, new NormalizedPath( (string)p.Attribute( "Path" ) ) ) );
-            var projects = document
-                            .Elements( "Project" )
-                            .Select( p => (bool)p.Attribute( "IsPublished" )
-                                            ? NPMPublishedProject.Load(
-                                                globalInfo,
-                                                (string)p.Attribute( "Path" ),
-                                                (string)p.Attribute( "ExpectedName" )
-                                            )
-                                            : new NPMProject(
-                                                globalInfo,
-                                                SimplePackageJsonFile.Create( (string)p.Attribute( "Path" ) ) ) );
-            return new NPMSolution( globalInfo, projects, angularWorkspaces );
+            var solution = new NPMSolution( globalInfo );
+
+            foreach( var item in document.Elements( "AngularWorkspace" ) )
+            {
+                AngularWorkspace.Create( globalInfo,
+                        solution,
+                        (string)item.Attribute( "Path" ),
+                        (string)item.Attribute( "OutputDir" ) );
+            }
+            foreach( var item in document.Elements( "Project" ) )
+            {
+                NPMPublishedProject.Create(
+                        globalInfo,
+                        solution,
+                        (string)item.Attribute( "Path" ),
+                        (string)item.Attribute( "OutputFolder" ) );
+            }
+            return solution;
         }
     }
 }

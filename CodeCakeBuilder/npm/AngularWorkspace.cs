@@ -7,20 +7,25 @@ using System.Linq;
 
 namespace CodeCake
 {
-    public class AngularWorkspace
+    public class AngularWorkspace : NPMProjectContainer
     {
         public NPMProject WorkspaceProject { get; }
         public IReadOnlyList<NPMProject> Projects { get; }
         public NormalizedPath OutputPath { get; }
 
-        AngularWorkspace( NPMProject workspaceProject, IReadOnlyList<NPMProject> projects, NormalizedPath outputPath )
+        AngularWorkspace(
+            NPMProject workspaceProject,
+            IReadOnlyList<NPMProject> projects,
+            NormalizedPath outputPath )
+            :base()
         {
             WorkspaceProject = workspaceProject;
             Projects = projects;
             OutputPath = outputPath;
         }
+        public void Build() => WorkspaceProject.RunBuild();
 
-        public static AngularWorkspace Create( StandardGlobalInfo globalInfo, NormalizedPath path, NormalizedPath outputPath )
+        public static AngularWorkspace Create( StandardGlobalInfo globalInfo, NPMSolution npmSolution, NormalizedPath path, NormalizedPath outputPath )
         {
             NormalizedPath packageJsonPath = path.AppendPart( "package.json" );
             NormalizedPath angularJsonPath = path.AppendPart( "angular.json" );
@@ -33,49 +38,14 @@ namespace CodeCake
             List<NPMProject> projects = names.Select(
                 p => NPMPublishedProject.Create(
                     globalInfo,
+                    npmSolution,
                     new NormalizedPath( angularJson["projects"][p]["root"].ToString() ),
                     outputPath.AppendPart( p )
                 )
             ).ToList();
-            return new AngularWorkspace( projects.Single( p => p.DirectoryPath == path ), projects, outputPath );
+            var output = new AngularWorkspace( projects.Single( p => p.DirectoryPath == path ), projects, outputPath );
+            npmSolution.Add( output );
+            return output;
         }
-
-        public void Pack()
-        {
-            foreach( var p in Projects )
-            {
-                if( p is NPMPublishedProject o )
-                {
-                    o.RunPack();
-                }
-            }
-        }
-
-        public void RunNpmCI()
-        {
-            foreach( var project in Projects )
-            {
-                project.RunNpmCi();
-            }
-        }
-
-        public void RunClean()
-        {
-            foreach( var p in Projects )
-            {
-                p.RunClean();
-            }
-        }
-
-        public void Build() => WorkspaceProject.RunBuild();
-
-        public void Test()
-        {
-            foreach( var p in Projects )
-            {
-                p.RunTest( true );
-            }
-        }
-
     }
 }
