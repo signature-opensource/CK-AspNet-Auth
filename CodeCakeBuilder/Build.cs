@@ -1,8 +1,6 @@
 using Cake.Common.IO;
-using Cake.Common.Solution;
 using Cake.Common.Tools.DotNetCore;
 using Cake.Common.Tools.DotNetCore.Build;
-using Cake.Common.Tools.DotNetCore.Test;
 using Cake.Common.Tools.NUnit;
 using Cake.Core;
 using Cake.Core.Diagnostics;
@@ -40,7 +38,7 @@ namespace CodeCake
                  {
                      globalInfo.GetDotnetSolution().Clean();
                      Cake.CleanDirectories( globalInfo.ReleasesFolder );
-                     globalInfo.GetNPMSolution().RunInstallAndClean( scriptMustExist: false );
+                     globalInfo.GetNPMSolution().RunClean( scriptMustExist: false );
                  } );
 
 

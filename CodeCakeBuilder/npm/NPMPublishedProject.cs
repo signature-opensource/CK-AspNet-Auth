@@ -12,12 +12,29 @@ namespace CodeCake
 {
     public class NPMPublishedProject : NPMProject, ILocalArtifact
     {
-        NPMPublishedProject(StandardGlobalInfo globalInfo, NormalizedPath path, SimplePackageJsonFile json, SVersion v )
-            : base( globalInfo, path, json )
+        NPMPublishedProject(StandardGlobalInfo globalInfo, SimplePackageJsonFile json, NormalizedPath outputPath )
+            : base( globalInfo, json, outputPath )
         {
             ArtifactInstance = new ArtifactInstance( new Artifact( "NPM", json.Name ), globalInfo.Version );
             string tgz = json.Name.Replace( "@", "" ).Replace( '/', '-' );
-            TGZName = tgz + "-" + v.ToString() + ".tgz";
+            TGZName = tgz + "-" + globalInfo.Version.ToString() + ".tgz";
+        }
+
+        /// <summary>
+        /// Create a <see cref="NPMProject"/> that can be a <see cref="NPMPublishedProject"/>.
+        /// </summary>
+        /// <param name="globalInfo">The global info of the CodeCakeBuilder.</param>
+        /// <param name="dirPath">The directory path where is located the npm package.</param>
+        /// <param name="outputPath">The directory path where the build output is. It can be the same than <paramref name="dirPath"/>.</param>
+        /// <returns></returns>
+        public static NPMProject Create( StandardGlobalInfo globalInfo, NormalizedPath dirPath, NormalizedPath outputPath )
+        {
+            var json = SimplePackageJsonFile.Create( dirPath );
+            if( json.IsPrivate )
+            {
+                return CreateNPMProject( globalInfo, json, outputPath );
+            }
+            return new NPMPublishedProject( globalInfo, json, outputPath );
         }
 
         public override bool IsPublished => true;
@@ -64,17 +81,5 @@ namespace CodeCake
             GlobalInfo.Cake.CopyFile( tgz.Path, target.Path );
             GlobalInfo.Cake.DeleteFile( tgz.Path );
         }
-
-        public static NPMPublishedProject Load(StandardGlobalInfo globalInfo, NormalizedPath directoryPath, string expectedName = null, SVersion v = null )
-        {
-            var json = new SimplePackageJsonFile( directoryPath );
-            if( expectedName != null && json.Name != expectedName )
-            {
-                throw new Exception( $"NPM package '{directoryPath}' must be a published package named '{expectedName}', not '{json.Name}'." );
-            }
-            if( v == null ) v = SVersion.TryParse( json.Version );
-            return new NPMPublishedProject( globalInfo, directoryPath, json, v );
-        }
-
     }
 }
