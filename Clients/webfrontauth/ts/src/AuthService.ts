@@ -160,7 +160,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
                     throw new Error('Incorrect origin in postMessage.');
                 }
-                this.parseResonse(messageEvent.data.data);
+                this.parseResponse(messageEvent.data.data);
             }
         };
     }
@@ -171,7 +171,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private async sendRequest(
         entryPoint: string,
-        requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> }
+        requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> },
+        skipResponseParsing: boolean = false
     ): Promise<void> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
@@ -186,7 +187,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
             const status = response.status;
             if (status === 200 ) {
-                this.parseResonse(response.data);
+                if (!skipResponseParsing ) { this.parseResponse(response.data); }
             } else {
                 this.localDisconnect();
                 this._currentError = new WebFrontAuthError({
@@ -213,7 +214,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private parseResonse(response: IWebFrontAuthResponse): void {
+    private parseResponse(response: IWebFrontAuthResponse): void {
         if (!(response)) {
             this.localDisconnect();
             return;
@@ -300,7 +301,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     public async logout(full: boolean = false): Promise<void> {
         this._token = '';
-        await this.sendRequest('logout', { queries: full ? ['full'] : [] });
+        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseParsing */ true);
         await this.refresh();
     }
 
