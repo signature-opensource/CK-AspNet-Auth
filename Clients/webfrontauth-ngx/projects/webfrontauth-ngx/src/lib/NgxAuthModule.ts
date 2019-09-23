@@ -40,7 +40,8 @@ export function initializeAuthFactory(
 })
 export class NgxAuthModule {
   /**
-   * Returns the module with its providers.
+   * Returns the module with its providers, and registers its own classes
+   * into HTTP_INTERCEPTORS and APP_INITIALIZER.
    * Not for use in shared modules.
    */
   public static forRoot(): ModuleWithProviders {
@@ -51,7 +52,7 @@ export class NgxAuthModule {
           provide: AuthService,
           useFactory: authServiceFactory,
           deps: [
-            AuthServiceClientConfiguration, // Manual injection from pre-bootstrap
+            AuthServiceClientConfiguration, // Injection from pre-bootstrap
             AXIOS, // Injection from pre-bootstrap
             [new Optional(), WFA_TYPESYSTEM], // Optional injection from pre-bootstrap
           ]

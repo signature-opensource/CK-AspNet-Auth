@@ -15,8 +15,6 @@ export class AuthServiceClientConfiguration implements IAuthServiceConfiguration
     public readonly identityEndPoint: IEndPoint,
     public readonly loginPath: string = '/login'
   ) {
-    this.loginPath = loginPath;
-    this.identityEndPoint = identityEndPoint;
   }
 }
 

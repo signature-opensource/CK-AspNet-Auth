@@ -3,8 +3,6 @@ import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-
 import { IUserInfo } from '@signature/webfrontauth';
 import { AxiosInstance } from 'axios';
 
-export const WFA_TYPESYSTEM: InjectionToken<IAuthenticationInfoTypeSystem<IUserInfo>>
-= new InjectionToken<IAuthenticationInfoTypeSystem<IUserInfo>>('IAuthenticationInfoTypeSystem<IUserInfo>');
+export const WFA_TYPESYSTEM = new InjectionToken<IAuthenticationInfoTypeSystem<IUserInfo>>('IAuthenticationInfoTypeSystem<IUserInfo>');
 
-export const AXIOS: InjectionToken<AxiosInstance>
-= new InjectionToken<AxiosInstance>('AxiosInstance');
+export const AXIOS = new InjectionToken<AxiosInstance>('AxiosInstance');

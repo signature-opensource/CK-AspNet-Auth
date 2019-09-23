@@ -14,7 +14,7 @@ export abstract class AuthSchemeGuard implements CanActivate, CanActivateChild {
    */
   protected abstract blockedSchemes: string[];
 
-  constructor(private authService: AuthService) { }
+  constructor(private readonly authService: AuthService) { }
 
   public canActivate(
     route: ActivatedRouteSnapshot,

@@ -7,7 +7,7 @@ import { AuthService } from '@signature/webfrontauth';
 export class AuthInterceptor implements HttpInterceptor {
 
     constructor(
-        private authService: AuthService
+        private readonly authService: AuthService
     ) {
     }
 

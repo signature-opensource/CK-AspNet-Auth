@@ -7,9 +7,9 @@ import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration
 export class AuthGuard implements CanActivate, CanActivateChild {
 
   constructor(
-    private router: Router,
-    private authService: AuthService,
-    private authConfig: AuthServiceClientConfiguration
+    private readonly router: Router,
+    private readonly authService: AuthService,
+    private readonly authConfig: AuthServiceClientConfiguration
   ) {
   }
 
