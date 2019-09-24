@@ -31,10 +31,4 @@ dotnet_naming_symbols.private_internal_fields.applicable_kinds = field
 dotnet_naming_symbols.private_internal_fields.applicable_accessibilities = private, internal
 
 dotnet_naming_style.camel_case_underscore_style.required_prefix = _
-dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
-
-[*.{js,ts}]
-indent_size = 4
-end_of_line = crlf
-max_line_length = 140
-spaces_around_brackets = inside
+dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case 
