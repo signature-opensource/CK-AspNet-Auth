@@ -1,5 +1,0 @@
-C:/Dev/CK/CK-AspNet-Projects/CK-AspNet-Auth/Tests/CK.AspNet.Auth.Tests/bin/Debug/net461/CK.AspNet.Auth.Tests.dll
-C:/Dev/CK/CK-AspNet-Projects/CK-AspNet-Auth/Tests/CK.AspNet.Auth.Tests/bin/Debug/netcoreapp2.1/CK.AspNet.Auth.Tests.dll
-C:/Dev/CK/CK-AspNet-Projects/CK-AspNet-Auth/Tests/CK.DB.AspNet.Auth.Tests/bin/Debug/net461/CK.DB.AspNet.Auth.Tests.dll
-C:/Dev/CK/CK-AspNet-Projects/CK-AspNet-Auth/Tests/CK.DB.AspNet.Auth.Tests/bin/Debug/netcoreapp2.1/CK.DB.AspNet.Auth.Tests.dll
-Clients/webfrontauth/test
