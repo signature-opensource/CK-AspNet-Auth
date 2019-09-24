@@ -12,7 +12,7 @@ using static CodeCake.Build;
 namespace CodeCake
 {
 
-    public partial class DotnetSolution : ISolutionProducingArtifact
+    public partial class DotnetSolution : ICIPublishWorkflow
     {
         private ArtifactType _artifactType;
 

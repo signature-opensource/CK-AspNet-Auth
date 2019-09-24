@@ -1,8 +1,6 @@
 using Cake.Common.IO;
-using Cake.Common.Solution;
 using Cake.Common.Tools.DotNetCore;
 using Cake.Common.Tools.DotNetCore.Build;
-using Cake.Common.Tools.DotNetCore.Test;
 using Cake.Common.Tools.NUnit;
 using Cake.Core;
 using Cake.Core.Diagnostics;
@@ -40,7 +38,7 @@ namespace CodeCake
                  {
                      globalInfo.GetDotnetSolution().Clean();
                      Cake.CleanDirectories( globalInfo.ReleasesFolder );
-                     globalInfo.GetNPMSolution().RunInstallAndClean( scriptMustExist: false );
+                     globalInfo.GetNPMSolution().Clean();
                  } );
 
 
@@ -50,7 +48,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Build();
-                     globalInfo.GetNPMSolution().RunBuild();
+                     globalInfo.GetNPMSolution().Build();
                  } );
 
             Task( "Unit-Testing" )
@@ -63,7 +61,7 @@ namespace CodeCake
                                                             && !p.Path.Segments.Contains( "Integration" ) );
 
                     globalInfo.GetDotnetSolution().Test(testProjects);
-                    globalInfo.GetNPMSolution().RunTest();
+                    globalInfo.GetNPMSolution().Test();
                 } );
 
             Task( "Build-Integration-Projects" )

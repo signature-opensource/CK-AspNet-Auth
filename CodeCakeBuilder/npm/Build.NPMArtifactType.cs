@@ -5,7 +5,7 @@ using static CodeCake.Build;
 namespace CodeCake
 {
 
-    public partial class NPMSolution : ISolutionProducingArtifact
+    public partial class NPMSolution : ICIPublishWorkflow
     {
         private ArtifactType _artifactType;
 
@@ -37,7 +37,7 @@ namespace CodeCake
 
             public NPMSolution Solution { get; }
 
-            protected override IEnumerable<ILocalArtifact> GetLocalArtifacts() => Solution.PublishedProjects;
+            protected override IEnumerable<ILocalArtifact> GetLocalArtifacts() => Solution.SimplePublishedProjects;
 
 
             protected override IEnumerable<ArtifactFeed> GetRemoteFeeds()
