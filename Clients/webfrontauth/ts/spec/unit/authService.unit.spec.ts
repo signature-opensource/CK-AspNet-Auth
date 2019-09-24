@@ -392,11 +392,9 @@ describe('AuthService', function () {
          * Since this test relies on events' callback, we call done() after the last expectation.
          */
         it('should start expires and critical expires respective timers', function (done) {
-
-            const expires = new Date();
-            expires.setMilliseconds(expires.getMilliseconds() + 100);
-            const criticalExpires = new Date();
-            criticalExpires.setMilliseconds(expires.getMilliseconds() + 100);
+            const now = new Date();
+            const criticalExpires = new Date( now.getTime() + 100 );
+            const expires = new Date( criticalExpires.getTime() + 100 );
 
             const assertCriticalExpiresDemoted = (source: AuthService) => {
                 expect(source.authenticationInfo.level === AuthLevel.Normal);
