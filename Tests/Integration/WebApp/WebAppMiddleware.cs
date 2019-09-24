@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using CK.Auth;
 using Microsoft.AspNetCore.Hosting;
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace WebApp
 {
@@ -69,9 +70,9 @@ namespace WebApp
             {
                 c.Response.StatusCode = StatusCodes.Status200OK;
                 c.Response.ContentType = "application/json";
-                ISqlCallContext sqlCtx = c.RequestServices.GetService<ISqlCallContext>( false );
-                IActivityMonitor m = sqlCtx?.Monitor;
-                IActivityMonitor reqMonitor = c.RequestServices.GetService<IActivityMonitor>( false );
+                ISqlCallContext sqlCtx = c.RequestServices.GetService<ISqlCallContext>();
+                IActivityMonitor m = sqlCtx.Monitor;
+                IActivityMonitor reqMonitor = c.RequestServices.GetService<IActivityMonitor>();
                 await c.Response.WriteAsync( $@"{{ ""IAmHere"": true, ""Monitor"": {m != null}, ""SqlCallContext"": {sqlCtx != null}, ""SqlCallContext.Monitor"": {m==reqMonitor} }}" );
                 return;
             }
@@ -98,7 +99,7 @@ namespace WebApp
         {
             var b = await new StreamReader( req.Body ).ReadToEndAsync();
             var r = JObject.Parse( b );
-            ISqlCallContext ctx = c.RequestServices.GetService<ISqlCallContext>( true );
+            ISqlCallContext ctx = c.RequestServices.GetService<ISqlCallContext>();
             var userName = (string)r["userName"];
             int userId = await _userTable.CreateUserAsync( ctx, 1, userName );
             if( userId < 0 )

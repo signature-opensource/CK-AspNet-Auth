@@ -4,6 +4,7 @@ using CK.Core;
 using CK.DB.Auth;
 using CK.SqlServer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         public async Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
         {
-            IUserAuthInfo dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetService<ISqlCallContext>( false ), 1, userId );
+            IUserAuthInfo dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetService<ISqlCallContext>(), 1, userId );
             return _typeSystem.UserInfo.FromUserAuthInfo( dbUser );
         }
 

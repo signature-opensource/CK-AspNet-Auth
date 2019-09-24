@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth
 {
@@ -113,7 +114,7 @@ namespace CK.AspNet.Auth
         /// <returns>An activity monitor.</returns>
         IActivityMonitor GetRequestMonitor( HttpContext c )
         {
-            return c.RequestServices.GetService<IActivityMonitor>( false ) ?? new ActivityMonitor( "WebFrontAuthService-Request" );
+            return c.RequestServices.GetService<IActivityMonitor>() ?? new ActivityMonitor( "WebFrontAuthService-Request" );
         }
 
         internal string ProtectAuthenticationInfo( HttpContext c, IAuthenticationInfo info )

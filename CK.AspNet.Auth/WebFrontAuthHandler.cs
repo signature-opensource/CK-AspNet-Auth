@@ -16,6 +16,7 @@ using CK.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth
 {
@@ -48,7 +49,7 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
-        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>( false );
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
 
         public Task<bool> HandleRequestAsync()
         {

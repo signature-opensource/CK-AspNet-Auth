@@ -1,16 +1,16 @@
-import { AxiosResponse, AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
+import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IError, } from './index';
-import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor } from './index.extension';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, AuthLevel, IWebFrontAuthError } from './index';
+import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
-    private _authenticationInfo: IAuthenticationInfo<T>;
+    private _authenticationInfo: IAuthenticationInfoImpl<T>;
     private _token: string;
     private _refreshable: boolean;
     private _availableSchemes: string[];
-    private _retrievedError: IError;
+    private _currentError: IWebFrontAuthError;
     private _version: string;
     private _configuration: AuthServiceConfiguration;
 
@@ -21,14 +21,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _expTimer;
     private _cexpTimer;
 
-    private _subscribers: Set<() => void>;
+    private _subscribers: Set<(eventSource: AuthService) => void>;
 
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
     public get token(): string { return this._token; }
     public get refreshable(): boolean { return this._refreshable; }
     public get availableSchemes(): string[] { return this._availableSchemes; }
     public get version(): string { return this._version; }
-    public get errorCollector(): IError { return this._retrievedError; }
+    public get currentError(): IWebFrontAuthError { return this._currentError; }
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }
@@ -36,13 +36,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
     public set popupDescriptor(popupDescriptor: PopupDescriptor) {
         if (popupDescriptor) { this._popupDescriptor = popupDescriptor; }
-    };
-
-    private readonly _noRetrievedError: IError = {
-        loginFailureCode: null,
-        loginFailureReason: null,
-        errorId: null,
-        errorReason: null
     };
 
     //#region constructor
@@ -70,21 +63,32 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             window.addEventListener('message', this.onMessage(), false);
         }
 
-        this.handleResponseError();
+        this.localDisconnect();
     }
 
     public static async createAsync<T extends IUserInfo = IUserInfo>(
         configuration: IAuthServiceConfiguration,
         axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>
+        typeSystem?: IAuthenticationInfoTypeSystem<T>,
+        throwOnError: boolean = true
     ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         try {
             await authService.refresh(true, true);
+            if (authService.currentError.errorId) {
+                console.error(
+                    'Encoutered error while refreshing.',
+                    authService.currentError.errorId,
+                    authService.currentError.errorReason
+                );
+
+                if (throwOnError) {
+                    throw new Error('Setup did not complete successfully.');
+                }
+            }
             return authService;
         } catch (error) {
-            if (console.error) { console.error(error); }
-            else { console.log(error); }
+            console.error(error);
             return authService;
         }
     }
@@ -92,6 +96,53 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#endregion
 
     //#region events
+
+    private readonly maxTimeout: number = 2147483647;
+
+    private setExpirationTimeout(): void {
+        const timeDifference = this._authenticationInfo.expires.getTime() - Date.now()
+
+        if (timeDifference > this.maxTimeout) {
+            this._expTimer = setTimeout(this.setExpirationTimeout, this.maxTimeout);
+        } else {
+            this._expTimer = setTimeout(() => {
+                if (this._refreshable) {
+                    this.refresh();
+                } else {
+                    this._authenticationInfo = this._authenticationInfo.setExpires(null);
+                    this.onChange();
+                }
+            }, timeDifference);
+        }
+    }
+
+    private setCriticialExpirationTimeout(): void {
+        const timeDifference = this._authenticationInfo.criticalExpires.getTime() - Date.now()
+
+        if (timeDifference > this.maxTimeout) {
+            this._cexpTimer = setTimeout(this.setCriticialExpirationTimeout, this.maxTimeout);
+        } else {
+            this._cexpTimer = setTimeout(() => {
+                if (this._refreshable) {
+                    this.refresh();
+                } else {
+                    this._authenticationInfo = this._authenticationInfo.setCriticalExpires(null);
+                    this.onChange();
+                }
+            }, timeDifference);
+        }
+    }
+
+    private clearTimeouts(): void {
+        if (this._expTimer !== null) {
+            clearTimeout(this._expTimer);
+            this._expTimer = null;
+        }
+        if (this._cexpTimer !== null) {
+            clearTimeout(this._cexpTimer);
+            this._cexpTimer = null;
+        }
+    }
 
     private onIntercept(): (value: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig> {
         return (config: AxiosRequestConfig) => {
@@ -109,7 +160,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
                     throw new Error('Incorrect origin in postMessage.');
                 }
-                this.parseResonse(messageEvent.data.data);
+                this.parseResponse(messageEvent.data.data);
             }
         };
     }
@@ -120,9 +171,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private async sendRequest(
         entryPoint: string,
-        requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> }
+        requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> },
+        skipResponseParsing: boolean = false
     ): Promise<void> {
         try {
+            this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
+
             const query = requestOptions.queries && requestOptions.queries.length
                 ? `?${requestOptions.queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
                 : '';
@@ -131,45 +185,64 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 requestOptions.body ? JSON.stringify(requestOptions.body) : {},
                 { withCredentials: true });
 
-            return response.status === 200
-                ? this.parseResonse(response.data)
-                : this.handleResponseError();
+            const status = response.status;
+            if (status === 200 ) {
+                if (!skipResponseParsing ) { this.parseResponse(response.data); }
+            } else {
+                this.localDisconnect();
+                this._currentError = new WebFrontAuthError({
+                    errorId: `HTTP.Status.${status}`,
+                    errorReason: 'Unhandled success status'
+                });
+            }
         } catch (error) {
-            this.handleHttpErrorStatus((error as AxiosError).response);
+            this.localDisconnect();
+
+            const axiosError = error as AxiosError;
+            if (!(axiosError && axiosError.response)) {
+                this._currentError = new WebFrontAuthError({
+                    errorId: 'HTTP.Status.408',
+                    errorReason: 'No connection could be made'
+                });
+            } else {
+                const errorResponse = axiosError.response;
+                this._currentError = new WebFrontAuthError({
+                    errorId: `HTTP.Status.${errorResponse.status}`,
+                    errorReason: 'Server response error'
+                });
+            }
         }
     }
 
-    private parseResonse(response: IWebFrontAuthResponse): void {
+    private parseResponse(response: IWebFrontAuthResponse): void {
         if (!(response)) {
-            this.handleResponseError();
+            this.localDisconnect();
             return;
         }
 
         const loginFailureCode: number = response.loginFailureCode;
         const loginFailureReason: string = response.loginFailureReason;
         const errorId: string = response.errorId;
-        const errorText: string = response.errorText;
+        const errorReason: string = response.errorText;
 
-        this._retrievedError = this._noRetrievedError;
+        this._currentError = WebFrontAuthError.NoError;
 
         if (loginFailureCode && loginFailureReason) {
-            this._retrievedError = {
-                ...this._retrievedError,
+            this._currentError = new WebFrontAuthError({
                 loginFailureCode: loginFailureCode,
                 loginFailureReason: loginFailureReason
-            };
+            });
         }
 
-        if (errorId && errorText) {
-            this._retrievedError = {
-                ...this._retrievedError,
-                errorId: errorId,
-                errorReason: errorText
-            };
+        if (errorId && errorReason) {
+            this._currentError = new WebFrontAuthError({
+                errorId,
+                errorReason
+            });
         }
 
-        if (this._retrievedError !== this._noRetrievedError) {
-            this.handleResponseError();
+        if (!!this._currentError.error) {
+            this.localDisconnect();
             return;
         }
 
@@ -177,7 +250,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if (response.schemes) { this._availableSchemes = response.schemes; }
 
         if (!response.info) {
-            this.handleResponseError();
+            this.localDisconnect();
             return;
         }
 
@@ -185,30 +258,19 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = response.refreshable ? response.refreshable : false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info);
 
+        if (this._authenticationInfo.expires) {
+            this.setExpirationTimeout();
+            if (this._authenticationInfo.criticalExpires) { this.setCriticialExpirationTimeout(); }
+        }
+
         this.onChange();
     }
 
-    private handleHttpErrorStatus(errorResponse: AxiosResponse): void {
-        this.handleResponseError();
-        this._retrievedError = {
-            ...this._noRetrievedError,
-            errorId: `HTTP status: ${errorResponse.status}`,
-            errorReason: errorResponse.statusText
-        }
-    }
-
-    private handleResponseError(): void {
+    private localDisconnect(): void {
         this._token = '';
         this._refreshable = false;
         this._authenticationInfo = this._typeSystem.authenticationInfo.none;
-        if (this._expTimer !== null) {
-            clearTimeout(this._expTimer);
-            this._expTimer = null;
-        }
-        if (this._cexpTimer !== null) {
-            clearTimeout(this._cexpTimer);
-            this._cexpTimer = null;
-        }
+        this.clearTimeouts();
         this.onChange();
     }
 
@@ -239,7 +301,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     public async logout(full: boolean = false): Promise<void> {
         this._token = '';
-        await this.sendRequest('logout', { queries: full ? ['full'] : [] });
+        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseParsing */ true);
         await this.refresh();
     }
 
@@ -297,14 +359,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region onChange
 
     private onChange(): void {
-        this._subscribers.forEach(func => func());
+        this._subscribers.forEach(func => func(this));
     }
 
-    public addOnChange(func: () => void): void {
+    public addOnChange(func: (eventSource: AuthService) => void): void {
         if (func !== undefined && func !== null) { this._subscribers.add(func); }
     }
 
-    public removeOnChange(func: () => void): boolean {
+    public removeOnChange(func: (eventSource: AuthService) => void): boolean {
         return this._subscribers.delete(func);
     }
 

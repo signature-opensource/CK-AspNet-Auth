@@ -52,7 +52,7 @@ describe('AuthService', function() {
             port: 27459,
             disableSsl: true
         };
-        
+
         authService = await AuthService.createAsync( { identityEndPoint }, axiosInstance );
     });
 
@@ -135,7 +135,7 @@ describe('AuthService', function() {
     it('should call OnChange() correctly.', async function() {
         let authenticationInfo: IAuthenticationInfo;
         const onChangeFunction = () => authenticationInfo = authService.authenticationInfo;
-        authService.addOnChange(onChangeFunction); 
+        authService.addOnChange(onChangeFunction);
         await authService.basicLogin('admin','admin');
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
         await authService.logout();
