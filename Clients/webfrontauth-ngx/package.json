@@ -7,7 +7,8 @@
     "build": "ng build webfrontauth-ngx && ng build",
     "test": "echo \"ng test temporarily disabled\" && exit 0",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "clean": "exit 0"
   },
   "private": true,
   "dependencies": {

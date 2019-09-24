@@ -39,7 +39,6 @@ namespace CodeCake
             {
                 output = new NPMPublishedProject( globalInfo, solution, json, outputPath );
             }
-            solution.Add( output );
             return output;
         }
 
@@ -51,11 +50,11 @@ namespace CodeCake
 
         public string TGZName { get; }
 
-        private protected override void DoRunScript( string scriptName, bool buildDirectory )
+        private protected override void DoRunScript( string scriptName, bool runInBuildDirectory )
         {
             using( TemporarySetVersion( ArtifactInstance.Version ) )
             {
-                base.DoRunScript( scriptName, false );
+                base.DoRunScript( scriptName, runInBuildDirectory );
             }
         }
 

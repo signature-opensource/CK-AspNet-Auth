@@ -1,5 +1,6 @@
 using Cake.Common.Diagnostics;
 using Cake.Npm;
+using Cake.Npm.RunScript;
 using CK.Text;
 using CSemVer;
 using Newtonsoft.Json.Linq;
@@ -136,7 +137,7 @@ namespace CodeCake
         /// <returns></returns>
         public virtual void RunClean()
         {
-            RunScript( "clean", true );
+            RunScript( "clean", false, true );
         }
 
         /// <summary>
@@ -148,7 +149,7 @@ namespace CodeCake
         /// </param>
         /// <param name="runInBuildDirectory">Whether the script should be run in <see cref="OutputPath"/> or <see cref="DirectoryPath"/> if false.</param>
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
-        public bool RunScript( string name, bool runInBuildDirectory, bool scriptMustExist = true )
+        public bool RunScript( string name, bool runInBuildDirectory, bool scriptMustExist )
         {
             string n = FindBestScript( name, scriptMustExist );
             if( n == null ) return false;
@@ -164,10 +165,12 @@ namespace CodeCake
         private protected virtual void DoRunScript( string scriptName, bool runInBuildDirectory )
         {
             GlobalInfo.Cake.NpmRunScript(
-                    scriptName,
-                    s => s
-                        .WithLogLevel( NpmLogLevel.Info )
-                        .FromPath( DirectoryPath.Path )
+                    new NpmRunScriptSettings()
+                    {
+                        ScriptName = scriptName,
+                        LogLevel= NpmLogLevel.Info,
+                        WorkingDirectory = runInBuildDirectory ? OutputPath.Path : DirectoryPath.Path
+                    }
                 );
         }
 
@@ -180,7 +183,7 @@ namespace CodeCake
         /// throwing an exception.
         /// </param>
         /// <returns>False if the script doesn't exist (<paramref name="scriptMustExist"/> is false), otherwise true.</returns>
-        public bool RunBuild( bool scriptMustExist = true ) => RunScript( "build", scriptMustExist );
+        public bool RunBuild( bool scriptMustExist = true ) => RunScript( "build", false, scriptMustExist );
 
         /// <summary>
         /// Runs "test" script: see <see cref="RunScript(string, bool)"/>.
@@ -196,7 +199,7 @@ namespace CodeCake
             var key = DirectoryPath.AppendPart( "test" );
             if( !GlobalInfo.CheckCommitMemoryKey( key ) )
             {
-                RunScript( "test", false );
+                RunScript( "test", false, true );
                 GlobalInfo.WriteCommitMemoryKey( key );
             }
         }

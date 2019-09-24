@@ -1,6 +1,7 @@
 import { IAuthenticationInfoType, IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
-import { IUserInfo, IAuthenticationInfo } from '../authService.model.public';
-import { StdAuthenticationInfo, StdAuthenticationTypeSystem } from '.';
+import { IUserInfo } from '../authService.model.public';
+import { StdAuthenticationInfo } from './StdAuthenticationInfo';
+import { StdAuthenticationTypeSystem } from './StdAuthenticationTypeSystem';
 
 export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserInfo> {
 

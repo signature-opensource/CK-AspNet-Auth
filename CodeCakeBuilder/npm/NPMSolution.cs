@@ -89,7 +89,17 @@ namespace CodeCake
         {
             foreach( var p in AllProjects )
             {
+                p.RunNpmCi();
+            }
+
+            foreach( var p in SimpleProjects )
+            {
                 p.RunClean();
+            }
+
+            foreach( var p in AngularWorkspaces )
+            {
+                p.WorkspaceProject.RunClean();
             }
         }
 
@@ -111,7 +121,7 @@ namespace CodeCake
             }
             foreach( var p in AngularWorkspaces )
             {
-                p.Build();
+                p.WorkspaceProject.RunBuild();
             }
         }
 
@@ -126,9 +136,13 @@ namespace CodeCake
         /// </param>
         public void Test()
         {
-            foreach( var p in AllProjects )
+            foreach( var p in SimpleProjects )
             {
                 p.RunTest();
+            }
+            foreach( var p in AngularWorkspaces )
+            {
+                p.WorkspaceProject.RunTest();
             }
         }
 
@@ -161,18 +175,18 @@ namespace CodeCake
 
             foreach( var item in document.Elements( "AngularWorkspace" ) )
             {
-                AngularWorkspace.Create( globalInfo,
+               solution.Add(AngularWorkspace.Create( globalInfo,
                         solution,
                         (string)item.Attribute( "Path" ),
-                        (string)item.Attribute( "OutputDir" ) );
+                        (string)item.Attribute( "OutputFolder" ) ));
             }
             foreach( var item in document.Elements( "Project" ) )
             {
-                NPMPublishedProject.Create(
+                solution.Add(NPMPublishedProject.Create(
                         globalInfo,
                         solution,
                         (string)item.Attribute( "Path" ),
-                        (string)item.Attribute( "OutputFolder" ) );
+                        (string)item.Attribute( "OutputFolder" ) ));
             }
             return solution;
         }
