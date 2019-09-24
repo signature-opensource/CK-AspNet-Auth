@@ -362,11 +362,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._subscribers.forEach(func => func(this));
     }
 
-    public addOnChange(func: (eventSource: AuthService) => void): void {
+    public addOnChange(func: (eventSource: AuthService<T>) => void): void {
         if (func !== undefined && func !== null) { this._subscribers.add(func); }
     }
 
-    public removeOnChange(func: (eventSource: AuthService) => void): boolean {
+    public removeOnChange(func: (eventSource: AuthService<T>) => void): boolean {
         return this._subscribers.delete(func);
     }
 
