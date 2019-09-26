@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.AspNet.Auth
 {

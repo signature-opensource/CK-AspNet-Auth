@@ -6,24 +6,31 @@ import {
     IAuthenticationInfo,
     AuthLevel,
     IUserInfo,
-    IError,
     IAuthServiceConfiguration
 } from '../../';
-import { AuthServiceConfiguration } from '../../src/index.private';
+import { AuthServiceConfiguration, IWebFrontAuthResponse } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
-import { responseJson } from '../helpers/sample-responses';
+import { WebFrontAuthError } from '../../src/index.extension';
+import ResponseBuilder from '../helpers/response-builder';
 
-describe('AuthService', function() {
-    enum EScenario {
-        Normal = 'Normal',
-        Unsafe = 'Unsafe',
-        Failure = 'Failure',
-        Error = 'Error',
-        None = 'None'
+describe('AuthService', function () {
+    const axiosInstance = axios.create({ timeout: 0.1 });
+    let requestInterceptorId: number;
+    let responseInterceptorId: number;
+
+    const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+    const emptyResponse: IWebFrontAuthResponse = {
+        info: null,
+        token: null,
+        refreshable: false
     }
-    let currentScenario: EScenario = EScenario.Normal;
+    let serverResponse: IWebFrontAuthResponse = emptyResponse;
 
-    let authService: AuthService;
+    const schemeLastUsed = new Date();
+    const exp = new Date();
+    exp.setHours(exp.getHours() + 6);
+    const cexp = new Date();
+    cexp.setHours(cexp.getHours() + 3);
 
     const anonymous: IUserInfo = {
         userId: 0,
@@ -31,32 +38,16 @@ describe('AuthService', function() {
         schemes: []
     };
 
-    const noError: IError = {
-        loginFailureCode: null,
-        loginFailureReason: null,
-        errorId: null,
-        errorReason: null
-    }
-
-    let requestInterceptorId: number;
-    let responseInterceptorId: number;
-    
-    before(function() {
-        authService = new AuthService( { identityEndPoint: {} }, axios );
-
-        axios.defaults.timeout = 0;
-        requestInterceptorId = axios.interceptors.request.use((config: AxiosRequestConfig) => {
-            config.url = `unitTest+${config.url}`;
+    before(function () {
+        requestInterceptorId = axiosInstance.interceptors.request.use((config: AxiosRequestConfig) => {
             return config;
         });
-        responseInterceptorId = axios.interceptors.response.use((response: AxiosResponse) => {
-            return response; // never occurs
+
+        responseInterceptorId = axiosInstance.interceptors.response.use((response: AxiosResponse) => {
+            return response; // Never occurs
         }, (error: AxiosError) => {
-            let currentRequest: string = error.config.url.slice(22);
-            currentRequest += currentScenario !== EScenario.Normal ? currentScenario : '';
-            const targetData = responseJson[currentRequest];
             return Promise.resolve({
-                data: targetData,
+                data: serverResponse,
                 status: 200,
                 statusText: 'Ok',
                 headers: {},
@@ -65,18 +56,17 @@ describe('AuthService', function() {
         });
     });
 
-    beforeEach(async function() {
-        currentScenario = EScenario.Normal;
-        await authService.logout();
+    beforeEach(async function () {
+        serverResponse = emptyResponse;
+        await authService.logout(true);
     });
 
-    after(function() {
-        axios.interceptors.request.eject(requestInterceptorId);
-        axios.interceptors.response.eject(responseInterceptorId);
-        axios.defaults.timeout = 1000;
+    after(function () {
+        axiosInstance.interceptors.request.eject(requestInterceptorId);
+        axiosInstance.interceptors.response.eject(responseInterceptorId);
     });
 
-    it('should parse configuration object correctly.', function() {
+    it('should parse configuration object correctly.', function () {
         let configuration: IAuthServiceConfiguration = { identityEndPoint: { hostname: 'host', disableSsl: false, port: 12345 } };
 
         let authConfiguration: AuthServiceConfiguration = new AuthServiceConfiguration(configuration);
@@ -87,267 +77,350 @@ describe('AuthService', function() {
         expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('/');
     });
 
-    it('should parse basicLogin response correctly.', async function() {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
-        }
+    context('when parsing server response', function () {
 
-        currentScenario = EScenario.Failure;
-        await authService.basicLogin('', '');
+        it('should parse basicLogin response.', async function () {
 
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            const expectedLoginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withLoginFailure({ loginFailureCode: 4, loginFailureReason: 'Invalid credentials.' })
+                .build();
+            await authService.basicLogin('', '');
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( {
-                ...noError,
+            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
                 loginFailureCode: 4,
                 loginFailureReason: 'Invalid credentials.'
-            } );
-        }
-        
-        currentScenario = EScenario.Unsafe;
-        await authService.basicLogin('', '');
+            }));
 
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withToken('CfDJ8CS62…pLB10X')
+                .build();
+            await authService.basicLogin('', '');
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
+            expect(authService.currentError.error).to.equal(null);
 
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
 
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
+            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+            expect(authService.refreshable).to.be.equal(true);
+            expect(authService.currentError.error).to.equal(null);
+        });
+
+        it('should parse refresh response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(false)
+                .withVersion('v0.0.0-alpha')
+                .build();
+            await authService.refresh();
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
-    });
-
-    it('should parse refresh response correctly.', async function() {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
-        }
-
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
-        
-        await authService.refresh();
-        let currentModel = authService.authenticationInfo;
-        { 
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
+            expect(authService.currentError.error).to.equal(null);
             expect(authService.version).to.be.equal('v0.0.0-alpha');
-        }
 
-        currentScenario = EScenario.Unsafe;
-        await authService.refresh();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(false)
+                .build();
+            await authService.refresh();
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
+            expect(authService.currentError.error).to.equal(null);
 
-        currentScenario = EScenario.Failure;
-        await authService.refresh();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            serverResponse = emptyResponse;
+            await authService.refresh();
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( {
-                ...noError,
-                loginFailureCode: 4,
-                loginFailureReason: 'Invalid credentials.'
-            } );
-        }
-    });
+            expect(authService.currentError.error).to.equal(null);
+        });
 
-    it('should parse logout response correctly.', async function() {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
-        }
+        it('should parse logout response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+            }
 
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('', '');
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
 
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
+            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+            expect(authService.refreshable).to.be.equal(true);
+            expect(authService.currentError.error).to.be.equal(null);
+
+            // We set the response for the refresh which is triggered by the logout
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(false)
+                .build();
+            await authService.logout();
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
+            expect(authService.currentError.error).to.be.equal(null);
 
-        currentScenario = EScenario.Unsafe;
-        await authService.logout();
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.refreshable).to.be.equal(false);
-        }
-        
-        currentScenario = EScenario.None;
-        await authService.logout(true);
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            serverResponse = emptyResponse;
+            await authService.logout(true);
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-        }
-    });
+            expect(authService.currentError.error).to.be.equal(null);
+        });
 
-    it('should parse unsafeDirectLogin response correctly.', async function() {
-        const loginInfo: IUserInfo = {
-            userId: 2,
-            userName: 'Albert',
-            schemes: [ { name: 'Basic', lastUsed: new Date('3000-03-26T14:50:48.5767287Z') } ]
-        }
+        it('should parse unsafeDirectLogin response.', async function () {
+            const loginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+            }
 
-        currentScenario = EScenario.Normal;
-        await authService.unsafeDirectLogin('', {});
-        
-        let currentModel = authService.authenticationInfo;
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(false)
+                .build();
+            await authService.unsafeDirectLogin('', {});
 
-        {
-            expect(areUserInfoEquals(currentModel.user, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, loginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, loginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, loginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
+            expect(authService.currentError.error).to.equal(null);
 
-        currentScenario = EScenario.Error;
-        await authService.unsafeDirectLogin('', {});
-        currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, anonymous)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.None);
+            serverResponse = new ResponseBuilder()
+                .withError({ errorId: 'System.ArgumentException', errorText: 'Invalid payload.' })
+                .build();
+            await authService.unsafeDirectLogin('', {});
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, anonymous)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, anonymous)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal( { 
-                ...noError, errorId: 'System.ArgumentException', errorReason: 'Invalid payload.'
-            } );
-        }
-    });
+            expect(authService.currentError).to.deep.equal(new WebFrontAuthError({
+                errorId: 'System.ArgumentException',
+                errorReason: 'Invalid payload.'
+            }));
+        });
 
-    it('should parse impersonate response correctly.', async function() {
-    const impersonatedLoginInfo: IUserInfo = {
-        userId: 3,
-        userName: 'Robert',
-        schemes: []
-    }
+        it('should parse impersonate response.', async function () {
+            const impersonatedLoginInfo: IUserInfo = {
+                userId: 3,
+                userName: 'Bob',
+                schemes: []
+            }
 
-    const impersonatorLoginInfo: IUserInfo = {
-        userId: 2,
-        userName: 'Albert',
-        schemes: [ { name: 'Basic', lastUsed: new Date('3000-07-28T16:33:26.2758228Z') } ]
-    }
+            const impersonatorLoginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+            }
 
-        currentScenario = EScenario.Normal;
-        await authService.impersonate('');
-        
-        let currentModel = authService.authenticationInfo;
-        {
-            expect(areUserInfoEquals(currentModel.user, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeUser, impersonatedLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.actualUser, impersonatorLoginInfo)).to.be.true;
-            expect(areUserInfoEquals(currentModel.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
-            expect(currentModel.level).to.be.equal(AuthLevel.Normal);
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 3, name: 'Bob', schemes: [] })
+                .withActualUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ…s4POjOs')
+                .withRefreshable(false)
+                .build();
+            await authService.impersonate('');
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, impersonatedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, impersonatedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, impersonatorLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, impersonatorLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ…s4POjOs');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.errorCollector).to.deep.equal(noError);
-        }
+            expect(authService.currentError.error).to.equal(null);
+        });
+
     });
 
-    it('should call OnChange() correctly.', async function() {
-        let authenticationInfo: IAuthenticationInfo;
-        let token: string;
-        
-        const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
-        const updateToken = () => token = authService.token;
-        authService.addOnChange(updateAuthenticationInfo); 
-        authService.addOnChange(updateToken); 
+    context('when authentication info changes', function () {
 
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('' , '');
-        {
+        it('should call OnChange().', async function () {
+            let authenticationInfo: IAuthenticationInfo;
+            let token: string;
+
+            const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
+            const updateToken = () => token = authService.token;
+            authService.addOnChange(updateAuthenticationInfo);
+            authService.addOnChange(updateToken);
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
+
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
             expect(token).to.not.be.equal('');
-        }
 
-        currentScenario = EScenario.None;
-        await authService.logout(true);
-        {
+            serverResponse = emptyResponse;
+            await authService.logout(true);
+
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
             expect(token).to.be.equal('');
-        }
-        authService.removeOnChange(updateAuthenticationInfo);
-        
-        currentScenario = EScenario.Normal;
-        await authService.basicLogin('' , '');
-        {
+
+            authService.removeOnChange(updateAuthenticationInfo);
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
+
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
             expect(token).to.not.be.equal('');
-        }
+        });
+
+        it('should contains the source as an Event parameter.', async function () {
+            const assertEventSource = (source: AuthService) => expect(source).to.deep.equal(authService);
+            authService.addOnChange(assertEventSource);
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(exp)
+                .withToken('CfDJ8CS62…pLB10X')
+                .withRefreshable(true)
+                .build();
+            await authService.basicLogin('', '');
+        });
+
+        /**
+         * NOTE
+         * Do not use async here. Otherwise an "method is overspecified" error will be throw.
+         * This error is thrown whenever a function returns a promise and uses the done callback.
+         * Since this test relies on events' callback, we call done() after the last expectation.
+         */
+        it('should start expires and critical expires respective timers', function (done) {
+            const now = new Date();
+            const criticalExpires = new Date( now.getTime() + 100 );
+            const expires = new Date( criticalExpires.getTime() + 100 );
+
+            const assertCriticalExpiresDemoted = (source: AuthService) => {
+                expect(source.authenticationInfo.level === AuthLevel.Normal);
+                source.removeOnChange(assertCriticalExpiresDemoted);
+                source.addOnChange(assertExpiresDemoted);
+            }
+
+            const assertExpiresDemoted = (source: AuthService) => {
+                expect(source.authenticationInfo.level === AuthLevel.Unsafe);
+                source.removeOnChange(assertExpiresDemoted);
+                done();
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
+                .withExpires(expires)
+                .withCriticalExpires(criticalExpires)
+                .withToken('Cf0DEq...Fd10xRD')
+                .withRefreshable(false)
+                .build();
+
+            authService.basicLogin('', '').then(_ => {
+                expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Critical);
+                authService.addOnChange(assertCriticalExpiresDemoted);
+            });
+        });
     });
+
 });

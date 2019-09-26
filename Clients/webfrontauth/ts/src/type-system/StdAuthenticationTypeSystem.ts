@@ -19,9 +19,8 @@ export class StdAuthenticationTypeSystem implements IAuthenticationInfoTypeSyste
     public static readonly userKeyType: string = 'user';
     public static readonly actualUserKeyType: string = 'actualUser';
 
-    constructor()
-    {
+    constructor() {
         this._userInfo = new StdUserInfoType();
-        this._authenticationInfo = new StdAuthenticationInfoType( this );
+        this._authenticationInfo = new StdAuthenticationInfoType(this);
     }
 }

@@ -27,6 +27,7 @@ namespace WebApp
     {
         public void ConfigureServices( IServiceCollection services )
         {
+            var monitor = new ActivityMonitor();
             services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme )
                 .AddGoogle( "Google", options =>
                 {
@@ -49,7 +50,7 @@ namespace WebApp
                     } );
                 } )
                 .AddWebFrontAuth();
-            services.AddCKDatabase( "CK.StObj.AutoAssembly" );
+            services.AddCKDatabase( monitor, "CK.StObj.AutoAssembly" );
             //services.AddSingleton<IWebFrontAuthLoginService, SqlWebFrontAuthLoginService>();
             //services.AddSingleton<IWebFrontAuthAutoCreateAccountService,AutoCreateAccountService>();
         }
@@ -68,7 +69,7 @@ namespace WebApp
 
         public void Configure( IApplicationBuilder app )
         {
-            app.UseRequestMonitor();
+            app.UseGuardRequestMonitor();
             app.UseAuthentication();
             app.UseMiddleware<WebAppMiddleware>();
         }

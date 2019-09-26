@@ -6,7 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
-    <PackageReference Include="CK.DB.DependencyInjection" Version="$(CKDatabaseVersion)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />

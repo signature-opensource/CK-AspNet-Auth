@@ -23,12 +23,12 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth( options );
-                    services.AddCKDatabase( TestHelper.StObjMap );
+                    services.AddCKDatabase( TestHelper.Monitor, TestHelper.StObjMap );
                     configureServices?.Invoke( services );
                 },
                 app =>
                 {
-                    app.UseRequestMonitor();
+                    app.UseGuardRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );

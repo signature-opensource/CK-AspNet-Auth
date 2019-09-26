@@ -12,6 +12,7 @@ using CK.Text;
 using CK.Core;
 using System.Diagnostics;
 using CK.SqlServer;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.DB.AspNet.Auth
 {
