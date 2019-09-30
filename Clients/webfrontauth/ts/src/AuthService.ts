@@ -158,7 +158,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             if (messageEvent.data.WFA === 'WFA') {
                 const origin = messageEvent.origin + '/';
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
-                    throw new Error('Incorrect origin in postMessage.');
+                    throw new Error(`Incorrect origin in postMessage. Expected '${this._configuration.webFrontAuthEndPoint}', but was '${origin}'`);
                 }
                 this.parseResponse(messageEvent.data.data);
             }
