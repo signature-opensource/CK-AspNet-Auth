@@ -22,6 +22,6 @@ export class NgxAuthService<T extends IUserInfo = IUserInfo> {
     this.authenticationInfo$ = this._authenticationInfo.asObservable();
 
     // Register on change event
-    this.authService.addOnChange(source => this._authenticationInfo.next(source.authenticationInfo));
+    this.authService.addOnChange((source: AuthService<T>) => this._authenticationInfo.next(source.authenticationInfo));
   }
 }
