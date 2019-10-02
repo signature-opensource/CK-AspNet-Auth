@@ -27,9 +27,14 @@ The following features are exposed:
 - With `APP_INITIALIZER`: WFA authentication is automatically refreshed on init.
   - **This may cause your application to fail on init if if the WFA endpoint fails to respond.**
 - With `HTTP_INTERCEPTORS`: All requests made using the Angular `HttpService` will be authenticated by injecting the user token from `AuthService` into the `Authorization: Bearer` HTTP request header.
-  - **No domain check is made.** Ensure your application does *not* call third party or untrusted domains with the Angular `HttpService`, or **your user token will leak to the outside.**
+  - **No domain check is made.** Ensure your application does *not* call third party or untrusted domains with the Angular `HttpService`, or **your user token will leak to the outside.**  
 
-You can prevent the module from injecting automatic providers by calling `NgxAuthModule.forRoot( false )` *instead of*  `NgxAuthModule.forRoot()` in your `AppModule`.
+You can prevent the module from injecting automatic providers:
+
+ `NgxAuthModule.forRoot` full signature is `NgxAuthModule.forRoot( autoInitialization, addInterceptor )` with both parameters defaulting to `true`.
+
+- If you want prevent the injection of the app initializer then you must set `autoInitialization` to false.
+- If you want prevent the injection of the http interceptor then you must set `addInterceptor` to false.
 
 ## Requirements
 
@@ -50,20 +55,18 @@ import { AXIOS, AuthServiceClientConfiguration, createAuthConfigUsingCurrentHost
 platformBrowserDynamic([
   {
     provide: AuthServiceClientConfiguration,
-    deps: [],
-
+    deps: [], // This is not required in latest angular versions.
     // If your WFA host is on the same machine and port (eg. using a SPA proxy):
     // Replace '/login' with the Angular route you use to log in.
     // This route automatically gets the 'returnUrl' query parameter.
-    useValue: createAuthConfigUsingCurrentHost('/login'),
-
+    useValue: createAuthConfigUsingCurrentHost('/login')
     // If your WFA host is on another machine or port:
     // Create your own `AuthServiceClientConfiguration` here.
-    //useValue: new AuthServiceClientConfiguration(myEndpoint, '/login')
+    useValue: new AuthServiceClientConfiguration(myEndpoint, '/login')
   },
   {
     provide: AXIOS,
-    deps: [],
+    deps: [], // This is not required in latest angular versions.
     useValue: axios.create(),
   },
 ]).bootstrapModule(AppModule)
