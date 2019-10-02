@@ -1,8 +1,9 @@
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-
+import { AuthService } from '@signature/webfrontauth';
 import { AppComponent } from './app.component';
-import { NgxAuthModule } from 'projects/webfrontauth-ngx/src/public-api';
+import { NgxAuthModule, initializeAuthFactory, AuthInterceptor } from 'projects/webfrontauth-ngx/src/public-api';
 
 @NgModule({
   declarations: [
@@ -12,7 +13,21 @@ import { NgxAuthModule } from 'projects/webfrontauth-ngx/src/public-api';
     BrowserModule,
     NgxAuthModule.forRoot()
   ],
-  providers: [],
+  providers: [
+    {
+      // Refreshes authentication on startup
+      provide: APP_INITIALIZER,
+      useFactory: initializeAuthFactory,
+      multi: true,
+      deps: [AuthService]
+    },
+    {
+      // Authenticates all HTTP requests made by Angular
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

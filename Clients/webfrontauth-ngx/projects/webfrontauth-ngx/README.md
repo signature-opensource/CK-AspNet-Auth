@@ -6,7 +6,8 @@ Angular module and integration for WebFrontAuth (WFA) applications.
 
 - `npm i @signature/webfrontauth-ngx`
 - In the `imports` array of your `AppModule`, add `NgxAuthModule.forRoot()`
-- In your `main.ts`, **configure the module before bootstrap (see Requirements below)**
+- In the `providers` array of your `AppModule`, add `initializeAuthFactory` and/or `AuthInterceptor` (see *Example module* below)
+- In your `main.ts`, **configure the module before bootstrap** *(see Requirements below)*
 - Inject `NgxAuthService` and/or `AuthService` wherever you need it
 - If you need route protection, use `AuthGuard` and/or extend your own `AuthSchemeGuard` in your routes
 
@@ -22,19 +23,10 @@ The following features are exposed:
 
 ## Side effects
 
-`@signature/webfrontauth-ngx` provides `HTTP_INTERCEPTORS` and `APP_INITIALIZER`, which may affect your entire application:
+`@signature/webfrontauth-ngx` provides some services which may affect your entire application:
 
-- With `APP_INITIALIZER`: WFA authentication is automatically refreshed on init.
-  - **This may cause your application to fail on init if if the WFA endpoint fails to respond.**
-- With `HTTP_INTERCEPTORS`: All requests made using the Angular `HttpService` will be authenticated by injecting the user token from `AuthService` into the `Authorization: Bearer` HTTP request header.
-  - **No domain check is made.** Ensure your application does *not* call third party or untrusted domains with the Angular `HttpService`, or **your user token will leak to the outside.**  
-
-You can prevent the module from injecting automatic providers:
-
- `NgxAuthModule.forRoot` full signature is `NgxAuthModule.forRoot( autoInitialization, addInterceptor )` with both parameters defaulting to `true`.
-
-- If you want prevent the injection of the app initializer then you must set `autoInitialization` to false.
-- If you want prevent the injection of the http interceptor then you must set `addInterceptor` to false.
+- With `AuthInterceptor`: All requests made using the Angular `HttpService` will be authenticated by injecting the user token from `AuthService` into the `Authorization: Bearer` HTTP request header.
+  - **No domain check is made.** Ensure your application does *not* call third party or untrusted domains with the Angular `HttpService`, or **your user token will leak to the outside.**
 
 ## Requirements
 
@@ -73,3 +65,43 @@ platformBrowserDynamic([
 ```
 
 Optionally, you can also provide `WFA_TYPESYSTEM` to use your own `IAuthenticationInfoTypeSystem<IUserInfo>`.
+
+## Example module
+
+A simple `AppModule` using both `initializeAuthFactory` and `AuthInterceptor` looks like this:
+
+```ts
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AuthService } from '@signature/webfrontauth';
+import { NgxAuthModule, AuthInterceptor, initializeAuthFactory } from '@signature/webfrontauth-ngx';
+import { AppComponent } from './app.component';
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    NgxAuthModule.forRoot()
+  ],
+  providers: [
+    {
+      // Refreshes authentication on startup
+      provide: APP_INITIALIZER,
+      useFactory: initializeAuthFactory,
+      multi: true,
+      deps: [AuthService]
+    },
+    {
+      // Authenticates all HTTP requests made by Angular
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```

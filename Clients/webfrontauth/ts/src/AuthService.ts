@@ -1,6 +1,6 @@
 import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, AuthLevel, IWebFrontAuthError } from './index';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 

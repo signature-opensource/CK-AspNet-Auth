@@ -32,3 +32,13 @@ export interface IUserInfoType<T extends IUserInfo> {
 
     fromJson(o: object): T;
 }
+
+export class StdKeyType {
+  public static readonly userName: string = 'name';
+  public static readonly userId: string = 'id';
+  public static readonly schemes: string = 'schemes';
+  public static readonly expiration: string = 'exp';
+  public static readonly criticalExpiration: string = 'cexp';
+  public static readonly user: string = 'user';
+  public static readonly actualUser: string = 'actualUser';
+}
