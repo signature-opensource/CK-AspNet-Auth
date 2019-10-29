@@ -5,10 +5,9 @@ import {
     AuthService,
     IAuthenticationInfo,
     AuthLevel,
-    IUserInfo,
-    IAuthServiceConfiguration
+    IUserInfo
 } from '../../';
-import { AuthServiceConfiguration, IWebFrontAuthResponse } from '../../src/index.private';
+import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
@@ -64,17 +63,6 @@ describe('AuthService', function () {
     after(function () {
         axiosInstance.interceptors.request.eject(requestInterceptorId);
         axiosInstance.interceptors.response.eject(responseInterceptorId);
-    });
-
-    it('should parse configuration object correctly.', function () {
-        let configuration: IAuthServiceConfiguration = { identityEndPoint: { hostname: 'host', disableSsl: false, port: 12345 } };
-
-        let authConfiguration: AuthServiceConfiguration = new AuthServiceConfiguration(configuration);
-        expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('https://host:12345/');
-
-        configuration = { identityEndPoint: {} };
-        authConfiguration = new AuthServiceConfiguration(configuration);
-        expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('/');
     });
 
     context('when parsing server response', function () {
@@ -391,7 +379,7 @@ describe('AuthService', function () {
          * This error is thrown whenever a function returns a promise and uses the done callback.
          * Since this test relies on events' callback, we call done() after the last expectation.
          */
-        it('should start expires and critical expires respective timers', function (done) {
+        it('should start expires and critical expires respective timers.', function (done) {
             const now = new Date();
             const criticalExpires = new Date( now.getTime() + 100 );
             const expires = new Date( criticalExpires.getTime() + 100 );

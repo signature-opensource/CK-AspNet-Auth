@@ -1,13 +1,5 @@
 import { IAuthServiceConfiguration, IEndPoint } from './authService.model.public';
 
-function isDefaultPort(isHttps: boolean, portNumber: number) {
-  if(isHttps) {
-    return portNumber === 443;
-  } else {
-    return portNumber === 80;
-  }
-}
-
 export class AuthServiceConfiguration {
     private readonly _identityServerEndPoint: string;
 
@@ -18,16 +10,18 @@ export class AuthServiceConfiguration {
     }
 
     private getUrlFromEndPoint(endPoint: IEndPoint): string {
-        if(!endPoint.hostname) { return '/'; }
+        if (!endPoint.hostname) { return '/'; }
         const isHttps = !endPoint.disableSsl;
-        const hostnameAndPort = endPoint.port !== undefined
-          && endPoint.port !== null
-          && !isDefaultPort( isHttps, endPoint.port )
+        const hostnameAndPort = endPoint.port !== undefined && endPoint.port !== null && !this.isDefaultPort(isHttps, endPoint.port)
             ? `${endPoint.hostname}:${endPoint.port}`
             : `${endPoint.hostname}`;
 
         return hostnameAndPort
             ? `${isHttps ? 'https' : 'http'}://${hostnameAndPort}/`
             : '/';
+    }
+
+    private isDefaultPort(isHttps: boolean, portNumber: number): boolean {
+        return isHttps ? portNumber === 443 : portNumber === 80;
     }
 }
