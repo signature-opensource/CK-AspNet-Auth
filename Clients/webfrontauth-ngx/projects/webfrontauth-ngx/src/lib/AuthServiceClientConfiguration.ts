@@ -33,9 +33,7 @@ export function createAuthConfigUsingCurrentHost(
     hostname: window.location.hostname,
     port: window.location.port
       ? Number(window.location.port)
-      : isHttps
-        ? 443
-        : 80,
+      : undefined,
     disableSsl: !isHttps
   };
   return new AuthServiceClientConfiguration(identityEndPoint, loginPath);

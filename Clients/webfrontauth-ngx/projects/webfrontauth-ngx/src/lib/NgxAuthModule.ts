@@ -1,14 +1,17 @@
-import { NgModule, ModuleWithProviders, APP_INITIALIZER, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { ModuleWithProviders, NgModule, Optional } from '@angular/core';
 import { AuthService, IUserInfo } from '@signature/webfrontauth';
-import { AuthInterceptor } from './AuthInterceptor';
-import { AuthGuard } from './AuthGuard';
-import { NgxAuthService } from './NgxAuthService';
-import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
 import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-system';
 import { AxiosInstance } from 'axios';
+import { AuthGuard } from './AuthGuard';
+import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
 import { AXIOS, WFA_TYPESYSTEM } from './injectionTokens';
+import { NgxAuthService } from './NgxAuthService';
+
+export interface NgxAuthModuleConfiguration {
+  autoInitialization: boolean;
+  addInterceptor: boolean;
+}
 
 export function authServiceFactory(
   authConfig: AuthServiceClientConfiguration,
@@ -40,16 +43,11 @@ export function initializeAuthFactory(
 })
 export class NgxAuthModule {
   /**
-   * Returns the module with its providers,
-   * and optionally registers its own classes
-   * into HTTP_INTERCEPTORS and APP_INITIALIZER.
+   * Returns the module with its providers.
    * Not for use in shared modules.
-   *
-   * @param [addAutoProviders=true] **Defaults to true.** If true, `HTTP_INTERCEPTORS` and `APP_INITIALIZER` will be provided.
-   * **If false, your application will have to handle auth. refresh and token injection on its own**.
    */
-  public static forRoot( addAutoProviders: boolean = true ): ModuleWithProviders {
-    const moduleDef: ModuleWithProviders = {
+  public static forRoot(): ModuleWithProviders<NgxAuthModule> {
+    return {
       ngModule: NgxAuthModule,
       providers: [
         {
@@ -65,19 +63,5 @@ export class NgxAuthModule {
         NgxAuthService
       ]
     };
-    if (addAutoProviders) {
-      moduleDef.providers.push({
-        provide: HTTP_INTERCEPTORS,
-        useClass: AuthInterceptor,
-        multi: true
-      });
-      moduleDef.providers.push({
-        provide: APP_INITIALIZER,
-        useFactory: initializeAuthFactory,
-        multi: true,
-        deps: [AuthService]
-      });
-    }
-    return moduleDef;
   }
 }

@@ -1,6 +1,6 @@
 import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, AuthLevel, IWebFrontAuthError } from './index';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 
@@ -158,7 +158,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             if (messageEvent.data.WFA === 'WFA') {
                 const origin = messageEvent.origin + '/';
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
-                    throw new Error('Incorrect origin in postMessage.');
+                    throw new Error(`Incorrect origin in postMessage. Expected '${this._configuration.webFrontAuthEndPoint}', but was '${origin}'`);
                 }
                 this.parseResponse(messageEvent.data.data);
             }

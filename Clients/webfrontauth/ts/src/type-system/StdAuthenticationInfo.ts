@@ -1,4 +1,4 @@
-import { IUserInfo, IAuthenticationInfo, AuthLevel } from '../authService.model.public';
+import { IUserInfo, AuthLevel } from '../authService.model.public';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
 
 export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo> {

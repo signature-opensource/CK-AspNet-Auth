@@ -1,7 +1,6 @@
-import { IAuthenticationInfoType, IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
+import { IAuthenticationInfoType, IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl, StdKeyType } from './type-system.model';
 import { IUserInfo } from '../authService.model.public';
 import { StdAuthenticationInfo } from './StdAuthenticationInfo';
-import { StdAuthenticationTypeSystem } from './StdAuthenticationTypeSystem';
 
 export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserInfo> {
 
@@ -32,10 +31,10 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
     public fromJson(o: object): IAuthenticationInfoImpl<IUserInfo> {
         if (!o) { return null; }
         try {
-            const user = this._typeSystem.userInfo.fromJson(o[StdAuthenticationTypeSystem.userKeyType]);
-            const actualUser = this._typeSystem.userInfo.fromJson(o[StdAuthenticationTypeSystem.actualUserKeyType]);
-            const expires = this.parseNullableDate(o[StdAuthenticationTypeSystem.expirationKeyType]);
-            const criticalExpires = this.parseNullableDate(o[StdAuthenticationTypeSystem.criticalExpirationKeyType]);
+            const user = this._typeSystem.userInfo.fromJson(o[StdKeyType.user]);
+            const actualUser = this._typeSystem.userInfo.fromJson(o[StdKeyType.actualUser]);
+            const expires = this.parseNullableDate(o[StdKeyType.expiration]);
+            const criticalExpires = this.parseNullableDate(o[StdKeyType.criticalExpiration]);
             return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires);
         } catch (error) {
             throw new Error(error);

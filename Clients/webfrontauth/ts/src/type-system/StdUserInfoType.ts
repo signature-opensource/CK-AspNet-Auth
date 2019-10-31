@@ -1,6 +1,5 @@
-import { IUserInfoType } from './type-system.model';
+import { IUserInfoType, StdKeyType } from './type-system.model';
 import { IUserInfo, IUserSchemeInfo } from '../authService.model.public';
-import { StdAuthenticationTypeSystem } from './StdAuthenticationTypeSystem';
 import { StdUserInfo } from './StdUserInfo';
 import { StdUserSchemeInfo } from './StdUserSchemeInfo';
 import { IResponseScheme } from '../authService.model.private';
@@ -18,11 +17,11 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
     public fromJson( o: object ): IUserInfo {
         if( !o ) { return null; }
         try {
-            const userId = Number.parseInt( o[ StdAuthenticationTypeSystem.userIdKeyType ] );
+            const userId = Number.parseInt( o[ StdKeyType.userId ] );
             if( userId === 0 ) { return this.anonymous; }
-            const userName = o[ StdAuthenticationTypeSystem.userNameKeyType ] as string;
+            const userName = o[ StdKeyType.userName ] as string;
             const schemes: IUserSchemeInfo[] = [];
-            const jsonSchemes = o[ StdAuthenticationTypeSystem.schemesKeyType ] as IResponseScheme[];
+            const jsonSchemes = o[ StdKeyType.schemes ] as IResponseScheme[];
             jsonSchemes.forEach( p => schemes.push( new StdUserSchemeInfo( p[ 'name' ], p['lastUsed'] ) ) );
             return new StdUserInfo( userId, userName, schemes );
         } catch( error ) {
