@@ -334,3 +334,4 @@ jspm_packages/
 /Clients/webfrontauth/index.js.map
 
 CodeCakeBuilder/MemoryKey.*.txt
+CodeCakeBuilder/UnitTestsDone.*.txt
