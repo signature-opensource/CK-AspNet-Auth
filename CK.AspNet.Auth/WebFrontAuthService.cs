@@ -55,6 +55,7 @@ namespace CK.AspNet.Auth
         readonly IWebFrontAuthValidateLoginService _validateLoginService;
         readonly IWebFrontAuthAutoCreateAccountService _autoCreateAccountService;
         readonly IWebFrontAuthDynamicScopeProvider _dynamicScopeProvider;
+        readonly IWebFrontAuthAutoBindingAccountService _authAutoBindingAccountService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -73,7 +74,8 @@ namespace CK.AspNet.Auth
             IOptionsMonitor<WebFrontAuthOptions> options,
             IWebFrontAuthValidateLoginService validateLoginService = null,
             IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null,
-            IWebFrontAuthDynamicScopeProvider dynamicScopeProvider = null )
+            IWebFrontAuthDynamicScopeProvider dynamicScopeProvider = null,
+            IWebFrontAuthAutoBindingAccountService autoBindingAccountService = null)
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
@@ -81,6 +83,7 @@ namespace CK.AspNet.Auth
             _validateLoginService = validateLoginService;
             _autoCreateAccountService = autoCreateAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
+            _authAutoBindingAccountService = autoBindingAccountService;
 
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
@@ -569,8 +572,29 @@ namespace CK.AspNet.Auth
                     {
                         if( currentlyLoggedIn != 0 )
                         {
-                            ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                            monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                            if( _authAutoBindingAccountService != null)
+                            {
+                                if ( ctx.InitialAuthentication.Level == AuthLevel.Critical )
+                                {
+                                    AccountBindingResult uAuto = await _authAutoBindingAccountService.BindAccountAsync( monitor, ctx );
+                                    if( uAuto != null )
+                                    {
+                                        if( !uAuto.IsSuccess ) ctx.SetError( uAuto );
+                                    }
+                                }
+                                else
+                                {
+                                    // User's AuthLevel is not critical
+                                    ctx.SetError("User.AuthLevel", "User's authentication level is not critical." );
+                                    monitor.Error( $"[User.AuthLevel] {currentlyLoggedIn}'s auth level is {ctx.InitialAuthentication.Level}", WebFrontAuthMonitorTag );
+                                }
+                            }
+                            else
+                            {
+                                ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                                monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                            }
+
                         }
                         else
                         {

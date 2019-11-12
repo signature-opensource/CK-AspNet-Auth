@@ -22,11 +22,13 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext, IWebFrontAuthAutoCreateAccountContext
+    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext, IWebFrontAuthAutoCreateAccountContext, IWebFrontAuthAutoBindingAccountContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
         UserLoginResult _failedLogin;
+        AccountBindingResult _successfullBinding;
+        AccountBindingResult _failedBinding;
         string _errorId;
         string _errorText;
         // Used for Direct login (post return code).
@@ -162,6 +164,12 @@ namespace CK.AspNet.Auth
             return null;
         }
 
+        AccountBindingResult IWebFrontAuthAutoBindingAccountContext.SetError( string errorId, string errorText )
+        {
+            SetError( errorId, errorText );
+            return null;
+        }
+
         /// <summary>
         /// Sets an error message.
         /// The returned error has "errorId" set to the full name of the exception
@@ -185,6 +193,12 @@ namespace CK.AspNet.Auth
             return null;
         }
 
+        AccountBindingResult IWebFrontAuthAutoBindingAccountContext.SetError( Exception ex )
+        {
+            SetError( ex );
+            return null;
+        }
+
         /// <summary>
         /// Sets a login failure.
         /// The returned error contains the <see cref="InitialScheme"/>, <see cref="CallingScheme"/>, <see cref="UserData"/>,
@@ -199,6 +213,15 @@ namespace CK.AspNet.Auth
             _errorId = "User.LoginFailure";
             _errorText = loginFailed.LoginFailureReason;
             _failedLogin = loginFailed;
+            Debug.Assert( _errorText != null );
+        }
+
+        public void SetError( AccountBindingResult bindingFailed )
+        {
+            if( bindingFailed == null || bindingFailed.IsSuccess ) throw new ArgumentException();
+            _errorId = "User.LoginFailure";
+            _errorText = bindingFailed.BindingFailureReason;
+            _failedBinding = bindingFailed;
             Debug.Assert( _errorText != null );
         }
 

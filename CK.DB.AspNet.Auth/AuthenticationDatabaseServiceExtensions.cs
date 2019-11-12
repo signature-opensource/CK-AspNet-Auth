@@ -31,5 +31,13 @@ namespace CK.DB.Auth
                                 : null;
             return new UserLoginResult( info, dbResult.FailureCode, dbResult.FailureReason, dbResult.FailureCode == (int)KnownLoginFailureCode.UnregisteredUser );
         }
+
+        public static async Task<AccountBindingResult> CreateAccountBindingResultFromDatabase (this IAuthenticationDatabaseService @this, SqlServer.ISqlCallContext ctx, IAuthenticationTypeSystem typeSystem, LoginResult dbResult )
+        {
+            IUserInfo info = dbResult.IsSuccess
+                                ? typeSystem.UserInfo.FromUserAuthInfo( await @this.ReadUserAuthInfoAsync( ctx, 1, dbResult.UserId ) )
+                                : null;
+            return new AccountBindingResult( info, dbResult.FailureCode, dbResult.FailureReason );
+        }
     }
 }
