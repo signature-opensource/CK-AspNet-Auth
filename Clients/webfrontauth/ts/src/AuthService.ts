@@ -3,7 +3,6 @@ import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { unwatchFile } from 'fs';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -212,8 +211,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                         if( auth )
                         {
                             this._availableSchemes = schemes;
-                            this._authenticationInfo = auth;
                             this._currentError = null;
+                            this.localDisconnect( auth );
                         }
                     }
                 }
@@ -292,10 +291,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.onChange();
     }
 
-    private localDisconnect(): void {
+    private localDisconnect( authInfo?: IAuthenticationInfoImpl<T> ): void {
         this._token = '';
         this._refreshable = false;
-        this._authenticationInfo = this._typeSystem.authenticationInfo.none;
+        this._authenticationInfo = authInfo || this._typeSystem.authenticationInfo.none;
         this.clearTimeouts();
         this.onChange();
     }
