@@ -3,13 +3,14 @@ import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
+import { unwatchFile } from 'fs';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private _authenticationInfo: IAuthenticationInfoImpl<T>;
     private _token: string;
     private _refreshable: boolean;
-    private _availableSchemes: string[];
+    private _availableSchemes: ReadonlyArray<string>;
     private _currentError: IWebFrontAuthError;
     private _version: string;
     private _configuration: AuthServiceConfiguration;
@@ -26,7 +27,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
     public get token(): string { return this._token; }
     public get refreshable(): boolean { return this._refreshable; }
-    public get availableSchemes(): string[] { return this._availableSchemes; }
+    public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
     public get version(): string { return this._version; }
     public get currentError(): IWebFrontAuthError { return this._currentError; }
 
@@ -170,7 +171,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region request handling
 
     private async sendRequest(
-        entryPoint: string,
+        entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
         requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> },
         skipResponseParsing: boolean = false
     ): Promise<void> {
@@ -189,17 +190,34 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             if (status === 200 ) {
                 if (!skipResponseParsing ) { this.parseResponse(response.data); }
             } else {
-                this.localDisconnect();
                 this._currentError = new WebFrontAuthError({
                     errorId: `HTTP.Status.${status}`,
                     errorReason: 'Unhandled success status'
                 });
+                this.localDisconnect();
             }
         } catch (error) {
-            this.localDisconnect();
 
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
+                // Connection issue.
+                if( entryPoint !== 'impersonate' 
+                    && entryPoint !== 'logout' ) {
+
+                    const storage = this._configuration.useLocalStorage( entryPoint );
+                    if( storage !== null ) {
+                        const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( storage, 
+                                                                                        this._configuration.webFrontAuthEndPoint, 
+                                                                                        this._availableSchemes );
+                        if( auth )
+                        {
+                            this._availableSchemes = schemes;
+                            this._authenticationInfo = auth;
+                            this._currentError = null;
+                        }
+                    }
+                }
+
                 this._currentError = new WebFrontAuthError({
                     errorId: 'HTTP.Status.408',
                     errorReason: 'No connection could be made'
@@ -211,6 +229,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorReason: 'Server response error'
                 });
             }
+            if( this._currentError ) this.localDisconnect();
         }
     }
 
@@ -262,7 +281,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             this.setExpirationTimeout();
             if (this._authenticationInfo.criticalExpires) { this.setCriticialExpirationTimeout(); }
         }
-
+        if( this._configuration.localStorage )
+        {
+            this._typeSystem.authenticationInfo.saveToLocalStorage( 
+                    this._configuration.localStorage, 
+                    this._configuration.webFrontAuthEndPoint, 
+                    this._authenticationInfo, 
+                    this._availableSchemes );
+            }
         this.onChange();
     }
 

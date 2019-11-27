@@ -6,7 +6,7 @@ export enum AuthLevel {
 }
 
 export enum SchemeUsageStatus {
-    Used,
+    Active,
     Unused,
     Deprecated
 }

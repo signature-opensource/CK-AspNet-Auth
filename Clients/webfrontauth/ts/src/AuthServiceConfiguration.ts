@@ -1,15 +1,30 @@
-import { IAuthServiceConfiguration, IEndPoint, ILocalStoragePersistence } from './authService.model.public';
+import { IAuthServiceConfiguration, IEndPoint, ILocalStoragePersistence, IAuthenticationInfo, IUserInfo } from './authService.model.public';
+import { IAuthenticationInfoTypeSystem } from './type-system/type-system.model';
 
 export class AuthServiceConfiguration {
     private readonly _identityServerEndPoint: string;
-    private readonly _localStoragePersistence: ILocalStoragePersistence;
+    private readonly _localStorageConfig: ILocalStoragePersistence;
+    
+    /** Not null means that the local storage is available. */
+    public readonly localStorage: Storage;
 
+    /** Gets the end point address. */
     public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
-    public get localStoragePersistence(): ILocalStoragePersistence { return this._localStoragePersistence; }
+;
+    /** Gets the Storage API if it is available and enabled for the given action. */
+    public useLocalStorage( action: 'basicLogin' | 'refresh' | 'unsafeDirectLogin' | 'startLogin' ) : Storage {
+        return this._localStorageConfig['on'+action[0].toUpperCase()+action.slice(1)]
+                ? this.localStorage
+                : null;
+    }
 
     constructor(config: IAuthServiceConfiguration) {
         this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
-        this._localStoragePersistence = AuthServiceConfiguration.ensureLocalStoragePersistence(config.localStoragePersistence);
+        const s = this.localStorage = this.getAvailableStorage('localStorage');
+        this._localStorageConfig = s 
+                                    ? config.localStoragePersistence 
+                                        || { onBasicLogin: true, onRefresh: true, onStartLogin: true, onUnsafeDirectLogin: true }
+                                    : { onBasicLogin: false, onRefresh: false, onStartLogin: false, onUnsafeDirectLogin: false };
     }
 
     private static getUrlFromEndPoint(endPoint: IEndPoint): string {
@@ -28,33 +43,40 @@ export class AuthServiceConfiguration {
         return isHttps ? portNumber === 443 : portNumber === 80;
     }
 
-    private static ensureLocalStoragePersistence(localStoragePersistence?: ILocalStoragePersistence): ILocalStoragePersistence {
-        return this.storageAvailable('localStorage')
-            ? localStoragePersistence || { onBasicLogin: true, onRefresh: true, onStartLogin: true, onUnsafeDirectLogin: true }
-            : { onBasicLogin: false, onRefresh: false, onStartLogin: false, onUnsafeDirectLogin: false };
-    }
-
     /**
-     * Detects whether the localStorage is available.
+     * Returns the localStorage or null if it is unavailable.
      * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
      * @param storageType Storage type, either 'localStorage' or 'sessionStorage'
      */
-    private static storageAvailable(storageType: 'localStorage' | 'sessionStorage'): boolean {
-        let storage: Storage;
+    private getAvailableStorage(storageType: 'localStorage' | 'sessionStorage'):  Storage {
+        let storage: Storage = null;
         try {
-            if (typeof (window) === 'undefined')
-                return false;
-
-            storage = window[storageType];
-            const key = '__storage_test__';
-            storage.setItem(key, key);
-            storage.removeItem(key);
-            return true;
+            if (typeof (window) !== 'undefined') {
+                storage = window[storageType];
+                const key = '__storage_test__';
+                storage.setItem(key, key);
+                storage.removeItem(key);
+            }
         }
         catch (e) {
-            return e instanceof DOMException
-                && (e.code === 22 || e.code === 1014 || e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')
-                && (storage && storage.length !== 0);
+            const isAvailable = e instanceof DOMException 
+                                && ( 
+                                        // everything except Firefox
+                                        e.code === 22 ||
+                                        // Firefox
+                                        e.code === 1014 ||
+                                        // test name field too, because code might not be present
+                                        // everything except Firefox
+                                        e.name === 'QuotaExceededError' ||
+                                        // Firefox
+                                        e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+                                    )
+                                   // acknowledge QuotaExceededError only if there's something already stored
+                                && (storage && storage.length !== 0);
+            
+            if( !isAvailable ) storage = null;
         }
+        return storage;
     }
+
 }

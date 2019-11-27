@@ -14,17 +14,22 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
         return new StdUserInfo( userId, userName, schemes );
     }
 
-    public fromJson( o: object, availableSchemes: ReadonlyArray<string> ): IUserInfo {
+    /**
+     * Maps an object (by parsing it) into a necessarily valid user information.
+     * @param o Any object that must be shaped like a T.
+     * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
+     */
+    public fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IUserInfo {
         if( !o ) { return null; }
 
         function create( r: IResponseScheme, schemeNames: Set<string> ) : StdUserSchemeInfo {
             const name = r[ 'name' ];
-            return new StdUserSchemeInfo( name, r[ 'lastUsed' ], schemeNames.delete( name ) 
-                                                                    ? SchemeUsageStatus.Used 
+            return new StdUserSchemeInfo( name, r[ 'lastUsed' ], schemeNames === null || schemeNames.delete( name ) 
+                                                                    ? SchemeUsageStatus.Active 
                                                                     : SchemeUsageStatus.Deprecated );
         }
 
-        let schemeNames = new Set<string>(availableSchemes);
+        let schemeNames = availableSchemes ? new Set<string>(availableSchemes) : null;
 
         try {
             const userId = Number.parseInt( o[ StdKeyType.userId ] );
@@ -33,7 +38,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
             const schemes: IUserSchemeInfo[] = [];
             const jsonSchemes = o[ StdKeyType.schemes ] as IResponseScheme[];
             jsonSchemes.forEach( p => schemes.push( create( p, schemeNames ) ) );
-            schemeNames.forEach( s => schemes.push( new StdUserSchemeInfo( s, new Date(0), SchemeUsageStatus.Unused ) ) );
+            if( schemeNames ) schemeNames.forEach( s => schemes.push( new StdUserSchemeInfo( s, new Date(0), SchemeUsageStatus.Unused ) ) );
             return new StdUserInfo( userId, userName, schemes );
         } catch( error ) {
             throw new Error( error );
