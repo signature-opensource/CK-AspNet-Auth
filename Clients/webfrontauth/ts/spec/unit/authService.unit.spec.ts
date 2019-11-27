@@ -5,12 +5,14 @@ import {
     AuthService,
     IAuthenticationInfo,
     AuthLevel,
-    IUserInfo
-} from '../../';
+    IUserInfo,
+    SchemeUsageStatus
+} from '../../src';
 import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
+import { deepStrictEqual } from 'assert';
 
 describe('AuthService', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });
@@ -58,6 +60,8 @@ describe('AuthService', function () {
     beforeEach(async function () {
         serverResponse = emptyResponse;
         await authService.logout(true);
+        serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
+        await authService.refresh( false, true );
     });
 
     after(function () {
@@ -72,7 +76,7 @@ describe('AuthService', function () {
             const expectedLoginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -129,7 +133,7 @@ describe('AuthService', function () {
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -192,7 +196,7 @@ describe('AuthService', function () {
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status:SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -243,10 +247,11 @@ describe('AuthService', function () {
         });
 
         it('should parse unsafeDirectLogin response.', async function () {
+
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status:SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -288,17 +293,17 @@ describe('AuthService', function () {
             const impersonatedLoginInfo: IUserInfo = {
                 userId: 3,
                 userName: 'Bob',
-                schemes: []
+                schemes: [{ name: 'Basic', lastUsed: new Date( 98797179 ), status: SchemeUsageStatus.Active }]
             }
 
             const impersonatorLoginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
-                .withUser({ id: 3, name: 'Bob', schemes: [] })
+                .withUser({ id: 3, name: 'Bob', schemes: [{ name: 'Basic', lastUsed: new Date( 98797179 )}] })
                 .withActualUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
                 .withExpires(exp)
                 .withToken('CfDJ…s4POjOs')
@@ -316,7 +321,46 @@ describe('AuthService', function () {
             expect(authService.currentError.error).to.equal(null);
         });
 
-    });
+        it('should update schemes status.', async function () {
+
+            serverResponse = new ResponseBuilder()
+                .withSchemes( ["Basic", "BrandNewProvider"] )
+                .build();
+            await authService.refresh( false, true );
+
+            deepStrictEqual( authService.availableSchemes, ["Basic", "BrandNewProvider"] );
+
+            const expectedLoginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [
+                    { name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active },
+                    { name: 'Wanadoo', lastUsed: new Date(1999,12,14), status: SchemeUsageStatus.Deprecated }, 
+                    { name: 'BrandNewProvider', lastUsed: new Date(0), status: SchemeUsageStatus.Unused } 
+                ]
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: 
+                            [
+                                { name: 'Basic', lastUsed: schemeLastUsed },
+                                { name: 'Wanadoo', lastUsed: new Date(1999,12,14) } 
+                        ] })
+                .withToken('CfDJ8CS62…pLB10X')
+                .withExpires(exp)
+                .build();
+            await authService.basicLogin('', '');
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
+            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+            expect(authService.currentError.error).to.equal(null);
+        });
+
+   });
 
     context('when authentication info changes', function () {
 

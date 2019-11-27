@@ -333,7 +333,7 @@ namespace CK.AspNet.Auth
             try
             {
                 string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 2048 ) ) return null;
+                if( !Request.TryReadSmallBodyAsString( out b, 4096 ) ) return null;
                 var r = JsonConvert.DeserializeObject<BasicLoginRequest>( b );
                 if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
             }

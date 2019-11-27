@@ -54,6 +54,7 @@ namespace CK.AspNet.Auth
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
         readonly IWebFrontAuthValidateLoginService _validateLoginService;
         readonly IWebFrontAuthAutoCreateAccountService _autoCreateAccountService;
+        readonly IWebFrontAuthAutoBindingAccountService _autoBindingAccountService;
         readonly IWebFrontAuthDynamicScopeProvider _dynamicScopeProvider;
 
         /// <summary>
@@ -65,6 +66,7 @@ namespace CK.AspNet.Auth
         /// <param name="options">Monitored options.</param>
         /// <param name="validateLoginService">Optional service that validates logins.</param>
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
+        /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to suport scope augmentation.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
@@ -73,6 +75,7 @@ namespace CK.AspNet.Auth
             IOptionsMonitor<WebFrontAuthOptions> options,
             IWebFrontAuthValidateLoginService validateLoginService = null,
             IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null,
+            IWebFrontAuthAutoBindingAccountService autoBindingAccountService = null,
             IWebFrontAuthDynamicScopeProvider dynamicScopeProvider = null )
         {
             _typeSystem = typeSystem;
@@ -80,6 +83,7 @@ namespace CK.AspNet.Auth
             _options = options;
             _validateLoginService = validateLoginService;
             _autoCreateAccountService = autoCreateAccountService;
+            _autoBindingAccountService = autoBindingAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
 
             WebFrontAuthOptions initialOptions = CurrentOptions;
@@ -556,6 +560,7 @@ namespace CK.AspNet.Auth
             UserLoginResult u = null;
             if( !ctx.HasError )
             {
+                // The logger function must kindly return an unlogged UserLoginResult if it cannot log the user in.
                 u = await SafeCallLogin( monitor, ctx, logger, actualLogin: _validateLoginService == null );
             }
             if( !ctx.HasError )
@@ -569,23 +574,44 @@ namespace CK.AspNet.Auth
                     {
                         if( currentlyLoggedIn != 0 )
                         {
-                            ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                            monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                            bool raiseError = true;
+                            if( _autoBindingAccountService != null )
+                            {
+                                UserLoginResult uBound = await _autoBindingAccountService.BindAccountAsync( monitor, ctx );
+                                if( uBound != null )
+                                {
+                                    raiseError = false;
+                                    if( !uBound.IsSuccess ) ctx.SetError( uBound );
+                                    else
+                                    {
+                                        if( u != uBound )
+                                        {
+                                            u = uBound;
+                                            monitor.Info( $"[Account.AutoBinding] {currentlyLoggedIn} now bound to '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                                        }
+                                    }
+                                }
+                            }
+                            if( raiseError )
+                            {
+                                ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
+                                monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                            }
                         }
                         else
                         {
-                            bool noAutoRegistrationError = true;
+                            bool raiseError = true;
                             if( _autoCreateAccountService != null )
                             {
                                 UserLoginResult uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
                                 if( uAuto != null )
                                 {
-                                    noAutoRegistrationError = false;
+                                    raiseError = false;
                                     if( !uAuto.IsSuccess ) ctx.SetError( uAuto );
                                     else u = uAuto;
                                 }
                             }
-                            if( noAutoRegistrationError )
+                            if( raiseError )
                             {
                                 ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
                                 monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
@@ -612,6 +638,7 @@ namespace CK.AspNet.Auth
                         }
                     }
                 }
+                // Eventuallly...
                 if( !ctx.HasError )
                 { 
                     // Login succeeds.
@@ -626,6 +653,15 @@ namespace CK.AspNet.Auth
             await ctx.SendResponse();
         }
 
+        /// <summary>
+        /// Calls the actual logger function (that must kindly return an unlogged UserLoginResult if it cannot log the user in)
+        /// in a try/catch and sets an error on the context only if it it throws.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="ctx">The login context.</param>
+        /// <param name="logger">The actual login function.</param>
+        /// <param name="actualLogin">True for an actual login, false otherwise.</param>
+        /// <returns>A login result (that mey be unsuccessful).</returns>
         static async Task<UserLoginResult> SafeCallLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
         {
             UserLoginResult u = null;

@@ -9,7 +9,9 @@ export function areUserInfoEquals( userInfo1: IUserInfo, userInfo2: IUserInfo ):
     if( s1.length !== s2.length ) { return false; }
     if( s1.length > 0 ) {
         for( let i = 0; i < s1.length; ++i ) {
-            if( s1[i].name !== s2[i].name || s1[i].lastUsed.getDate() !== s2[i].lastUsed.getDate() ) {
+            if( s1[i].name !== s2[i].name 
+                || s1[i].lastUsed.getDate() !== s2[i].lastUsed.getDate()
+                || s1[i].status !== s2[i].status ) {
                 return false;
             }
         }

@@ -16,6 +16,7 @@ export default class ResponseBuilder {
     private _token: string = null;
     private _refreshable: boolean = null;
     private _error: IError = null;
+    private _schemes: string[] = null;
     private _loginFailure: ILoginFailure = null;
     private _version: string = null;
 
@@ -93,6 +94,11 @@ export default class ResponseBuilder {
         return this;
     }
 
+    public withSchemes(schemes: string[]): ResponseBuilder {
+        this._schemes = schemes;
+        return this;
+    }
+
     public build(): IWebFrontAuthResponse {
         const response: IWebFrontAuthResponse = {
             info: this._info,
@@ -112,6 +118,10 @@ export default class ResponseBuilder {
 
         if (this._version) {
             response.version = this._version;
+        }
+
+        if (this._schemes) {
+            response.schemes = this._schemes;
         }
 
         return response;

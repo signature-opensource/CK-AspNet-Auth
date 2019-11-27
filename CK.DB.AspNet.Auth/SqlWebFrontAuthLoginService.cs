@@ -82,7 +82,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>A new, empty, provider dependent login payload.</returns>
         public virtual object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
         {
-            return FindProvider( scheme, mustHavePayload: true ).CreatePayload();
+            return _authPackage.FindRequiredProvider( scheme, mustHavePayload: true ).CreatePayload();
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The login result.</returns>
         public virtual async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
-            IGenericAuthenticationProvider p = FindProvider( scheme, false );
+            IGenericAuthenticationProvider p = _authPackage.FindRequiredProvider( scheme, false );
             var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
@@ -132,24 +132,5 @@ namespace CK.DB.AspNet.Auth
             return refreshed;
         }
 
-        /// <summary>
-        /// Returns a provider that may be required to be able to create a payload
-        /// (it must be a <see cref="IGenericAuthenticationProvider{T}"/>) or throws an exception
-        /// if it can't be found.
-        /// </summary>
-        /// <param name="scheme">The scheme to find.</param>
-        /// <param name="mustHavePayload">True if the provider must handle payload. An <see cref="ArgumentException"/>
-        /// is thrown if this is not the case.</param>
-        /// <returns>The provider.</returns>
-        protected virtual IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )
-        {
-            IGenericAuthenticationProvider p = _authPackage.FindProvider( scheme );
-            if( p == null ) throw new ArgumentException( $"Unable to find a database provider for scheme '{scheme}'. Available: {_providers.Concatenate()}.", nameof( scheme ) );
-            if( mustHavePayload && !p.HasPayload() )
-            {
-                throw new ArgumentException( $"Database provider '{p.GetType().FullName}' does not handle generic payload." );
-            }
-            return p;
-        }
     }
 }
