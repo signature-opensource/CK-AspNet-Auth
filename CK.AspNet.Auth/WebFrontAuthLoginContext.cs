@@ -22,7 +22,9 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext, IWebFrontAuthAutoCreateAccountContext
+    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext,
+                                              IWebFrontAuthAutoCreateAccountContext,
+                                              IWebFrontAuthAutoBindingAccountContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
@@ -162,6 +164,12 @@ namespace CK.AspNet.Auth
             return null;
         }
 
+        UserLoginResult IWebFrontAuthAutoBindingAccountContext.SetError( string errorId, string errorText )
+        {
+            SetError( errorId, errorText );
+            return null;
+        }
+
         /// <summary>
         /// Sets an error message.
         /// The returned error has "errorId" set to the full name of the exception
@@ -180,6 +188,12 @@ namespace CK.AspNet.Auth
         }
 
         UserLoginResult IWebFrontAuthAutoCreateAccountContext.SetError( Exception ex )
+        {
+            SetError( ex );
+            return null;
+        }
+
+        UserLoginResult IWebFrontAuthAutoBindingAccountContext.SetError( Exception ex )
         {
             SetError( ex );
             return null;
