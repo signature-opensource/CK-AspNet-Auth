@@ -53,10 +53,18 @@ export interface ILoginError {
 
 export interface IAuthServiceConfiguration {
     readonly identityEndPoint: IEndPoint;
+    readonly localStoragePersistence?: ILocalStoragePersistence;
 }
 
 export interface IEndPoint {
     readonly hostname?: string;
     readonly port?: number;
     readonly disableSsl?: boolean;
+}
+
+export interface ILocalStoragePersistence {
+    readonly onBasicLogin: boolean;
+    readonly onRefresh: boolean;
+    readonly onUnsafeDirectLogin: boolean;
+    readonly onStartLogin: boolean;
 }
