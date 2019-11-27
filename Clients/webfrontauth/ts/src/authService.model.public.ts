@@ -5,6 +5,12 @@ export enum AuthLevel {
     Critical
 }
 
+export enum SchemeUsageStatus {
+    Active,
+    Unused,
+    Deprecated
+}
+
 export interface IAuthenticationInfo<T extends IUserInfo = IUserInfo> {
     readonly user: T;
     readonly unsafeUser: T;
@@ -19,12 +25,13 @@ export interface IAuthenticationInfo<T extends IUserInfo = IUserInfo> {
 export interface IUserInfo {
     readonly userId: number;
     readonly userName: string;
-    readonly schemes: IUserSchemeInfo[];
+    readonly schemes: ReadonlyArray<IUserSchemeInfo>;
 }
 
 export interface IUserSchemeInfo {
     readonly name: string;
     readonly lastUsed: Date;
+    readonly status: SchemeUsageStatus;
 }
 
 export interface IWebFrontAuthError {
@@ -46,10 +53,18 @@ export interface ILoginError {
 
 export interface IAuthServiceConfiguration {
     readonly identityEndPoint: IEndPoint;
+    readonly localStoragePersistence?: ILocalStoragePersistence;
 }
 
 export interface IEndPoint {
     readonly hostname?: string;
     readonly port?: number;
     readonly disableSsl?: boolean;
+}
+
+export interface ILocalStoragePersistence {
+    readonly onBasicLogin: boolean;
+    readonly onRefresh: boolean;
+    readonly onUnsafeDirectLogin: boolean;
+    readonly onStartLogin: boolean;
 }

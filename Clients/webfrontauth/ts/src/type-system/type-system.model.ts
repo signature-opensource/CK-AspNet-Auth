@@ -22,7 +22,29 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
 
     create(user: T, expires?: Date, criticalExpires?: Date): IAuthenticationInfoImpl<T>;
 
-    fromJson(o: object): IAuthenticationInfoImpl<T>;
+    /**
+     * Maps an object (by parsing it) into a necessarily valid authentication info.
+     * @param o Any object that must be shaped like an authentication info.
+     * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
+     */
+    fromJson(o: object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>;
+
+    /**
+     * Saves the authentication info and currently available schemes into the local storage.
+     * @param storage Storage API to use.
+     * @param endPoint The authentication end point.  
+     * @param auth The authentication info to save.
+     * @param schemes The available schemes to save.
+     */
+    saveToLocalStorage( storage: Storage, webFrontAuthEndPoint: string, auth: IAuthenticationInfoImpl<T>, schemes: ReadonlyArray<string> ) 
+
+    /**
+     * Returns the authentication and available schemes previously saved by saveToLocalStorage.
+     * @param storage Storage API to use.
+     * @param endPoint The authentication end point.  
+     * @param availableSchemes Current available schemes: when not empty, the saved schemes are ignored.
+     */
+    loadFromLocalStorage( storage: Storage, webFrontAuthEndPoint: string, availableSchemes : ReadonlyArray<string> ) : [IAuthenticationInfoImpl<T>,ReadonlyArray<string>]
 }
 
 export interface IUserInfoType<T extends IUserInfo> {
@@ -30,7 +52,12 @@ export interface IUserInfoType<T extends IUserInfo> {
 
     create(userId: number, userName: string, schemes: IUserSchemeInfo[]): T;
 
-    fromJson(o: object): T;
+    /**
+     * Maps an object (by parsing it) into a necessarily valid user information.
+     * @param o Any object that must be shaped like a T.
+     * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
+     */
+    fromJson(o: object, availableSchemes?: ReadonlyArray<string> ): T;
 }
 
 export class StdKeyType {

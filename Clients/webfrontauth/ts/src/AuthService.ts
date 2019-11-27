@@ -9,7 +9,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _authenticationInfo: IAuthenticationInfoImpl<T>;
     private _token: string;
     private _refreshable: boolean;
-    private _availableSchemes: string[];
+    private _availableSchemes: ReadonlyArray<string>;
     private _currentError: IWebFrontAuthError;
     private _version: string;
     private _configuration: AuthServiceConfiguration;
@@ -26,7 +26,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
     public get token(): string { return this._token; }
     public get refreshable(): boolean { return this._refreshable; }
-    public get availableSchemes(): string[] { return this._availableSchemes; }
+    public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
     public get version(): string { return this._version; }
     public get currentError(): IWebFrontAuthError { return this._currentError; }
 
@@ -45,7 +45,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         axiosInstance: AxiosInstance,
         typeSystem?: IAuthenticationInfoTypeSystem<T>
     ) {
-        if (!configuration) { throw new Error('Confiugration must be defined.'); }
+        if (!configuration) { throw new Error('Configuration must be defined.'); }
         this._configuration = new AuthServiceConfiguration(configuration);
 
         if (!axiosInstance) { throw new Error('AxiosInstance must be defined.'); }
@@ -170,7 +170,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region request handling
 
     private async sendRequest(
-        entryPoint: string,
+        entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
         requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> },
         skipResponseParsing: boolean = false
     ): Promise<void> {
@@ -182,24 +182,41 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 : '';
             const response = await this._axiosInstance.post<IWebFrontAuthResponse>(
                 `${this._configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
-                requestOptions.body ? JSON.stringify(requestOptions.body) : {},
+                !!requestOptions.body ? JSON.stringify(requestOptions.body) : {},
                 { withCredentials: true });
 
             const status = response.status;
             if (status === 200 ) {
                 if (!skipResponseParsing ) { this.parseResponse(response.data); }
             } else {
-                this.localDisconnect();
                 this._currentError = new WebFrontAuthError({
                     errorId: `HTTP.Status.${status}`,
                     errorReason: 'Unhandled success status'
                 });
+                this.localDisconnect();
             }
         } catch (error) {
-            this.localDisconnect();
 
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
+                // Connection issue.
+                if( entryPoint !== 'impersonate' 
+                    && entryPoint !== 'logout' ) {
+
+                    const storage = this._configuration.useLocalStorage( entryPoint );
+                    if( storage !== null ) {
+                        const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( storage, 
+                                                                                        this._configuration.webFrontAuthEndPoint, 
+                                                                                        this._availableSchemes );
+                        if( auth )
+                        {
+                            this._availableSchemes = schemes;
+                            this._currentError = null;
+                            this.localDisconnect( auth );
+                        }
+                    }
+                }
+
                 this._currentError = new WebFrontAuthError({
                     errorId: 'HTTP.Status.408',
                     errorReason: 'No connection could be made'
@@ -211,6 +228,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorReason: 'Server response error'
                 });
             }
+            if( this._currentError ) this.localDisconnect();
         }
     }
 
@@ -256,20 +274,27 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
         this._token = response.token ? response.token : '';
         this._refreshable = response.refreshable ? response.refreshable : false;
-        this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info);
+        this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info, this._availableSchemes);
 
         if (this._authenticationInfo.expires) {
             this.setExpirationTimeout();
             if (this._authenticationInfo.criticalExpires) { this.setCriticialExpirationTimeout(); }
         }
-
+        if( this._configuration.localStorage )
+        {
+            this._typeSystem.authenticationInfo.saveToLocalStorage( 
+                    this._configuration.localStorage, 
+                    this._configuration.webFrontAuthEndPoint, 
+                    this._authenticationInfo, 
+                    this._availableSchemes );
+            }
         this.onChange();
     }
 
-    private localDisconnect(): void {
+    private localDisconnect( authInfo?: IAuthenticationInfoImpl<T> ): void {
         this._token = '';
         this._refreshable = false;
-        this._authenticationInfo = this._typeSystem.authenticationInfo.none;
+        this._authenticationInfo = authInfo || this._typeSystem.authenticationInfo.none;
         this.clearTimeouts();
         this.onChange();
     }
@@ -278,8 +303,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     //#region webfrontauth protocol
 
-    public async basicLogin(userName: string, password: string): Promise<void> {
-        await this.sendRequest('basicLogin', { body: { userName, password } });
+    public async basicLogin(userName: string, password: string, userData?: object): Promise<void> {
+        await this.sendRequest('basicLogin', { body: { userName, password, userData } });
     }
 
     public async unsafeDirectLogin(provider: string, payload: object): Promise<void> {
@@ -305,15 +330,18 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         await this.refresh();
     }
 
-    public async startInlineLogin(scheme: string, returnUrl: string): Promise<void> {
+    public async startInlineLogin(scheme: string, returnUrl: string, userData?: object): Promise<void> {
         if (!returnUrl) { throw new Error('returnUrl must be defined.'); }
         if (!(returnUrl.startsWith('http://') || returnUrl.startsWith('https://'))) {
             if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
             returnUrl = document.location.origin + returnUrl;
         }
+        const queries = [
+            { key: 'scheme', value: scheme }, 
+            { key: 'returnUrl', value: encodeURI(returnUrl) },
+            { key: 'callerOrigin', value: encodeURI(document.location.origin) } ];
 
-        const queries = [{ key: 'scheme', value: scheme }, { key: 'returnUrl', value: encodeURI(returnUrl) }];
-        await this.sendRequest('startLogin', { queries });
+        await this.sendRequest('startLogin', { body: userData, queries });
     }
 
     public async startPopupLogin(scheme: string, userData?: object): Promise<void> {
@@ -333,7 +361,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorDiv.innerHTML = this.popupDescriptor.basicMissingCredentialsError;
                     errorDiv.style.display = 'block';
                 } else {
-                    await this.basicLogin(loginData.username, loginData.password);
+                    await this.basicLogin(loginData.username, loginData.password, userData);
 
                     if (this.authenticationInfo.level >= 2) {
                         popup.close();
@@ -345,7 +373,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             }
 
             popup.document.getElementById('submit-button').onclick = (async () => await onClick());
-        } else {
+        } 
+        else {
             const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
             userData = { ...userData, callerOrigin: document.location.origin };
             const queryString = Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData[key])).join('&');

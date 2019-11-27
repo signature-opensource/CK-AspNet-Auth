@@ -1,6 +1,4 @@
 <NPMSolution>
-  <!--
   <Project Path="Clients/webfrontauth" IsPublished="true" OutputFolder="Clients/webfrontauth" ExpectedName="@signature/webfrontauth" />
   <AngularWorkspace Path="Clients/webfrontauth-ngx" OutputFolder="Clients/webfrontauth-ngx/dist" />
-  -->
 </NPMSolution>
