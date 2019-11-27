@@ -28,11 +28,11 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
             );
     }
 
-    public fromJson(o: object): IAuthenticationInfoImpl<IUserInfo> {
+    public fromJson(o: object, availableSchemes: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo> {
         if (!o) { return null; }
         try {
-            const user = this._typeSystem.userInfo.fromJson(o[StdKeyType.user]);
-            const actualUser = this._typeSystem.userInfo.fromJson(o[StdKeyType.actualUser]);
+            const user = this._typeSystem.userInfo.fromJson(o[StdKeyType.user], availableSchemes);
+            const actualUser = this._typeSystem.userInfo.fromJson(o[StdKeyType.actualUser], availableSchemes);
             const expires = this.parseNullableDate(o[StdKeyType.expiration]);
             const criticalExpires = this.parseNullableDate(o[StdKeyType.criticalExpiration]);
             return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires);

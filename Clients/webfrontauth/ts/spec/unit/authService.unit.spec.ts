@@ -12,6 +12,7 @@ import { AuthServiceConfiguration, IWebFrontAuthResponse } from '../../src/index
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
+import { SchemeUsageStatus } from '../../src';
 
 describe('AuthService', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });
@@ -84,7 +85,7 @@ describe('AuthService', function () {
             const expectedLoginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Used }]
             }
 
             serverResponse = new ResponseBuilder()

@@ -22,7 +22,7 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
 
     create(user: T, expires?: Date, criticalExpires?: Date): IAuthenticationInfoImpl<T>;
 
-    fromJson(o: object): IAuthenticationInfoImpl<T>;
+    fromJson(o: object, availableSchemes: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>;
 }
 
 export interface IUserInfoType<T extends IUserInfo> {
@@ -30,7 +30,7 @@ export interface IUserInfoType<T extends IUserInfo> {
 
     create(userId: number, userName: string, schemes: IUserSchemeInfo[]): T;
 
-    fromJson(o: object): T;
+    fromJson(o: object, availableSchemes: ReadonlyArray<string> ): T;
 }
 
 export class StdKeyType {
