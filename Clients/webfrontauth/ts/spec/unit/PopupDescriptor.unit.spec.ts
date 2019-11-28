@@ -14,9 +14,8 @@ describe('PopupDescriptor', function () {
             expect(authService.popupDescriptor).to.not.be.null;
         });
 
-        it('should not accept null as a new value.', function () {
+        it('should not accept a custom descriptor.', function () {
             const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-            authService.popupDescriptor = null;
             expect(authService.popupDescriptor).to.not.be.null;
 
             const customPopupDescriptor = new PopupDescriptor();

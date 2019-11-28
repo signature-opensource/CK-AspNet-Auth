@@ -10,9 +10,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _token: string;
     private _refreshable: boolean;
     private _availableSchemes: ReadonlyArray<string>;
-    private _currentError: IWebFrontAuthError;
     private _version: string;
-    private _configuration: AuthServiceConfiguration;
+    private _configuration: AuthServiceConfiguration;    
+    private _currentError?: IWebFrontAuthError;
 
     private _axiosInstance: AxiosInstance;
     private _typeSystem: IAuthenticationInfoTypeSystem<T>;
@@ -23,12 +23,18 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private _subscribers: Set<(eventSource: AuthService) => void>;
 
+    /** Gets the current authentication information. */
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
+    /** Gets the current authentication token. This is the empty string when there is currently no authentication. */
     public get token(): string { return this._token; }
+    /** Gets whether this service will automatically refreshes the authentication. */
     public get refreshable(): boolean { return this._refreshable; }
+    /** Gets the available authentication schemes names. */
     public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
+    /** Gets the Authentication server version. */
     public get version(): string { return this._version; }
-    public get currentError(): IWebFrontAuthError { return this._currentError; }
+    /** Gets the current error if any. */
+    public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }
@@ -75,9 +81,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         try {
             await authService.refresh(true, true);
-            if (authService.currentError.errorId) {
+            if (authService.currentError) {
                 console.error(
-                    'Encoutered error while refreshing.',
+                    'Encountered error while refreshing.',
                     authService.currentError.errorId,
                     authService.currentError.errorReason
                 );
@@ -100,7 +106,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private readonly maxTimeout: number = 2147483647;
 
     private setExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.expires.getTime() - Date.now()
+        const timeDifference = this._authenticationInfo.expires!.getTime() - Date.now()
 
         if (timeDifference > this.maxTimeout) {
             this._expTimer = setTimeout(this.setExpirationTimeout, this.maxTimeout);
@@ -109,7 +115,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 if (this._refreshable) {
                     this.refresh();
                 } else {
-                    this._authenticationInfo = this._authenticationInfo.setExpires(null);
+                    this._authenticationInfo = this._authenticationInfo.setExpires(undefined);
                     this.onChange();
                 }
             }, timeDifference);
@@ -117,7 +123,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private setCriticialExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.criticalExpires.getTime() - Date.now()
+        const timeDifference = this._authenticationInfo.criticalExpires!.getTime() - Date.now()
 
         if (timeDifference > this.maxTimeout) {
             this._cexpTimer = setTimeout(this.setCriticialExpirationTimeout, this.maxTimeout);
@@ -126,7 +132,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 if (this._refreshable) {
                     this.refresh();
                 } else {
-                    this._authenticationInfo = this._authenticationInfo.setCriticalExpires(null);
+                    this._authenticationInfo = this._authenticationInfo.setCriticalExpires();
                     this.onChange();
                 }
             }, timeDifference);
@@ -146,8 +152,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private onIntercept(): (value: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig> {
         return (config: AxiosRequestConfig) => {
-            if (config.url.startsWith(this._configuration.webFrontAuthEndPoint) && this._token) {
-                Object.assign(config.headers, { Authorization: `Bearer ${this._token}` });
+            if( this._token
+                && config.url 
+                && config.url.startsWith(this._configuration.webFrontAuthEndPoint) ) {
+                    Object.assign(config.headers, { Authorization: `Bearer ${this._token}` });
             }
             return config;
         };
@@ -171,8 +179,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private async sendRequest(
         entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
-        requestOptions?: { body?: object, queries?: Array<string | { key: string, value: string }> },
-        skipResponseParsing: boolean = false
+        requestOptions: { body?: object, queries?: Array<string | { key: string, value: string }> },
+        skipResponseHandling: boolean = false
     ): Promise<void> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
@@ -187,7 +195,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
             const status = response.status;
             if (status === 200 ) {
-                if (!skipResponseParsing ) { this.parseResponse(response.data); }
+                if (!skipResponseHandling ) { this.parseResponse(response.data); }
             } else {
                 this._currentError = new WebFrontAuthError({
                     errorId: `HTTP.Status.${status}`,
@@ -204,14 +212,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     && entryPoint !== 'logout' ) {
 
                     const storage = this._configuration.useLocalStorage( entryPoint );
-                    if( storage !== null ) {
+                    if( storage ) {
                         const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( storage, 
                                                                                         this._configuration.webFrontAuthEndPoint, 
                                                                                         this._availableSchemes );
                         if( auth )
                         {
                             this._availableSchemes = schemes;
-                            this._currentError = null;
+                            this._currentError = undefined;
                             this.localDisconnect( auth );
                         }
                     }
@@ -232,49 +240,47 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private parseResponse(response: IWebFrontAuthResponse): void {
-        if (!(response)) {
+    private parseResponse(r: IWebFrontAuthResponse): void {
+        if (!r) {
             this.localDisconnect();
             return;
         }
 
-        const loginFailureCode: number = response.loginFailureCode;
-        const loginFailureReason: string = response.loginFailureReason;
-        const errorId: string = response.errorId;
-        const errorReason: string = response.errorText;
+        this._currentError = undefined;
 
-        this._currentError = WebFrontAuthError.NoError;
-
-        if (loginFailureCode && loginFailureReason) {
+        if (r.loginFailureCode && r.loginFailureReason) {
             this._currentError = new WebFrontAuthError({
-                loginFailureCode: loginFailureCode,
-                loginFailureReason: loginFailureReason
+                loginFailureCode: r.loginFailureCode,
+                loginFailureReason: r.loginFailureReason
             });
         }
 
-        if (errorId && errorReason) {
+        if (r.errorId && r.errorText) {
             this._currentError = new WebFrontAuthError({
-                errorId,
-                errorReason
+                errorId: r.errorId,
+                errorReason: r.errorText
             });
         }
 
-        if (!!this._currentError.error) {
+        if (this._currentError) {
             this.localDisconnect();
             return;
         }
 
-        if (response.version) { this._version = response.version; }
-        if (response.schemes) { this._availableSchemes = response.schemes; }
+        if (r.version) { this._version = r.version; }
+        if (r.schemes) { this._availableSchemes = r.schemes; }
 
-        if (!response.info) {
+        if (!r.info) {
             this.localDisconnect();
             return;
         }
 
-        this._token = response.token ? response.token : '';
-        this._refreshable = response.refreshable ? response.refreshable : false;
-        this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(response.info, this._availableSchemes);
+        this._token = r.token ? r.token : '';
+        this._refreshable = r.refreshable ? r.refreshable : false;
+        
+        const info = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes);
+        if( info ) this._authenticationInfo = info;
+        else this._authenticationInfo = this._typeSystem.authenticationInfo.none;
 
         if (this._authenticationInfo.expires) {
             this.setExpirationTimeout();
@@ -303,30 +309,68 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     //#region webfrontauth protocol
 
+    /**
+     * Triggers a basic login with a user name and password.
+     * @param userName The user name.
+     * @param password The password to use.
+     * @param userData Optional user data that the server may use.
+     */
     public async basicLogin(userName: string, password: string, userData?: object): Promise<void> {
         await this.sendRequest('basicLogin', { body: { userName, password, userData } });
     }
 
+    /**
+     * Triggers a direct, unsafe login (this has to be explicitly allowed by the server).
+     * @param provider The authentication scheme to use.
+     * @param payload The object payload that contain any information required to authenticate with the scheme.
+     */
     public async unsafeDirectLogin(provider: string, payload: object): Promise<void> {
         await this.sendRequest('unsafeDirectLogin', { body: { provider, payload } });
     }
 
+    /**
+     * Refreshes the current authentication.
+     * @param full True to force a full refresh of the authentication: the server will 
+     * challenge again the authentication against its backend.
+     * @param requestSchemes True to force a refresh of the availableSchemes (this is automatically 
+     * true when availableSchemes is empty). 
+     * @param requestVersion True to force a refresh of the version (this is automatically 
+     * true when version is the empty string).
+     */
     public async refresh(full: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false): Promise<void> {
-        const queries = [];
+        const queries: string[] = [];
         if (full) { queries.push('full'); }
-        if (requestSchemes) { queries.push('schemes'); }
-        if (requestVersion) { queries.push('version'); }
+        if (requestSchemes || this._availableSchemes.length === 0 ) { queries.push('schemes'); }
+        if (requestVersion || this._version === '') { queries.push('version'); }
         await this.sendRequest('refresh', { queries });
     }
 
+    /**
+     * Request an impersonation to a user. This may be honored or not by the server.
+     * @param user The user into whom the currently authenticated user wants to be impersonated.
+     */
     public async impersonate(user: string | number): Promise<void> {
         const requestOptions = { body: (typeof user === 'string') ? { userName: user } : { userId: user } };
         await this.sendRequest('impersonate', requestOptions);
     }
 
+    /**
+     * Revokes the current authentication.
+     * @param full True to remove any way to remmember the current authentication (long term cookie, local storage, etc.)
+     */
     public async logout(full: boolean = false): Promise<void> {
         this._token = '';
-        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseParsing */ true);
+        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseHandling */ true);   
+        if( full ) {
+            if( this._configuration.localStorage ) {
+                this._typeSystem.authenticationInfo.saveToLocalStorage( 
+                    this._configuration.localStorage, 
+                    this._configuration.webFrontAuthEndPoint,
+                    null,
+                    []
+                     )
+            }
+        }    
         await this.refresh();
     }
 
@@ -348,13 +392,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
         if (scheme === 'Basic') {
             const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
-            popup.document.write(this.popupDescriptor.generateBasicHtml());
+            if( popup == null ) throw new Error( "Unable to open popup window." );
 
+            popup.document.write(this.popupDescriptor.generateBasicHtml());
             const onClick = async () => {
 
-                const usernameInput = popup.document.getElementById('username-input') as HTMLInputElement;
-                const passwordInput = popup.document.getElementById('password-input') as HTMLInputElement;
-                const errorDiv = popup.document.getElementById('error-div') as HTMLInputElement;
+                const usernameInput = popup!.document.getElementById('username-input') as HTMLInputElement;
+                const passwordInput = popup!.document.getElementById('password-input') as HTMLInputElement;
+                const errorDiv = popup!.document.getElementById('error-div') as HTMLInputElement;
                 const loginData = { username: usernameInput.value, password: passwordInput.value };
 
                 if (!(loginData.username && loginData.password)) {
@@ -364,7 +409,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     await this.basicLogin(loginData.username, loginData.password, userData);
 
                     if (this.authenticationInfo.level >= 2) {
-                        popup.close();
+                        popup!.close();
                     } else {
                         errorDiv.innerHTML = this.popupDescriptor.basicInvalidCredentialsError;
                         errorDiv.style.display = 'block';
@@ -372,12 +417,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 }
             }
 
-            popup.document.getElementById('submit-button').onclick = (async () => await onClick());
+            const eOnClick = popup.document.getElementById('submit-button'); 
+            if( eOnClick == null ) throw new Error( "Unable to find required 'submit-button' element." );
+            eOnClick.onclick = (async () => await onClick());
         } 
         else {
             const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
             userData = { ...userData, callerOrigin: document.location.origin };
-            const queryString = Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData[key])).join('&');
+            const queryString = userData 
+                                ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key])).join('&')
+                                : '';
             const finalUrl = url + '?scheme=' + scheme + ((queryString !== '') ? '&' + queryString : '');
             window.open(finalUrl, this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }

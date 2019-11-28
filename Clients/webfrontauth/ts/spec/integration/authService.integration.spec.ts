@@ -35,8 +35,8 @@ describe('AuthService', function() {
         unsafeUser: anonymous,
         actualUser: anonymous,
         unsafeActualUser: anonymous,
-        expires: null,
-        criticalExpires: null,
+        expires: undefined,
+        criticalExpires: undefined,
         isImpersonated: false,
         level: AuthLevel.None
     };
@@ -133,7 +133,7 @@ describe('AuthService', function() {
     });
 
     it('should call OnChange() correctly.', async function() {
-        let authenticationInfo: IAuthenticationInfo;
+        let authenticationInfo: IAuthenticationInfo = authService.authenticationInfo;
         const onChangeFunction = () => authenticationInfo = authService.authenticationInfo;
         authService.addOnChange(onChangeFunction);
         await authService.basicLogin('admin','admin');

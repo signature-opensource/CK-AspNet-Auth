@@ -6,16 +6,16 @@ export class AuthServiceConfiguration {
     private readonly _localStorageConfig: ILocalStoragePersistence;
     
     /** Not null means that the local storage is available. */
-    public readonly localStorage: Storage;
+    public readonly localStorage?: Storage;
 
     /** Gets the end point address. */
     public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
 ;
     /** Gets the Storage API if it is available and enabled for the given action. */
-    public useLocalStorage( action: 'basicLogin' | 'refresh' | 'unsafeDirectLogin' | 'startLogin' ) : Storage {
+    public useLocalStorage( action: 'basicLogin' | 'refresh' | 'unsafeDirectLogin' | 'startLogin' ) : Storage|undefined {
         return this._localStorageConfig['on'+action[0].toUpperCase()+action.slice(1)]
                 ? this.localStorage
-                : null;
+                : undefined;
     }
 
     constructor(config: IAuthServiceConfiguration) {
@@ -48,8 +48,8 @@ export class AuthServiceConfiguration {
      * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
      * @param storageType Storage type, either 'localStorage' or 'sessionStorage'
      */
-    private getAvailableStorage(storageType: 'localStorage' | 'sessionStorage'):  Storage {
-        let storage: Storage = null;
+    private getAvailableStorage(storageType: 'localStorage' | 'sessionStorage'):  Storage|undefined {
+        let storage: Storage|undefined = undefined;
         try {
             if (typeof (window) !== 'undefined') {
                 storage = window[storageType];
@@ -72,9 +72,9 @@ export class AuthServiceConfiguration {
                                         e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
                                     )
                                    // acknowledge QuotaExceededError only if there's something already stored
-                                && (storage && storage.length !== 0);
+                                && (storage && storage!.length !== 0);
             
-            if( !isAvailable ) storage = null;
+            if( !isAvailable ) storage = undefined;
         }
         return storage;
     }

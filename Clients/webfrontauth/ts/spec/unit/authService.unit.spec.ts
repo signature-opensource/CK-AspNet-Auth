@@ -21,8 +21,8 @@ describe('AuthService', function () {
 
     const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
     const emptyResponse: IWebFrontAuthResponse = {
-        info: null,
-        token: null,
+        info: undefined,
+        token: undefined,
         refreshable: false
     }
     let serverResponse: IWebFrontAuthResponse = emptyResponse;
@@ -109,7 +109,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
@@ -126,7 +126,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse refresh response.', async function () {
@@ -160,7 +160,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
             expect(authService.version).to.be.equal('v0.0.0-alpha');
 
             serverResponse = new ResponseBuilder()
@@ -177,7 +177,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = emptyResponse;
             await authService.refresh();
@@ -189,7 +189,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse logout response.', async function () {
@@ -214,7 +214,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             // We set the response for the refresh which is triggered by the logout
             serverResponse = new ResponseBuilder()
@@ -231,7 +231,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = emptyResponse;
             await authService.logout(true);
@@ -243,7 +243,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse unsafeDirectLogin response.', async function () {
@@ -269,7 +269,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = new ResponseBuilder()
                 .withError({ errorId: 'System.ArgumentException', errorText: 'Invalid payload.' })
@@ -318,7 +318,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ…s4POjOs');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should update schemes status.', async function () {
@@ -357,7 +357,7 @@ describe('AuthService', function () {
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
    });
@@ -365,8 +365,8 @@ describe('AuthService', function () {
     context('when authentication info changes', function () {
 
         it('should call OnChange().', async function () {
-            let authenticationInfo: IAuthenticationInfo;
-            let token: string;
+            let authenticationInfo: IAuthenticationInfo = authService.authenticationInfo;
+            let token: string = '';
 
             const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
             const updateToken = () => token = authService.token;

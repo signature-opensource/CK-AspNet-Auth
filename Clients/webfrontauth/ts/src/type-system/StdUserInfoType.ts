@@ -10,19 +10,20 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
         return this.createAnonymous();
     }
 
-    public create( userId: number, userName: string, schemes: IUserSchemeInfo[] = null ) {
+    public create( userId: number, userName: string, schemes: ReadonlyArray<IUserSchemeInfo> ) {
         return new StdUserInfo( userId, userName, schemes );
     }
 
     /**
-     * Maps an object (by parsing it) into a necessarily valid user information.
+     * Maps an object (by parsing it) into a necessarily valid user info or null if
+     * the given object o is false-ish.
      * @param o Any object that must be shaped like a T.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    public fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IUserInfo {
+    public fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IUserInfo|null {
         if( !o ) { return null; }
 
-        function create( r: IResponseScheme, schemeNames: Set<string> ) : StdUserSchemeInfo {
+        function create( r: IResponseScheme, schemeNames: Set<string>|null ) : StdUserSchemeInfo {
             const name = r[ 'name' ];
             return new StdUserSchemeInfo( name, r[ 'lastUsed' ], schemeNames === null || schemeNames.delete( name ) 
                                                                     ? SchemeUsageStatus.Active 
@@ -46,6 +47,6 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
     }
 
     protected createAnonymous(): IUserInfo {
-        return new StdUserInfo( 0, null, null );
+        return new StdUserInfo( 0, '', [] );
     }
 }

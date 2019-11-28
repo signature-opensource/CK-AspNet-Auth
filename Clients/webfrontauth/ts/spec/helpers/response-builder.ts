@@ -12,13 +12,13 @@ interface IError {
 
 export default class ResponseBuilder {
 
-    private _info: IResponseInfo = null;
-    private _token: string = null;
-    private _refreshable: boolean = null;
-    private _error: IError = null;
-    private _schemes: string[] = null;
-    private _loginFailure: ILoginFailure = null;
-    private _version: string = null;
+    private _info?: IResponseInfo;
+    private _token?: string;
+    private _refreshable?: boolean;
+    private _error?: IError;
+    private _schemes?: string[];
+    private _loginFailure?: ILoginFailure;
+    private _version?: string;
 
     public withInfo(info: IResponseInfo): ResponseBuilder {
         this._info = info;

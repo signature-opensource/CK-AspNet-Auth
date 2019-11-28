@@ -7,7 +7,9 @@
         "baseUrl": "./src",
         "outDir": "",
         "sourceMap": true,
-        "declaration": true
+        "declaration": true,
+        "alwaysStrict": true,
+        "strictNullChecks": true
     },
     "include": [
         "ts/**/*"
