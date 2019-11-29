@@ -358,7 +358,7 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Centralized way to return an error in 
+        /// Centralized way to return an error: a redirect or a close of the window is emitted.
         /// </summary>
         /// <param name="c"></param>
         /// <param name="returnUrl"></param>
