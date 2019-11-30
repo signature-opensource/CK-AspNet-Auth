@@ -31,6 +31,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Simple API used from <see cref="RemoteAuthenticationEvents.OnRemoteFailure"/> to handle remote failure authentication:
         /// the <paramref name="errorId"/> and <paramref name="errorText"/> are returned to the client.
+        /// (This method calls <see cref="HandleRequestContext{T}.HandleResponse()"/> that ends any further response processing.)
         /// </summary>
         /// <param name="f">This remote failure context.</param>
         /// <param name="errorId">
@@ -41,6 +42,7 @@ namespace CK.AspNet.Auth
         /// <returns>The awaitable.</returns>
         public static Task WebFrontAuthRemoteFailureAsync( this RemoteFailureContext f, string errorId = "RemoteFailure", string errorText = null )
         {
+            f.HandleResponse();
             if( errorText == null ) errorText = f.Failure.Message;
             var authService = f.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
             string initialScheme = f.Properties.Items["WFA-S"];
