@@ -8,8 +8,7 @@
         "outDir": "",
         "sourceMap": true,
         "declaration": true,
-        "alwaysStrict": true,
-        "strictNullChecks": true
+        "strict": true
     },
     "include": [
         "ts/**/*"

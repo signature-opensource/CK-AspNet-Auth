@@ -16,10 +16,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private _axiosInstance: AxiosInstance;
     private _typeSystem: IAuthenticationInfoTypeSystem<T>;
-    private _popupDescriptor: PopupDescriptor;
-
-    private _expTimer;
-    private _cexpTimer;
+    private _popupDescriptor: PopupDescriptor | undefined;
+    private _expTimer : number | undefined;
+    private _cexpTimer : number | undefined;
 
     private _subscribers: Set<(eventSource: AuthService) => void>;
 
@@ -62,8 +61,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._version = '';
         this._availableSchemes = [];
         this._subscribers = new Set<() => void>();
-        this._expTimer = null;
-        this._cexpTimer = null;
+        this._expTimer = undefined;
+        this._cexpTimer = undefined;
+        this._authenticationInfo = this._typeSystem.authenticationInfo.none;
+        this._refreshable = false;
+        this._token = '';
+        this._popupDescriptor = undefined;
 
         if (!(typeof window === 'undefined')) {
             window.addEventListener('message', this.onMessage(), false);
@@ -140,13 +143,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private clearTimeouts(): void {
-        if (this._expTimer !== null) {
+        if (this._expTimer ) {
             clearTimeout(this._expTimer);
-            this._expTimer = null;
+            this._expTimer = undefined;
         }
-        if (this._cexpTimer !== null) {
+        if (this._cexpTimer) {
             clearTimeout(this._cexpTimer);
-            this._cexpTimer = null;
+            this._cexpTimer = undefined;
         }
     }
 
@@ -388,7 +391,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         await this.sendRequest('startLogin', { body: userData, queries });
     }
 
-    public async startPopupLogin(scheme: string, userData?: object): Promise<void> {
+    public async startPopupLogin(scheme: string, userData?: {[index:string]: any}): Promise<void> {
 
         if (scheme === 'Basic') {
             const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
@@ -425,7 +428,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
             userData = { ...userData, callerOrigin: document.location.origin };
             const queryString = userData 
-                                ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key])).join('&')
+                                ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key] as string)).join('&')
                                 : '';
             const finalUrl = url + '?scheme=' + scheme + ((queryString !== '') ? '&' + queryString : '');
             window.open(finalUrl, this.popupDescriptor.popupTitle, this.popupDescriptor.features);
@@ -440,11 +443,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._subscribers.forEach(func => func(this));
     }
 
-    public addOnChange(func: (eventSource: AuthService<T>) => void): void {
+    public addOnChange(func: (eventSource: AuthService) => void): void {
         if (func !== undefined && func !== null) { this._subscribers.add(func); }
     }
 
-    public removeOnChange(func: (eventSource: AuthService<T>) => void): boolean {
+    public removeOnChange(func: (eventSource: AuthService) => void): boolean {
         return this._subscribers.delete(func);
     }
 

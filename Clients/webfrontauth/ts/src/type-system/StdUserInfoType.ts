@@ -20,7 +20,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
      * @param o Any object that must be shaped like a T.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    public fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IUserInfo|null {
+    public fromJson( o: {[index: string]: any}, availableSchemes?: ReadonlyArray<string> ): IUserInfo|null {
         if( !o ) { return null; }
 
         function create( r: IResponseScheme, schemeNames: Set<string>|null ) : StdUserSchemeInfo {

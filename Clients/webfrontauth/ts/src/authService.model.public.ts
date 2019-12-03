@@ -148,4 +148,6 @@ export interface ILocalStoragePersistence {
     readonly onUnsafeDirectLogin: boolean;
     /** True to allow a start login to reuse the saved unsafe authentication info whenever the server is not reachable. */
     readonly onStartLogin: boolean;
+    /** Gets the boolean configuration by its name. */
+    [index: string] : boolean | undefined;
 }

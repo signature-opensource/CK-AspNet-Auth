@@ -12,7 +12,6 @@ import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
-import { deepStrictEqual } from 'assert';
 
 describe('AuthService', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });
@@ -328,7 +327,7 @@ describe('AuthService', function () {
                 .build();
             await authService.refresh( false, true );
 
-            deepStrictEqual( authService.availableSchemes, ["Basic", "BrandNewProvider"] );
+            expect( authService.availableSchemes ).to.be.eql( ["Basic", "BrandNewProvider"] );
 
             const expectedLoginInfo: IUserInfo = {
                 userId: 2,

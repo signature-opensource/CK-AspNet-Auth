@@ -34,7 +34,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * @param o Any object that must be shaped like an authentication info.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    public fromJson(o: object, availableSchemes?: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo>|null {
+    public fromJson(o: {[index:string]: any}, availableSchemes?: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo>|null {
         if (!o) { return null; }
         try {
             const user = this._typeSystem.userInfo.fromJson(o[StdKeyType.user], availableSchemes);
