@@ -314,7 +314,7 @@ namespace CK.AspNet.Auth
 
         #endregion
 
-        internal struct LoginResult
+        internal readonly struct LoginResult
         {
             /// <summary>
             /// Standard JSON response.
