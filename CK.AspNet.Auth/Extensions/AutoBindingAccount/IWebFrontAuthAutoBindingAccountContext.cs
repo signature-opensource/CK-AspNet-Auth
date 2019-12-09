@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Enables <see cref="IWebFrontAuthAutoBindingAccountService.BindAccountAndLoginAsync"/> to
+    /// Enables <see cref="IWebFrontAuthAutoBindingAccountService.BindAccountAsync"/> to
     /// attempt to bind an account to a currently already logged in user.
     /// </summary>
     public interface IWebFrontAuthAutoBindingAccountContext

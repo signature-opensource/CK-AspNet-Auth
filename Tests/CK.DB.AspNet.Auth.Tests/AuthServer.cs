@@ -15,14 +15,13 @@ namespace CK.DB.AspNet.Auth.Tests
         IAuthenticationTypeSystem _typeSystem;
 
         public AuthServer(
-            Action<WebFrontAuthOptions> options = null,
             Action<IServiceCollection> configureServices = null,
             Action<IApplicationBuilder> configureApplication = null )
         {
             var b = CK.AspNet.Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
-                    services.AddAuthentication().AddWebFrontAuth( options );
+                    services.AddAuthentication().AddWebFrontAuth();
                     services.AddCKDatabase( TestHelper.Monitor, TestHelper.StObjMap );
                     configureServices?.Invoke( services );
                 },
