@@ -1,5 +1,9 @@
-import { Collector } from './index.extension';
 
+export type Collector = (s:string) => void;
+
+/**
+ * Mutable description of the basic popup window (it has to be a real browser's 'window).
+ */
 export class PopupDescriptor {
 
     private _popupTitle: string = 'Connection';

@@ -1,7 +1,5 @@
 import { IWebFrontAuthError, IResponseError, ILoginError } from "./authService.model.public";
 
-export type Collector = (s: string) => void;
-
 export class WebFrontAuthError implements IWebFrontAuthError {
     public readonly type: string;
     public readonly errorId: string;
@@ -25,11 +23,5 @@ export class WebFrontAuthError implements IWebFrontAuthError {
         return !!(error as T);
     }
 
-    public static NoError: IWebFrontAuthError = {
-        type: 'No Error',
-        error: null,
-        errorId: '',
-        errorReason: ''
-    };
 }
 

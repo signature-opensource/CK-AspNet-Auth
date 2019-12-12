@@ -37,7 +37,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var basic = auth.FindProvider( "Basic" );
 
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( options: null, configureServices: services =>
+            using( var server = new AuthServer( configureServices: services =>
             {
                 // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is automatically
                 // registered in the DI container, we must remove it.
@@ -87,7 +87,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         [TestCase( "Albert", "pass" )]
         [TestCase( "Paula", "pass" )]
-        public async Task basic_authentication_on_user( string userName, string password )
+        public async Task basic_authentication_on_userl( string userName, string password )
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
@@ -125,7 +125,7 @@ namespace CK.DB.AspNet.Auth.Tests
         [Test]
         public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
         {
-            using( var server = new AuthServer( options: null, configureServices: services =>
+            using( var server = new AuthServer( configureServices: services =>
             {
                 // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is
                 // automatically registered in the DI container.
@@ -201,7 +201,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( null, services =>
+            using( var server = new AuthServer( services =>
             {
                 // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower and NoEvilZoneForPaula are
                 // automatically registered in the DI container.
@@ -273,7 +273,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( null, services =>
+            using( var server = new AuthServer( services =>
             {
                 // In Net461, the StObjMap is done on this /bin: NoEvilZoneForPaula is
                 // automatically registered in the DI container.

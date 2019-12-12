@@ -1,4 +1,7 @@
-export interface IWebFrontAuthResponse {
+/**
+ * This models the server response.
+ */
+export interface  IWebFrontAuthResponse {
     info?: IResponseInfo;
     token?: string;
     refreshable?: boolean;

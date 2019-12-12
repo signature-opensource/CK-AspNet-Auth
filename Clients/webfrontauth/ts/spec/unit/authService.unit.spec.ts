@@ -6,9 +6,9 @@ import {
     IAuthenticationInfo,
     AuthLevel,
     IUserInfo,
-    IAuthServiceConfiguration
-} from '../../';
-import { AuthServiceConfiguration, IWebFrontAuthResponse } from '../../src/index.private';
+    SchemeUsageStatus
+} from '../../src';
+import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
@@ -20,8 +20,8 @@ describe('AuthService', function () {
 
     const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
     const emptyResponse: IWebFrontAuthResponse = {
-        info: null,
-        token: null,
+        info: undefined,
+        token: undefined,
         refreshable: false
     }
     let serverResponse: IWebFrontAuthResponse = emptyResponse;
@@ -59,22 +59,13 @@ describe('AuthService', function () {
     beforeEach(async function () {
         serverResponse = emptyResponse;
         await authService.logout(true);
+        serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
+        await authService.refresh( false, true );
     });
 
     after(function () {
         axiosInstance.interceptors.request.eject(requestInterceptorId);
         axiosInstance.interceptors.response.eject(responseInterceptorId);
-    });
-
-    it('should parse configuration object correctly.', function () {
-        let configuration: IAuthServiceConfiguration = { identityEndPoint: { hostname: 'host', disableSsl: false, port: 12345 } };
-
-        let authConfiguration: AuthServiceConfiguration = new AuthServiceConfiguration(configuration);
-        expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('https://host:12345/');
-
-        configuration = { identityEndPoint: {} };
-        authConfiguration = new AuthServiceConfiguration(configuration);
-        expect(authConfiguration.webFrontAuthEndPoint).to.be.equal('/');
     });
 
     context('when parsing server response', function () {
@@ -84,7 +75,7 @@ describe('AuthService', function () {
             const expectedLoginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -117,7 +108,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
@@ -134,14 +125,14 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse refresh response.', async function () {
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -168,7 +159,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
             expect(authService.version).to.be.equal('v0.0.0-alpha');
 
             serverResponse = new ResponseBuilder()
@@ -185,7 +176,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = emptyResponse;
             await authService.refresh();
@@ -197,14 +188,14 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse logout response.', async function () {
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status:SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -222,7 +213,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(true);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             // We set the response for the refresh which is triggered by the logout
             serverResponse = new ResponseBuilder()
@@ -239,7 +230,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Unsafe);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = emptyResponse;
             await authService.logout(true);
@@ -251,14 +242,15 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.None);
             expect(authService.token).to.be.equal('');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.be.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
         it('should parse unsafeDirectLogin response.', async function () {
+
             const loginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status:SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
@@ -276,7 +268,7 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
 
             serverResponse = new ResponseBuilder()
                 .withError({ errorId: 'System.ArgumentException', errorText: 'Invalid payload.' })
@@ -300,17 +292,17 @@ describe('AuthService', function () {
             const impersonatedLoginInfo: IUserInfo = {
                 userId: 3,
                 userName: 'Bob',
-                schemes: []
+                schemes: [{ name: 'Basic', lastUsed: new Date( 98797179 ), status: SchemeUsageStatus.Active }]
             }
 
             const impersonatorLoginInfo: IUserInfo = {
                 userId: 2,
                 userName: 'Alice',
-                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }]
+                schemes: [{ name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active }]
             }
 
             serverResponse = new ResponseBuilder()
-                .withUser({ id: 3, name: 'Bob', schemes: [] })
+                .withUser({ id: 3, name: 'Bob', schemes: [{ name: 'Basic', lastUsed: new Date( 98797179 )}] })
                 .withActualUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
                 .withExpires(exp)
                 .withToken('CfDJ…s4POjOs')
@@ -325,16 +317,55 @@ describe('AuthService', function () {
             expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
             expect(authService.token).to.be.equal('CfDJ…s4POjOs');
             expect(authService.refreshable).to.be.equal(false);
-            expect(authService.currentError.error).to.equal(null);
+            expect(authService.currentError).to.be.undefined;
         });
 
-    });
+        it('should update schemes status.', async function () {
+
+            serverResponse = new ResponseBuilder()
+                .withSchemes( ["Basic", "BrandNewProvider"] )
+                .build();
+            await authService.refresh( false, true );
+
+            expect( authService.availableSchemes ).to.be.eql( ["Basic", "BrandNewProvider"] );
+
+            const expectedLoginInfo: IUserInfo = {
+                userId: 2,
+                userName: 'Alice',
+                schemes: [
+                    { name: 'Basic', lastUsed: schemeLastUsed, status: SchemeUsageStatus.Active },
+                    { name: 'Wanadoo', lastUsed: new Date(1999,12,14), status: SchemeUsageStatus.Deprecated }, 
+                    { name: 'BrandNewProvider', lastUsed: new Date(0), status: SchemeUsageStatus.Unused } 
+                ]
+            }
+
+            serverResponse = new ResponseBuilder()
+                .withUser({ id: 2, name: 'Alice', schemes: 
+                            [
+                                { name: 'Basic', lastUsed: schemeLastUsed },
+                                { name: 'Wanadoo', lastUsed: new Date(1999,12,14) } 
+                        ] })
+                .withToken('CfDJ8CS62…pLB10X')
+                .withExpires(exp)
+                .build();
+            await authService.basicLogin('', '');
+
+            expect(areUserInfoEquals(authService.authenticationInfo.user, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.actualUser, expectedLoginInfo)).to.be.true;
+            expect(areUserInfoEquals(authService.authenticationInfo.unsafeActualUser, expectedLoginInfo)).to.be.true;
+            expect(authService.authenticationInfo.level).to.be.equal(AuthLevel.Normal);
+            expect(authService.token).to.be.equal('CfDJ8CS62…pLB10X');
+            expect(authService.currentError).to.be.undefined;
+        });
+
+   });
 
     context('when authentication info changes', function () {
 
         it('should call OnChange().', async function () {
-            let authenticationInfo: IAuthenticationInfo;
-            let token: string;
+            let authenticationInfo: IAuthenticationInfo = authService.authenticationInfo;
+            let token: string = '';
 
             const updateAuthenticationInfo = () => authenticationInfo = authService.authenticationInfo;
             const updateToken = () => token = authService.token;
@@ -391,7 +422,7 @@ describe('AuthService', function () {
          * This error is thrown whenever a function returns a promise and uses the done callback.
          * Since this test relies on events' callback, we call done() after the last expectation.
          */
-        it('should start expires and critical expires respective timers', function (done) {
+        it('should start expires and critical expires respective timers.', function (done) {
             const now = new Date();
             const criticalExpires = new Date( now.getTime() + 100 );
             const expires = new Date( criticalExpires.getTime() + 100 );
