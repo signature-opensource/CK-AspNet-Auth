@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "CK.Setupable.Engine.NetCore.Tests": {
-      "commandName": "Project",
-      "commandLineArgs": "--wait"
-    }
-  }
-}
