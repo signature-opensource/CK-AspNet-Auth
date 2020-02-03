@@ -44,10 +44,9 @@ namespace CK.AspNet.Auth.Tests
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
-                } );
-            b.UseMonitoring();
-            b.UseScopedHttpContext();
-            Server = new TestServer( b );
+                }, builder => builder.UseScopedHttpContext()
+            ).UseMonitoring();
+            Server = b.Build().GetTestServer();
             Client = new TestServerClient( Server );
         }
 
