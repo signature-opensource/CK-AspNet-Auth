@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>13.0.0-a</CKDatabaseVersion>
-    <CKDBVersion>8.0.0-a</CKDBVersion>
-    <CKActivityMonitorVersion>13.0.0-a</CKActivityMonitorVersion>
+    <CKDatabaseVersion>13.0.0-a00-00-0019-develop</CKDatabaseVersion>
+    <CKDBVersion>8.0.0-a00-00-0018-develop</CKDBVersion>
+    <CKActivityMonitorVersion>13.0.0-a00-00-0018-develop</CKActivityMonitorVersion>
     <CKMonitoringVersion>11.2.1--0002-develop</CKMonitoringVersion>
-    <CKAspNetVersion>5.0.0-a</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.10.0-a</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>3.0.0-b</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>8.0.0-a</CKDBUserUserPasswordVersion>
+    <CKAspNetVersion>5.0.0-a00-00-0020-develop</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.10.0-a00-00-0013-develop</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>3.0.0-b00-00-0004-develop</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>8.0.0-a00-00-0019-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for Cake build. -->
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
   <ItemGroup Condition=" '$(CakeBuild)' == 'true' ">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
   <!--</SourceLink>-->
   <!--<BasicDefinitions>: It is useful to knwow whether we are in the Tests/ folder and/or if the current project is a Test.-->
