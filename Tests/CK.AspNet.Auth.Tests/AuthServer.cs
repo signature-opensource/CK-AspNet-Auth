@@ -46,8 +46,8 @@ namespace CK.AspNet.Auth.Tests
                     configureApplication?.Invoke( app );
                 }, builder => builder.UseScopedHttpContext()
             ).UseMonitoring();
-            Server = b.Build().GetTestServer();
-            Client = new TestServerClient( Server );
+            Client = new TestServerClient( b.Build() );
+            Server = Client.Server;
         }
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
