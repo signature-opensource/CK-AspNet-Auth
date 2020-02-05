@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using static CK.Testing.DBSetupTestHelper;
 
@@ -31,10 +32,10 @@ namespace CK.DB.AspNet.Auth.Tests
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     configureApplication?.Invoke( app );
-                } );
-            b.UseMonitoring();
-            b.UseScopedHttpContext();
-            Server = new TestServer( b );
+                },
+                builder => builder.UseScopedHttpContext() )
+                .UseMonitoring();
+            Server = b.Build().GetTestServer();
             Client = new TestServerClient( Server );
         }
 
