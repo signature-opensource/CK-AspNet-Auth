@@ -57,11 +57,11 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    // var testProjects = globalInfo.GetDotnetSolution().Projects.Where( p => p.Name.EndsWith( ".Tests" )
-                    //                                         && !p.Path.Segments.Contains( "Integration" ) );
+                    var testProjects = globalInfo.GetDotnetSolution().Projects.Where( p => p.Name.EndsWith( ".Tests" )
+                                                            && !p.Path.Segments.Contains( "Integration" ) );
 
-                    // globalInfo.GetDotnetSolution().Test(testProjects);
-                    // globalInfo.GetNPMSolution().Test();
+                    globalInfo.GetDotnetSolution().Test( testProjects );
+                    globalInfo.GetNPMSolution().Test();
                 } );
 
             Task( "Create-Packages" )
