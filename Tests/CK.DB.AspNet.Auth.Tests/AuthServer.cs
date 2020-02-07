@@ -35,7 +35,9 @@ namespace CK.DB.AspNet.Auth.Tests
                 },
                 builder => builder.UseScopedHttpContext() )
                 .UseMonitoring();
-            Client = new TestServerClient( b.Build() );
+            var host = b.Build();
+            host.Start();
+            Client = new TestServerClient( host );
             Server = Client.Server;
         }
 
