@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Net.Http;
@@ -46,7 +47,9 @@ namespace CK.AspNet.Auth.Tests
                     configureApplication?.Invoke( app );
                 }, builder => builder.UseScopedHttpContext()
             ).UseMonitoring();
-            Client = new TestServerClient( b.Build() );
+            var host = b.Build();
+            host.Start();
+            Client = new TestServerClient( host );
             Server = Client.Server;
         }
 
