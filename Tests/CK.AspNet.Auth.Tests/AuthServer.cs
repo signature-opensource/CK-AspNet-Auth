@@ -44,11 +44,10 @@ namespace CK.AspNet.Auth.Tests
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
-                } );
-            b.UseMonitoring();
-            b.UseScopedHttpContext();
-            Server = new TestServer( b );
-            Client = new TestServerClient( Server );
+                }, builder => builder.UseScopedHttpContext()
+            ).UseMonitoring();
+            Client = new TestServerClient( b.Build() );
+            Server = Client.Server;
         }
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
