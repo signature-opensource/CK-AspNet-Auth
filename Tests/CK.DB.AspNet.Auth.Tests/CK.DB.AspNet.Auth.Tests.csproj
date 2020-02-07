@@ -2,9 +2,6 @@
   <Import Project="..\..\Common\Shared.props" />
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-    <!-- Required for Microsoft.AspNetCore.Testing (see: https://github.com/aspnet/Hosting/issues/926) -->
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -12,7 +9,6 @@
     <PackageReference Include="CK.DB.Tests.NUnit" Version="$(CKDatabaseVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBUserUserPasswordVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
