@@ -214,7 +214,8 @@ namespace CK.AspNet.Auth
             Response.StatusCode = StatusCodes.Status403Forbidden;
             if( _unsafeDirectLoginAllower != null )
             {
-                ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
+                string body = await Request.TryReadSmallBodyAsString( 4096 );
+                ProviderLoginRequest req = body != null ? ReadDirectLoginRequest( monitor, body ) : null;
                 if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
                     // The req.Payload my be null here. We map it to an empty object to preserve the invariant of the context.
@@ -243,13 +244,11 @@ namespace CK.AspNet.Auth
             return true;
         }
 
-        ProviderLoginRequest ReadDirectLoginRequest( IActivityMonitor monitor )
+        ProviderLoginRequest ReadDirectLoginRequest( IActivityMonitor monitor, string body )
         {
             ProviderLoginRequest req = null;
             try
             {
-                string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 4096 ) ) return null;
                 // By using our poor StringMatcher here, we parse the JSON
                 // to basic List<KeyValuePair<string, object>> because 
                 // JObject are IEnumerable<KeyValuePair<string, JToken>> and
@@ -257,7 +256,7 @@ namespace CK.AspNet.Auth
                 // convertible (to basic types) without using the JToken type.
                 // A dependency on NewtonSoft.Json may not be suitable for some 
                 // providers.
-                var m = new StringMatcher( b );
+                var m = new StringMatcher( body );
                 if( m.MatchJSONObject( out object val )
                     && val is List<KeyValuePair<string, object>> o )
                 {
@@ -287,6 +286,7 @@ namespace CK.AspNet.Auth
             if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
             return req;
         }
+
         #endregion
 
         #region Basic Authentication support
@@ -301,7 +301,8 @@ namespace CK.AspNet.Auth
         async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
         {
             Debug.Assert( _loginService.HasBasicLogin );
-            BasicLoginRequest req = ReadBasicLoginRequest( monitor );
+            string body  = await Request.TryReadSmallBodyAsString( 4096 );
+            BasicLoginRequest req = body != null ? ReadBasicLoginRequest( monitor, body ) : null;
             if( req != null )
             {
                 var wfaSC = new WebFrontAuthLoginContext(
@@ -327,14 +328,12 @@ namespace CK.AspNet.Auth
             return true;
         }
 
-        BasicLoginRequest ReadBasicLoginRequest( IActivityMonitor monitor )
+        BasicLoginRequest ReadBasicLoginRequest( IActivityMonitor monitor, string body )
         {
             BasicLoginRequest req = null;
             try
             {
-                string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 4096 ) ) return null;
-                var r = JsonConvert.DeserializeObject<BasicLoginRequest>( b );
+                var r = JsonConvert.DeserializeObject<BasicLoginRequest>( body );
                 if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
             }
             catch( Exception ex )
@@ -355,9 +354,10 @@ namespace CK.AspNet.Auth
             IAuthenticationInfo info = _authService.EnsureAuthenticationInfo( Context );
             if( info.ActualUser.UserId != 0 )
             {
+                string body = await Request.TryReadSmallBodyAsString( 1024 );
                 int userId = -1;
                 string userName = null;
-                if( TryReadUserKey( monitor, ref userId, ref userName ) )
+                if( body != null && TryReadUserKey( monitor, ref userId, ref userName, body ) )
                 {
                     if( userName == info.ActualUser.UserName || userId == info.ActualUser.UserId )
                     {
@@ -384,44 +384,39 @@ namespace CK.AspNet.Auth
             return true;
         }
 
-        bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string userName )
+        bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string userName, string body )
         {
-            string b;
-            if( Request.TryReadSmallBodyAsString( out b, 512 ) )
+            var m = new StringMatcher( body );
+            List<KeyValuePair<string, object>> param;
+            if( m.MatchJSONObject( out object val )
+                && (param = val as List<KeyValuePair<string, object>>) != null
+                && param.Count == 1 )
             {
-                var m = new StringMatcher( b );
-                List<KeyValuePair<string, object>> param;
-                if( m.MatchJSONObject( out object val )
-                    && (param = val as List<KeyValuePair<string, object>>) != null
-                    && param.Count == 1 )
+                if( param[0].Key == "userName" )
                 {
-                    if( param[0].Key == "userName" )
+                    if( param[0].Value is string n )
                     {
-                        if( param[0].Value is string n )
-                        {
-                            userName = n;
-                            return true;
-                        }
-                    }
-                    if( param[0].Key == "userId" )
-                    {
-                        if( param[0].Value is string n )
-                        {
-                            if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
-                            {
-                                return true;
-                            }
-                        }
-                        else if( param[0].Value is double d )
-                        {
-                            userId = (int)d;
-                            return true;
-                        }
+                        userName = n;
+                        return true;
                     }
                 }
-                Response.StatusCode = StatusCodes.Status400BadRequest;
+                if( param[0].Key == "userId" )
+                {
+                    if( param[0].Value is string n )
+                    {
+                        if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
+                        {
+                            return true;
+                        }
+                    }
+                    else if( param[0].Value is double d )
+                    {
+                        userId = (int)d;
+                        return true;
+                    }
+                }
             }
-            Debug.Assert( Response.StatusCode == StatusCodes.Status400BadRequest );
+            Response.StatusCode = StatusCodes.Status400BadRequest;
             return false;
         }
 
