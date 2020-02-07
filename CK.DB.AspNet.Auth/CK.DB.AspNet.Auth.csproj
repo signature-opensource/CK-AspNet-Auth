@@ -4,6 +4,7 @@
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <Description>Implements concrete SqlWebFrontAuthService on CK.DB.Auth.</Description>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="$(CKDBVersion)" />
   </ItemGroup>
