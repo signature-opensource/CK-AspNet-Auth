@@ -15,20 +15,20 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         /// <summary>
         /// Adds the WebFrontAuth authentication services without options configuration.
-        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency and requires
-        /// hostBuilder.<see cref="Microsoft.AspNetCore.Hosting.WebHostBuilderCKAspNetExtensions.UseScopedHttpContext(AspNetCore.Hosting.IWebHostBuilder)">UseScopedHttpContext()</see> to be defined.
+        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency.
+        /// That relies on the <see cref="CK.AspNet.ScopedHttpContext"/> that MUST be registered.
         /// </summary>
         /// <param name="this">This Authentication builder.</param>
         /// <returns>Authentication builder to enable fluent syntax.</returns>
         public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this )
         {
-            return @this.AddWebFrontAuth( null );
+            return @this.AddWebFrontAuth( null ); 
         }
 
         /// <summary>
         /// Adds the WebFrontAuth authentication services with options configuration.
-        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency and requires
-        /// hostBuilder.<see cref="Microsoft.AspNetCore.Hosting.WebHostBuilderCKAspNetExtensions.UseScopedHttpContext(AspNetCore.Hosting.IWebHostBuilder)">UseScopedHttpContext()</see> to be defined.
+        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency.
+        /// That relies on the <see cref="CK.AspNet.ScopedHttpContext"/> that MUST be registered.
         /// </summary>
         /// <param name="this">This Authentication builder.</param>
         /// <param name="configure">Configuration action.</param>

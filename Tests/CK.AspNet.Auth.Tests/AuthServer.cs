@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Net.Http;
@@ -44,11 +45,12 @@ namespace CK.AspNet.Auth.Tests
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
-                } );
-            b.UseMonitoring();
-            b.UseScopedHttpContext();
-            Server = new TestServer( b );
-            Client = new TestServerClient( Server );
+                }, builder => builder.UseScopedHttpContext()
+            ).UseMonitoring();
+            var host = b.Build();
+            host.Start();
+            Client = new TestServerClient( host );
+            Server = Client.Server;
         }
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;

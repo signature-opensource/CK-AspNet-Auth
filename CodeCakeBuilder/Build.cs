@@ -60,48 +60,19 @@ namespace CodeCake
                     var testProjects = globalInfo.GetDotnetSolution().Projects.Where( p => p.Name.EndsWith( ".Tests" )
                                                             && !p.Path.Segments.Contains( "Integration" ) );
 
-                    globalInfo.GetDotnetSolution().Test(testProjects);
+                    globalInfo.GetDotnetSolution().Test( testProjects );
                     globalInfo.GetNPMSolution().Test();
                 } );
-
-            Task( "Build-Integration-Projects" )
-                .IsDependentOn( "Unit-Testing" )
-                .Does( () =>
-                {
-                    // Use WebApp.Tests to generate the StObj assembly.
-                    var webAppTests = globalInfo.GetDotnetSolution().Projects.Single( p => p.Name == "WebApp.Tests" );
-                    var path = webAppTests.Path.GetDirectory().CombineWithFilePath( "bin/" + globalInfo.BuildConfiguration + "/net461/WebApp.Tests.dll" );
-                    Cake.NUnit3( path.FullPath, new NUnit3Settings{ Test = "WebApp.Tests.DBSetup.Generate_StObj_Assembly_Generated" } );
-                    var webApp = globalInfo.GetDotnetSolution().Projects.Single( p => p.Name == "WebApp" );
-                    Cake.DotNetCoreBuild( webApp.Path.FullPath,
-                         new DotNetCoreBuildSettings().AddVersionArguments( gitInfo, s =>
-                         {
-                             s.Configuration = globalInfo.BuildConfiguration;
-                         } ) );
-                } );
-
-            Task( "Integration-Testing" )
-                .IsDependentOn( "Build-Integration-Projects" )
-                .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
-                                     || Cake.ReadInteractiveOption( "Run integration tests?", 'N', 'Y' ) == 'Y' )
-                .Does( () =>
-                {
-                    var testIntegrationProjects = globalInfo.GetDotnetSolution().Projects
-                                                    .Where( p => p.Name.EndsWith( ".Tests" )
-                                                                 && p.Path.Segments.Contains( "Integration" ) );
-                    globalInfo.GetDotnetSolution().Test( testIntegrationProjects );
-                } );
-
 
             Task( "Create-Packages" )
                 .WithCriteria( () => gitInfo.IsValid )
                 .IsDependentOn( "Unit-Testing" )
-                .IsDependentOn( "Integration-Testing" )
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Pack();
                      globalInfo.GetNPMSolution().RunPack();
                  } );
+
 
             Task( "Push-Packages" )
                 .WithCriteria( () => gitInfo.IsValid )
