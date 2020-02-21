@@ -8,11 +8,6 @@ import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration
 import { AXIOS, WFA_TYPESYSTEM } from './injectionTokens';
 import { NgxAuthService } from './NgxAuthService';
 
-export interface NgxAuthModuleConfiguration {
-  autoInitialization: boolean;
-  addInterceptor: boolean;
-}
-
 export function authServiceFactory(
   authConfig: AuthServiceClientConfiguration,
   axiosInstance: AxiosInstance,
