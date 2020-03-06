@@ -11,10 +11,10 @@
     <ProjectReference Include="..\..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="2.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.1.16" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="2.1.8" />
     <PackageReference Include="CK.Monitoring" Version="$(CKMonitoringVersion)" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="$(CKDBUserUserPasswordVersion)" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="$(CKDBVersion)" />
