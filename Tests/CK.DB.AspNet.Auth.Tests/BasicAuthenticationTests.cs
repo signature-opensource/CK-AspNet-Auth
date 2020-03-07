@@ -37,7 +37,18 @@ namespace CK.DB.AspNet.Auth.Tests
             var basic = auth.FindProvider( "Basic" );
 
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer() )
+            using( var server = new AuthServer( configureServices: services =>
+            {
+                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is automatically
+                // registered in the DI container, we must remove it.
+                // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
+                // is not automatically registered.
+                if( !allowed )
+                {
+                    int idx = services.IndexOf( s => s.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
+                    services.RemoveAt( idx );
+                }
+            } ) )
             {
                 string userName = Guid.NewGuid().ToString();
                 int idUser = user.CreateUser( ctx, 1, userName );
