@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { expect } from 'chai';
 
 import { AuthService } from '../../src';
 import { PopupDescriptor } from '../../src/index.extension';
@@ -7,21 +6,21 @@ import { PopupDescriptor } from '../../src/index.extension';
 describe('PopupDescriptor', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });
 
-    context('when defined in an AuthService', function () {
+    describe('when defined in an AuthService', function () {
 
         it('should be instanciated by default.', function () {
             const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-            expect(authService.popupDescriptor).to.not.be.null;
+            expect(authService.popupDescriptor).not.toBeNull();
         });
 
         it('should not accept a custom descriptor.', function () {
             const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-            expect(authService.popupDescriptor).to.not.be.null;
+            expect(authService.popupDescriptor).not.toBeNull();
 
             const customPopupDescriptor = new PopupDescriptor();
             customPopupDescriptor.basicFormTitle = 'Connexion';
             authService.popupDescriptor = customPopupDescriptor;
-            expect(authService.popupDescriptor).to.deep.equal(customPopupDescriptor);
+            expect(authService.popupDescriptor).toEqual(customPopupDescriptor);
         });
 
     });
@@ -51,7 +50,7 @@ font-size: 80%;
 color: rgb(226, 28, 28);
 display: none;
 } </style> </head> <body> <h1> Connection </h1> <div id="error-div" class="error"> <span id="error"></span> </div> <div class="form"> <input type="text" id="username-input" placeholder=" username " class="username-input"/> <input type="password" id="password-input" placeholder=" password " class="password-input"/> </div> <button id="submit-button"> Submit </button> </body> </html>`;
-        expect(html).to.be.equal(expectedOutput);
+        expect(html).toEqual(expectedOutput);
     });
 
     it('should be translatable.', function () {
@@ -84,6 +83,6 @@ font-size: 80%;
 color: rgb(226, 28, 28);
 display: none;
 } </style> </head> <body> <h1> Connexion </h1> <div id="error-div" class="error"> <span id="error"></span> </div> <div class="form"> <input type="text" id="username-input" placeholder=" Nom d'utilisateur " class="username-input"/> <input type="password" id="password-input" placeholder=" Mot de passe " class="password-input"/> </div> <button id="submit-button"> Se connecter </button> </body> </html>`;
-        expect(html).to.be.equal(expectedOutput);
+        expect(html).toEqual(expectedOutput);
     });
 });
