@@ -207,7 +207,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 this.localDisconnect();
             }
         } catch (error) {
-
+            
+            // This should not happen too often nor contain dangerous secrets...
+            console.log( 'Exception while sending '+entryPoint+' request.', error );
+            
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
                 // Connection issue.
