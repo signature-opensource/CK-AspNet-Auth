@@ -34,6 +34,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get version(): string { return this._version; }
     /** Gets the current error if any. */
     public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
+    /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
+    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }   
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }

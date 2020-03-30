@@ -83,7 +83,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         else
         {
             auth = auth.clearImpersonation().setExpires( new Date(0) );
-            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( auth ) );
+            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( auth, (n,v) => n == '_typeSystem' ? null : v ) );
         }
         if( schemes ) storage.setItem( '$AuthSchemes$'+endPoint, JSON.stringify( schemes ) );
     }

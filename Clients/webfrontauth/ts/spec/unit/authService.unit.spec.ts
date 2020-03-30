@@ -60,11 +60,44 @@ describe('AuthService', function () {
         await authService.logout(true);
         serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
         await authService.refresh( false, true );
+        localStorage.clear();
     });
 
     afterAll(function () {
         axiosInstance.interceptors.request.eject(requestInterceptorId);
         axiosInstance.interceptors.response.eject(responseInterceptorId);
+    });
+
+    describe('when using localStorage', function() {
+        
+        const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Unused}] );
+        const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+
+        it('stringify StdAuthenticationInfo should throw.', function() {
+            expect( () => JSON.stringify( nicoleAuth ) ).toThrow();
+        });
+        
+        it('is possible to store a null AuthenticationInfo.', function() {
+            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage,
+                                                                          'theEndPoint',
+                                                                           null,
+                                                                           ['Saved','Schemes','are', 'ignored','for','null','AuthIno'] );
+            
+            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Hop'] );
+            expect( restored ).toBeNull();
+            expect( schemes ).toStrictEqual( ['Hop'] );
+            
+            const [_,schemes2] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', [] );
+            expect( schemes2 ).toStrictEqual( [] );
+        });
+
+        it('AuthenticationInfo can be restored.', function() {
+            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'theEndPoint', nicoleAuth );
+            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', []);
+            expect( restored ).not.toBe( nicoleAuth );
+            expect( restored ).toStrictEqual( nicoleAuth );
+            expect( schemes ).toStrictEqual( ['Basic','Other'] );
+        });
     });
 
     describe('when parsing server response', function () {
