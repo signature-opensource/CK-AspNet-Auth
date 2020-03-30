@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import axios from 'axios';
 import * as tough from 'tough-cookie';
 import axiosCookieJarSupport from 'axios-cookiejar-support';
@@ -41,7 +40,7 @@ describe('AuthService', function() {
         level: AuthLevel.None
     };
 
-    before(async function() {
+    beforeAll(async function() {
         const axiosInstance = axios.create();
         axiosCookieJarSupport(axiosInstance);
         const cookieJar = new tough.CookieJar();
@@ -63,30 +62,30 @@ describe('AuthService', function() {
     it('should basicLogin and logout.', async function() {
         await authService.basicLogin('admin', 'admin');
         let currentModel: IAuthenticationInfo = authService.authenticationInfo;
-        expect(currentModel.user.userName).to.be.equal('admin');
-        expect(currentModel.unsafeUser.userName).to.be.equal('admin');
-        expect(currentModel.actualUser.userName).to.be.equal('admin');
-        expect(currentModel.unsafeActualUser.userName).to.be.equal('admin');
-        expect(currentModel.isImpersonated).to.be.false;
-        expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-        expect(authService.token).to.not.be.equal('');
-        expect(authService.refreshable).to.be.true;
+        expect(currentModel.user.userName).toBe('admin');
+        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(currentModel.actualUser.userName).toBe('admin');
+        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.isImpersonated).toBe(false);
+        expect(currentModel.level).toBe(AuthLevel.Normal);
+        expect(authService.token).not.toBe('');
+        expect(authService.refreshable).toBe(true);
 
         await authService.logout();
         currentModel = authService.authenticationInfo;
-        expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-        expect(currentModel.unsafeUser.userName).to.be.equal('admin');
-        expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-        expect(currentModel.unsafeActualUser.userName).to.be.equal('admin');
-        expect(currentModel.isImpersonated).to.be.false;
-        expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-        expect(authService.token).to.not.be.equal('');
-        expect(authService.refreshable).to.be.false;
+        expect(areUserInfoEquals(currentModel.user, anonymous)).toBe(true);
+        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(areUserInfoEquals(currentModel.actualUser, anonymous)).toBe(true);
+        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.isImpersonated).toBe(false);
+        expect(currentModel.level).toBe(AuthLevel.Unsafe);
+        expect(authService.token).not.toBe('');
+        expect(authService.refreshable).toBe(false);
 
         await authService.logout(true);
-        expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).to.be.true;
-        expect(authService.token).to.be.equal('');
-        expect(authService.refreshable).to.be.false;
+        expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
+        expect(authService.token).toBe('');
+        expect(authService.refreshable).toBe(false);
     });
 
     it('should refresh correctly.', async function() {
@@ -95,41 +94,41 @@ describe('AuthService', function() {
 
         await authService.basicLogin('admin', 'admin');
         currentModel = authService.authenticationInfo;
-        expect(currentModel.user.userName).to.be.equal('admin');
-        expect(currentModel.unsafeUser.userName).to.be.equal('admin');
-        expect(currentModel.actualUser.userName).to.be.equal('admin');
-        expect(currentModel.unsafeActualUser.userName).to.be.equal('admin');
-        expect(currentModel.isImpersonated).to.be.false;
-        expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-        expect(authService.token).to.not.be.equal('');
-        expect(authService.refreshable).to.be.true;
+        expect(currentModel.user.userName).toBe('admin');
+        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(currentModel.actualUser.userName).toBe('admin');
+        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.isImpersonated).toBe(false);
+        expect(currentModel.level).toBe(AuthLevel.Normal);
+        expect(authService.token).not.toBe('');
+        expect(authService.refreshable).toBe(true);
 
         await authService.refresh();
         currentModel = authService.authenticationInfo;
-        expect(currentModel.user.userName).to.be.equal('admin');
-        expect(currentModel.unsafeUser.userName).to.be.equal('admin');
-        expect(currentModel.actualUser.userName).to.be.deep.equal('admin');
-        expect(currentModel.unsafeActualUser.userName).to.be.equal('admin');
-        expect(currentModel.isImpersonated).to.be.false;
-        expect(currentModel.level).to.be.equal(AuthLevel.Normal);
-        expect(authService.token).to.not.be.equal('');
-        expect(authService.refreshable).to.be.true;
+        expect(currentModel.user.userName).toBe('admin');
+        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(currentModel.actualUser.userName).toEqual('admin');
+        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.isImpersonated).toBe(false);
+        expect(currentModel.level).toBe(AuthLevel.Normal);
+        expect(authService.token).not.toBe('');
+        expect(authService.refreshable).toBe(true);
 
         await authService.logout();
         currentModel = authService.authenticationInfo;
-        expect(areUserInfoEquals(currentModel.user, anonymous)).to.be.true;
-        expect(currentModel.unsafeUser.userName).to.be.equal('admin');
-        expect(areUserInfoEquals(currentModel.actualUser, anonymous)).to.be.true;
-        expect(currentModel.unsafeActualUser.userName).to.be.equal('admin');
-        expect(currentModel.isImpersonated).to.be.false;
-        expect(currentModel.level).to.be.equal(AuthLevel.Unsafe);
-        expect(authService.token).to.not.be.equal('');
-        expect(authService.refreshable).to.be.false;
+        expect(areUserInfoEquals(currentModel.user, anonymous)).toBe(true);
+        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(areUserInfoEquals(currentModel.actualUser, anonymous)).toBe(true);
+        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.isImpersonated).toBe(false);
+        expect(currentModel.level).toBe(AuthLevel.Unsafe);
+        expect(authService.token).not.toBe('');
+        expect(authService.refreshable).toBe(false);
 
         await authService.logout(true);
-        expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).to.be.true;
-        expect(authService.token).to.be.equal('');
-        expect(authService.refreshable).to.be.false;
+        expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
+        expect(authService.token).toBe('');
+        expect(authService.refreshable).toBe(false);
     });
 
     it('should call OnChange() correctly.', async function() {
@@ -137,13 +136,13 @@ describe('AuthService', function() {
         const onChangeFunction = () => authenticationInfo = authService.authenticationInfo;
         authService.addOnChange(onChangeFunction);
         await authService.basicLogin('admin','admin');
-        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.false;
+        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(false);
         await authService.logout();
-        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
+        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
 
         authService.removeOnChange(onChangeFunction);
         await authService.basicLogin('admin','admin');
-        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).to.be.true;
+        expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
     });
 
     it('should call OnChange() for every subscribed functions.', async function() {
@@ -154,7 +153,7 @@ describe('AuthService', function() {
         functionArray.forEach(func => authService.addOnChange(() => func()));
 
         await authService.logout();
-        booleanArray.forEach(bool => expect(bool).to.be.true);
+        booleanArray.forEach(bool => expect(bool).toBe(true));
 
         functionArray.forEach(func => authService.removeOnChange(() => func()));
     });
