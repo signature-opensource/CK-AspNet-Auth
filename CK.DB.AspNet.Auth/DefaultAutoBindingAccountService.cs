@@ -61,7 +61,12 @@ namespace CK.DB.AspNet.Auth
             }
             IGenericAuthenticationProvider p = _authPackage.FindRequiredProvider( context.CallingScheme );
             var ctx = context.HttpContext.RequestServices.GetRequiredService<ISqlCallContext>();
-            UCLResult result  = await p.CreateOrUpdateUserAsync( ctx, 1, auth.User.UserId, context.Payload, UCLMode.CreateOrUpdate );
+            // Here we trigger an actual login.
+            // If a bind-without-login is required once, we'll have to introduce an option or a parameter
+            // to specify it.
+            // In such case, CreateUserLoginResultFromDatabase must not be called but a UserLoginResult must be returned
+            // that is based on the current context.InitialAuthentication: in such case, the returned scemes is NOT modified.
+            UCLResult result  = await p.CreateOrUpdateUserAsync( ctx, 1, auth.User.UserId, context.Payload, UCLMode.CreateOrUpdate|UCLMode.WithActualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( ctx, context.AuthenticationTypeSystem, result.LoginResult );
         }
     }
