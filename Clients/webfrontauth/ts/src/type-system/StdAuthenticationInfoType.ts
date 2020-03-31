@@ -11,9 +11,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         return this.create(this._typeSystem.userInfo.anonymous);
     }
 
-    constructor(
-        typeSystem: IAuthenticationInfoTypeSystem<IUserInfo>
-    ) {
+    constructor( typeSystem: IAuthenticationInfoTypeSystem<IUserInfo> ) {
         this._typeSystem = typeSystem;
     }
 
@@ -75,10 +73,10 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
     }
 
     /**
-     * Generates a JSON string for the Authentication info.
+     * Generates a JSON compatible object for the Authentication info.
      * @param auth The authentication information to serialize.
      */
-    public toJson( auth: IAuthenticationInfoImpl<IUserInfo> ) : string {
+    public toJSON( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
         const o : IResponseInfo = 
         { 
             user: { 
@@ -96,7 +94,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
                 } )
             }
         }
-        return JSON.stringify( o );
+        return o;
     }
 
     /**
@@ -118,7 +116,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         else
         {
             auth = auth.clearImpersonation().setExpires();
-            storage.setItem( '$AuthInfo$'+endPoint, this.toJson( auth ) );
+            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( auth ) );
         }
     }
 

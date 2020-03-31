@@ -45,6 +45,11 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
      * @param utcNow The date to consider to challenge expirations.
      */
     clearImpersonation(utcNow?: Date): IAuthenticationInfoImpl<T>;
+
+    /**
+     * Generates a JSON compatible object for this Authentication info.
+     */
+    toJSON() : Object 
 }
 
 /** Defines a type system that exposes a type manager for IUserInfo and for IAuthenticationInfo. */
@@ -73,13 +78,13 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
      * @param o Any object that must be shaped like an authentication info.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
+    fromJson( o: Object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
 
     /**
-     * Generates a JSON string for the Authentication info.
+     * Generates a JSON compatible object for the Authentication info.
      * @param auth The authentication information to serialize.
      */
-    toJson( auth: IAuthenticationInfoImpl<IUserInfo> ) : string;
+    toJSON( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object;
     
     /**
      * Saves the authentication info and currently available schemes into the local storage.

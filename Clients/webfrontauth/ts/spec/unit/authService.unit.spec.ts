@@ -76,8 +76,22 @@ describe('AuthService', function () {
         const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
         const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
 
-        it('JSON.stringify( StdAuthenticationInfo ) should throw.', function() {
-            expect( () => JSON.stringify( nicoleAuth ) ).toThrow();
+        it('JSON.stringify( StdAuthenticationInfo ) is safe (calls TypeSystem.toJSON) and is actually like a Server Response.', async function() {
+            expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( authService.typeSystem.authenticationInfo.toJSON( nicoleAuth ) ) );
+
+            const user = { id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] };
+            serverResponse = new ResponseBuilder()
+                .withUser( user )
+                .withExpires( exp )
+                .withToken('CfDJ8CS62…pLB10X')
+                .build();
+
+            await authService.basicLogin('', '');
+            
+            const expected = '{"user":{"name":"Alice","id":2,"schemes":[{"name":"Basic","lastUsed":"'
+                                + schemeLastUsed.toISOString() +'"}]},"exp":"'
+                                + exp.toISOString() +'"}';
+            expect( JSON.stringify( authService.authenticationInfo ) ).toBe( expected );
         });
         
         it('it is possible to store a null AuthenticationInfo (and schemes are saved nevertheless).', function() {
@@ -113,7 +127,7 @@ describe('AuthService', function () {
             
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth ); 
-            expect( nicoleAuth.level ).toBe( AuthLevel.Normal );
+            expect( momoAuth.level ).toBe( AuthLevel.Normal );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForMomo', momoAuth );
 
             const [rNicole,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'EndPointForNicole', ['Another']);

@@ -6,7 +6,7 @@ import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-s
  */
 export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo> {
 
-    private readonly _typeSystem: () => IAuthenticationInfoTypeSystem<IUserInfo>;
+    private readonly _typeSystem: IAuthenticationInfoTypeSystem<IUserInfo>;
     private readonly _user: IUserInfo;
     private readonly _actualUser: IUserInfo;
     private readonly _expires?: Date;
@@ -17,7 +17,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * Gets the user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical. 
      * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information. 
      * */
-    public get user(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._user : this._typeSystem().userInfo.anonymous }
+    public get user(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._user : this._typeSystem.userInfo.anonymous }
     
     /** Gets the user information, regardless of the @see level. */
     public get unsafeUser(): IUserInfo { return this._user; }
@@ -27,7 +27,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information. 
      * This actual user is not the same as this user if @see isImpersonated is true.
     */
-    public get actualUser(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._actualUser : this._typeSystem().userInfo.anonymous }
+    public get actualUser(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._actualUser : this._typeSystem.userInfo.anonymous }
    
     /** 
      * Gets the unsafe actual user information regardless of the @see level.  
@@ -109,7 +109,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
             }
         }
 
-        this._typeSystem = () => typeSystem;
+        this._typeSystem = typeSystem;
         this._user = user;
         this._actualUser = actualUser;
         this._expires = expires;
@@ -177,7 +177,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param utcNow The date to consider to challenge expirations.
      */
     public impersonate(user: IUserInfo, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        user = user || this._typeSystem().userInfo.anonymous;
+        user = user || this._typeSystem.userInfo.anonymous;
         if (this._actualUser.userId === 0) throw new Error('Invalid Operation');
         return this._user != user
             ? this.create(this._actualUser, user, this._expires, this._criticalExpires, utcNow)
@@ -197,6 +197,14 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
             : this.checkExpiration(utcNow);
     }
 
+    /**
+     * Generates a JSON compatible object for the Authentication info.
+     * @param auth The authentication information to serialize.
+     */
+    public toJSON() : Object {
+        return this._typeSystem.authenticationInfo.toJSON( this );
+    }
+
    /**
      * Creates a new StdAuthenticationInfo bound to the same IAuthenticationInfoTypeSystem<T>. 
      * Note that expiration dates are checked against the utcNow parameter so that level is
@@ -208,7 +216,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param utcNow The date to consider to challenge expires and criticalExpires parameters.
      */
     protected create(actualUser: IUserInfo|null, user: IUserInfo|null, expires?: Date, criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        return new StdAuthenticationInfo(this._typeSystem(), actualUser, user, expires, criticalExpires, utcNow);
+        return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires, utcNow);
     }
 
     private areDateEquals(firstDate?: Date, secondDate?: Date): boolean {
