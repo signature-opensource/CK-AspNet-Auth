@@ -73,14 +73,20 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
      * @param o Any object that must be shaped like an authentication info.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    fromJson(o: object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
+    fromJson( o: object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
 
+    /**
+     * Generates a JSON string for the Authentication info.
+     * @param auth The authentication information to serialize.
+     */
+    toJson( auth: IAuthenticationInfoImpl<IUserInfo> ) : string;
+    
     /**
      * Saves the authentication info and currently available schemes into the local storage.
      * @param storage Storage API to use.
      * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
      * @param auth The authentication info to save. Null to remove current authentication information.
-     * @param schemes Optional available schemes to save.
+     * @param schemes Optional available schemes to save. By default, any existing persisted schemes are left as-is.
      */
     saveToLocalStorage( storage: Storage, endPoint: string, auth: IAuthenticationInfoImpl<T>|null, schemes?: ReadonlyArray<string> ): void
 
@@ -88,9 +94,11 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
      * Returns the authentication and available schemes previously saved by saveToLocalStorage.
      * @param storage Storage API to use.
      * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
-     * @param availableSchemes Current available schemes: when not empty, the saved schemes are ignored.
+     * @param availableSchemes
+     * The optional list of available schemes that are used to update the users' scheme's state (Unused/Active/Deprecated).
+     * When specified (not null nor undefined), this parameter takes precedence over the schemes persisted in the local storage (if any).
      */
-    loadFromLocalStorage( storage: Storage, endPoint: string, availableSchemes : ReadonlyArray<string> ) : [IAuthenticationInfoImpl<T>|null,ReadonlyArray<string>]
+    loadFromLocalStorage( storage: Storage, endPoint: string, availableSchemes? : ReadonlyArray<string> ) : [IAuthenticationInfoImpl<T>|null,ReadonlyArray<string>]
 }
 
 export interface IUserInfoType<T extends IUserInfo> {

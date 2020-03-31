@@ -10,9 +10,9 @@ export class StdUserSchemeInfo implements IUserSchemeInfo {
     public get lastUsed(): Date { return this._lastUsed; }
     public get status(): SchemeUsageStatus { return this._status; }
 
-    constructor( name: string, lastUsed: Date, status: SchemeUsageStatus ) {
+    constructor( name: string, lastUsed: Date|string, status: SchemeUsageStatus ) {
         this._name = name;
-        this._lastUsed = lastUsed;
+        this._lastUsed = lastUsed  instanceof Date ? lastUsed : new Date( Date.parse( lastUsed ) );
         this._status = status;
     }
 }

@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Debug Tests",
+            "name": "vscode-jest-tests",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
             "cwd": "${workspaceRoot}",
             "args": ["--i", "--config", "jest.config.js"]

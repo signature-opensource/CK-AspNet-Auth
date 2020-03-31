@@ -160,7 +160,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param utcNow The date to consider to challenge expirations.
      */
     public setCriticalExpires(criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        if (this.areDateEquals(criticalExpires, this._criticalExpires)) { return this.checkExpiration(utcNow); }
+        if (this.areDateEquals(criticalExpires, this._criticalExpires)) return this.checkExpiration(utcNow);
         
         let newExpires: Date|undefined = this._expires;
         if (criticalExpires && (!newExpires || newExpires.getTime() < criticalExpires.getTime())) {

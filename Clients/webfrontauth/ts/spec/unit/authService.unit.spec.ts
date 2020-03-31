@@ -8,7 +8,7 @@ import {
     SchemeUsageStatus
 } from '../../src';
 import { IWebFrontAuthResponse } from '../../src/index.private';
-import { areUserInfoEquals } from '../helpers/test-helpers';
+import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../src/index.extension';
 import ResponseBuilder from '../helpers/response-builder';
 
@@ -70,33 +70,62 @@ describe('AuthService', function () {
 
     describe('when using localStorage', function() {
         
-        const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Unused}] );
+        // Nicole used the 'Provider' scheme.
+        const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
         const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+        const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+        const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
 
-        it('stringify StdAuthenticationInfo should throw.', function() {
+        it('JSON.stringify( StdAuthenticationInfo ) should throw.', function() {
             expect( () => JSON.stringify( nicoleAuth ) ).toThrow();
         });
         
-        it('is possible to store a null AuthenticationInfo.', function() {
+        it('it is possible to store a null AuthenticationInfo (and schemes are saved nevertheless).', function() {
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage,
                                                                           'theEndPoint',
                                                                            null,
-                                                                           ['Saved','Schemes','are', 'ignored','for','null','AuthIno'] );
+                                                                           ['Saved','Schemes','even', 'when','null','AuthInfo'] );
             
-            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Hop'] );
+            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint' );
             expect( restored ).toBeNull();
-            expect( schemes ).toStrictEqual( ['Hop'] );
+            expect( schemes ).toStrictEqual( ['Saved','Schemes','even', 'when','null','AuthInfo'] );
             
-            const [_,schemes2] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', [] );
-            expect( schemes2 ).toStrictEqual( [] );
+            const [_,schemes2] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Hop'] );
+            expect( schemes2 ).toStrictEqual( ['Hop'] );
         });
 
-        it('AuthenticationInfo can be restored.', function() {
+        it('AuthenticationInfo is restored as unsafe user.', function() {
+            
+            expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'theEndPoint', nicoleAuth );
-            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', []);
+
+            const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Provider']);
+            expect( restored ).not.toBeNull();
             expect( restored ).not.toBe( nicoleAuth );
-            expect( restored ).toStrictEqual( nicoleAuth );
-            expect( schemes ).toStrictEqual( ['Basic','Other'] );
+            
+            expect( restored!.level ).toBe( AuthLevel.Unsafe );
+            expect( restored!.user ).toStrictEqual( authService.typeSystem.userInfo.anonymous );
+            expect( restored!.unsafeUser.userName ).toBe( 'Nicole' );
+            expect( areSchemesEquals( restored!.unsafeUser.schemes, nicoleAuth.user.schemes ) ).toBe( true );
+        });
+
+        it('AuthenticationInfo and Schemes are stored by end point.', function() {
+            
+            expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
+            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth ); 
+            expect( nicoleAuth.level ).toBe( AuthLevel.Normal );
+            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForMomo', momoAuth );
+
+            const [rNicole,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'EndPointForNicole', ['Another']);
+            expect( schemes ).toStrictEqual( ['Another'] );
+            expect( rNicole!.level ).toBe( AuthLevel.Unsafe );
+            expect( rNicole!.unsafeUser.userName ).toBe( 'Nicole' );
+            expect( rNicole!.unsafeUser.schemes[0].status ).toBe( SchemeUsageStatus.Deprecated );
+
+            const [rMomo,_] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'EndPointForMomo' );
+            expect( rMomo!.level ).toBe( AuthLevel.Unsafe );
+            expect( rMomo!.unsafeUser.userName ).toBe( 'Momo' );
+            expect( rMomo!.unsafeUser.schemes[0].status ).toBe( SchemeUsageStatus.Active );         
         });
     });
 
