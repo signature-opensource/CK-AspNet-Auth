@@ -20,18 +20,24 @@ namespace CK.DB.AspNet.Auth
     public class DefaultAutoBindingAccountService : IWebFrontAuthAutoBindingAccountService
     {
         readonly IAuthenticationDatabaseService _authPackage;
-        readonly bool _useCritical;
 
         /// <summary>
-        /// Initializes a new <see cref="DefaultAutoBindingAccountService"/>.
+        /// Initializes a new <see cref="DefaultAutoBindingAccountService"/> with <see cref="RequiresCriticalLevel"/> sets
+        /// to true by default.
         /// </summary>
         /// <param name="authPackage">The authentication database service.</param>
-        /// <param name="useCriticalLevel">By default, Critical level is expected.</param>
-        public DefaultAutoBindingAccountService( IAuthenticationDatabaseService authPackage, bool useCriticalLevel = true )
+        public DefaultAutoBindingAccountService( IAuthenticationDatabaseService authPackage )
         {
             _authPackage = authPackage;
-            _useCritical = useCriticalLevel;
+            RequiresCriticalLevel = true;
         }
+
+        /// <summary>
+        /// Gets or sets whether the account binding requires a current <see cref="AuthLevel.Critical"/> level.
+        /// Defaults to true.
+        /// This may be changed explictly at any time (but this is typically configured once at startup).
+        /// </summary>
+        public bool RequiresCriticalLevel { get; set; }
 
         /// <summary>
         /// Called for each failed login when the user is currently logged in and
@@ -55,7 +61,7 @@ namespace CK.DB.AspNet.Auth
             {
                 return context.SetError( "User.AccountBinding.AtLeastNormalLevelRequired", "User must be logged at least in Normal level." );
             }
-            if( _useCritical && auth.Level != AuthLevel.Critical )
+            if( RequiresCriticalLevel && auth.Level != AuthLevel.Critical )
             {
                 return context.SetError( "User.AccountBinding.CriticalLevelRequired", "User must be logged in Critical level." );
             }
