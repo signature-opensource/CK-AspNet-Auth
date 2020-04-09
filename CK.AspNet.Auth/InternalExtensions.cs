@@ -68,6 +68,7 @@ namespace CK.AspNet.Auth
 <html>
 <head>
     <meta name=""viewport"" content=""width=device-width"" />
+    <meta charset=""UTF-8"">
     <title>Conclusion</title>
 </head>
 <body>
