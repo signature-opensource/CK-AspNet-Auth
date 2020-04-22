@@ -89,8 +89,9 @@ export interface IUserInfo {
     readonly userName: string;
 
     /** 
-     * Gets the authentication schemes that this user has used to authenticate so far.
-     * This is empty for Anonymous user.  
+     * Gets the authentication schemes that this user has used to authenticate so far, where the first one in the list 
+     * is the current one (this array is sorted on descending @see IUserSchemeInfo.lastUsed dates).
+     * This is empty for Anonymous user.
      */
     readonly schemes: ReadonlyArray<IUserSchemeInfo>;
 }
