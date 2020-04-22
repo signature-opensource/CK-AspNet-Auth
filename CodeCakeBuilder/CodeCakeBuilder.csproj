@@ -9,10 +9,10 @@
     <PackageReference Include="Cake.Npm" Version="0.17.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="5.4.0" />
+    <PackageReference Include="NuGet.Protocol" Version="5.5.1" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Credentials" Version="5.4.0" />
+    <PackageReference Include="NuGet.Credentials" Version="5.5.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Text" Version="9.0.0" />

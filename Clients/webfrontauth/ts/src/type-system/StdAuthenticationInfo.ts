@@ -160,7 +160,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param utcNow The date to consider to challenge expirations.
      */
     public setCriticalExpires(criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        if (this.areDateEquals(criticalExpires, this._criticalExpires)) { return this.checkExpiration(utcNow); }
+        if (this.areDateEquals(criticalExpires, this._criticalExpires)) return this.checkExpiration(utcNow);
         
         let newExpires: Date|undefined = this._expires;
         if (criticalExpires && (!newExpires || newExpires.getTime() < criticalExpires.getTime())) {
@@ -195,6 +195,14 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         return this.isImpersonated
             ? this.create(this._actualUser, this._user, this._expires, this._criticalExpires, utcNow)
             : this.checkExpiration(utcNow);
+    }
+
+    /**
+     * Generates a JSON compatible object for the Authentication info.
+     * @param auth The authentication information to serialize.
+     */
+    public toJSON() : Object {
+        return this._typeSystem.authenticationInfo.toJSON( this );
     }
 
    /**

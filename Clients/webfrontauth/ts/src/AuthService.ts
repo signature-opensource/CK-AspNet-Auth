@@ -34,6 +34,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get version(): string { return this._version; }
     /** Gets the current error if any. */
     public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
+    /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
+    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }   
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }
@@ -207,7 +209,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 this.localDisconnect();
             }
         } catch (error) {
-
+            
+            // This should not happen too often nor contain dangerous secrets...
+            console.log( 'Exception while sending '+entryPoint+' request.', error );
+            
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
                 // Connection issue.

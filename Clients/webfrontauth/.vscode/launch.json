@@ -7,17 +7,10 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Mocha Tests",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": [
-                "-u",
-                "tdd",
-                "--timeout",
-                "999999",
-                "--colors",
-                "${workspaceFolder}/spec/unit"
-            ],
-            "internalConsoleOptions": "openOnSessionStart"
-        }
+            "name": "vscode-jest-tests",
+            "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--i", "--config", "jest.config.js"]
+          }
     ]
 }
