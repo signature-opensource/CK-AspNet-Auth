@@ -21,16 +21,15 @@ export abstract class AuthSchemeGuard implements CanActivate, CanActivateChild {
     state: RouterStateSnapshot
   ): Observable<boolean> | Promise<boolean> | boolean {
 
-    const current = this.authService.authenticationInfo.user.schemes;
-    const latest = current.reduce((a, b) => a.lastUsed < b.lastUsed ? a : b);
+    const currentScheme = this.authService.authenticationInfo.user.schemes[ 0 ];
 
     if (this.blockedSchemes && this.blockedSchemes.length > 0
-      && this.blockedSchemes.includes(latest.name)) {
+      && this.blockedSchemes.includes(currentScheme.name)) {
       return false;
     }
 
     if (this.authorizedSchemes && this.authorizedSchemes.length > 0
-      && !this.authorizedSchemes.includes(latest.name)) {
+      && !this.authorizedSchemes.includes(currentScheme.name)) {
       return false;
     }
 
