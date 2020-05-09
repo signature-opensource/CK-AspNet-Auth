@@ -1,9 +1,5 @@
 using Cake.Npm;
 using Cake.Npm.RunScript;
-using Cake.Npm;
-using Cake.Npm.RunScript;
-using Cake.Npm;
-using Cake.Npm.RunScript;
 using Cake.Common.IO;
 using Cake.Common.Tools.DotNetCore;
 using Cake.Common.Tools.DotNetCore.Build;
