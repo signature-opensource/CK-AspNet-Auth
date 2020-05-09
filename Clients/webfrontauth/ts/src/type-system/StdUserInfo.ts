@@ -15,8 +15,9 @@ export class StdUserInfo implements IUserInfo {
     public get userName(): string { return this._userName; }
     
     /** 
-     * Gets the authentication schemes that this user has used to authenticate so far.
-     * This is empty for Anonymous user.  
+     * Gets the authentication schemes that this user has used to authenticate so far, where the first one in the list 
+     * is the current one (this array is sorted on descending @see IUserSchemeInfo.lastUsed dates).
+     * This is empty for Anonymous user.
      */
     public get schemes(): ReadonlyArray<IUserSchemeInfo> { return this._schemes; }
 
@@ -26,6 +27,8 @@ export class StdUserInfo implements IUserInfo {
         if( (this._userName.length === 0) !== (userId === 0) ) {
             throw new Error( `${this._userName} is empty if and only ${this._userId} is 0.`);
         }
-        this._schemes = schemes ? schemes : StdUserInfo.emptySchemes;
+        this._schemes = schemes 
+                            ? [ ...schemes ].sort( (a, b) => b.lastUsed.getUTCMilliseconds() - a.lastUsed.getUTCMilliseconds() )
+                            : StdUserInfo.emptySchemes;
     }
 }
