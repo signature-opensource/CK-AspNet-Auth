@@ -209,7 +209,7 @@ namespace CK.AspNet.Auth
                 {
                     Debug.Assert( "Bearer ".Length == 7 );
                     string token = authorization.Substring( 7 ).Trim();
-                    authInfo = _tokenFormat.Unprotect( token, GetTlsTokenBinding( c ) );
+                    authInfo = UnprotectAuthenticationInfo( c, token );
                 }
                 else
                 {
@@ -260,19 +260,23 @@ namespace CK.AspNet.Auth
             if( ctx.Request.Query.ContainsKey( "full" ) ) ClearCookie( ctx, UnsafeCookieName );
         }
 
-        internal void SetCookies( HttpContext ctx, IAuthenticationInfo authInfo )
+        internal void SetCookies( HttpContext ctx, IAuthenticationInfo authInfo, bool rememberMe )
         {
-            if( authInfo != null && CurrentOptions.UseLongTermCookie && authInfo.UnsafeActualUser.UserId != 0 )
+            if( authInfo != null
+                && rememberMe
+                && CurrentOptions.UseLongTermCookie
+                && authInfo.UnsafeActualUser.UserId != 0 )
             {
                 string value = _typeSystem.UserInfo.ToJObject( authInfo.UnsafeActualUser ).ToString( Formatting.None );
                 ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + CurrentOptions.UnsafeExpireTimeSpan ) );
             }
             else ClearCookie( ctx, UnsafeCookieName );
+
             if( authInfo != null && _cookieMode != AuthenticationCookieMode.None && authInfo.Level >= AuthLevel.Normal )
             {
                 Debug.Assert( authInfo.Expires.HasValue );
                 string value = _cookieFormat.Protect( authInfo, GetTlsTokenBinding( ctx ) );
-                ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, authInfo.Expires ) );
+                ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, rememberMe ? authInfo.Expires : null ) );
             }
             else ClearCookie( ctx, AuthCookieName );
         }
@@ -286,6 +290,7 @@ namespace CK.AspNet.Auth
                             : "/",
                 Expires = expires,
                 HttpOnly = true,
+                IsEssential = true,
                 Secure = _cookiePolicy == CookieSecurePolicy.SameAsRequest
                                 ? ctx.Request.IsHttps
                                 : _cookiePolicy == CookieSecurePolicy.Always
@@ -455,7 +460,7 @@ namespace CK.AspNet.Auth
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( authInfo ) ),
                         new JProperty( "token", authInfo.IsNullOrNone()
                                                     ? null
-                                                    : _tokenFormat.Protect( authInfo, GetTlsTokenBinding( c ) ) ),
+                                                    : ProtectAuthenticationInfo( c, authInfo ) ),
                         new JProperty( "refreshable", refreshable ) );
             if( onLogin != null && !onLogin.IsSuccess )
             {

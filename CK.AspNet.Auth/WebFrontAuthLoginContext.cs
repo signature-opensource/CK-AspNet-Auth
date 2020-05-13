@@ -41,6 +41,7 @@ namespace CK.AspNet.Auth
             WebFrontAuthLoginMode loginMode,
             string callingScheme,
             object payload,
+            bool rememberMe,
             AuthenticationProperties authProps,
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
@@ -55,6 +56,7 @@ namespace CK.AspNet.Auth
             LoginMode = loginMode;
             CallingScheme = callingScheme;
             Payload = payload;
+            RememberMe = rememberMe;
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
@@ -110,6 +112,11 @@ namespace CK.AspNet.Auth
         /// This is usually the same as the <see cref="InitialScheme"/>.
         /// </summary>
         public string CallingScheme { get; }
+
+        /// <summary>
+        /// Gets whether the authentication should be memorized (or be as transient as possible).
+        /// </summary>
+        public bool RememberMe { get; }
 
         /// <summary>
         /// Gets the provider payload (type is provider dependent).

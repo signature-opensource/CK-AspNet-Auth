@@ -227,6 +227,7 @@ namespace CK.AspNet.Auth
                                         WebFrontAuthLoginMode.UnsafeDirectLogin,
                                         req.Scheme,
                                         payload,
+                                        true, // RememberMe is currenlty always true for external providers.
                                         null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context ),
@@ -295,6 +296,7 @@ namespace CK.AspNet.Auth
         {
             public string UserName { get; set; }
             public string Password { get; set; }
+            public bool RememberMe { get; set; }
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
@@ -312,6 +314,7 @@ namespace CK.AspNet.Auth
                     WebFrontAuthLoginMode.BasicLogin,
                     "Basic",
                     Tuple.Create( req.UserName, req.Password ),
+                    req.RememberMe,
                     null,
                     "Basic",
                     _authService.EnsureAuthenticationInfo( Context ),
