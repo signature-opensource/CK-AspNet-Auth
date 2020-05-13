@@ -3,6 +3,7 @@ import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
 import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
+import { AuthLevel } from './authService.model.public';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -321,10 +322,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * Triggers a basic login with a user name and password.
      * @param userName The user name.
      * @param password The password to use.
+     * @param rememberMe False to avoid any memorization: session cookies are used.
      * @param userData Optional user data that the server may use.
      */
-    public async basicLogin(userName: string, password: string, userData?: object): Promise<void> {
-        await this.sendRequest('basicLogin', { body: { userName, password, userData } });
+    public async basicLogin(userName: string, password: string, rememberMe: boolean, userData?: object): Promise<void> {
+        await this.sendRequest('basicLogin', { body: { userName, password, userData, rememberMe } });
     }
 
     /**
@@ -407,16 +409,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
                 const usernameInput = popup!.document.getElementById('username-input') as HTMLInputElement;
                 const passwordInput = popup!.document.getElementById('password-input') as HTMLInputElement;
+                const rememberMeInput = popup!.document.getElementById('remember-me-input') as HTMLInputElement;
                 const errorDiv = popup!.document.getElementById('error-div') as HTMLInputElement;
-                const loginData = { username: usernameInput.value, password: passwordInput.value };
+                const loginData = { username: usernameInput.value, password: passwordInput.value, rememberMe: rememberMeInput.checked };
 
                 if (!(loginData.username && loginData.password)) {
                     errorDiv.innerHTML = this.popupDescriptor.basicMissingCredentialsError;
                     errorDiv.style.display = 'block';
                 } else {
-                    await this.basicLogin(loginData.username, loginData.password, userData);
+                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, userData);
 
-                    if (this.authenticationInfo.level >= 2) {
+                    if (this.authenticationInfo.level >= AuthLevel.Normal) {
                         popup!.close();
                     } else {
                         errorDiv.innerHTML = this.popupDescriptor.basicInvalidCredentialsError;
