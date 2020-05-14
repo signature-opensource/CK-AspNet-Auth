@@ -235,7 +235,7 @@ describe('AuthService', function () {
             expect(authService.token).toBe('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).toBe(false);
             expect(authService.currentError).toBeUndefined();
-            expect(authService.version).toBe('v0.0.0-alpha');
+            expect(authService.endPointVersion).toBe('v0.0.0-alpha');
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })

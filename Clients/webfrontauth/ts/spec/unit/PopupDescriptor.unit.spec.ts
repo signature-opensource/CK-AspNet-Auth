@@ -27,7 +27,7 @@ describe('PopupDescriptor', function () {
 
     it('should return a valid html.', function () {
         const popupDescriptor = new PopupDescriptor();
-        const html = popupDescriptor.generateBasicHtml();
+        const html = popupDescriptor.generateBasicHtml( true );
         const expectedOutput =
             `<!DOCTYPE html> <html> <head> <title> Connection </title> <style> body{
 font-family: Avenir,Helvetica,Arial,sans-serif;
@@ -60,9 +60,8 @@ display: none;
         popupDescriptor.basicUserNamePlaceholder = 'Nom d\'utilisateur';
         popupDescriptor.basicPasswordPlaceholder = 'Mot de passe';
         popupDescriptor.basicSubmitButtonLabel = 'Se connecter';
-        popupDescriptor.basicRememberMeDefault = false;
         popupDescriptor.basicRememberMeLabel = 'Se souvenir de moi';
-        const html = popupDescriptor.generateBasicHtml();
+        const html = popupDescriptor.generateBasicHtml( false );
         const expectedOutput =
             `<!DOCTYPE html> <html> <head> <title> Connexion </title> <style> body{
 font-family: Avenir,Helvetica,Arial,sans-serif;
