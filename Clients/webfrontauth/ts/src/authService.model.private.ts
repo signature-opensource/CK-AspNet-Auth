@@ -4,6 +4,7 @@
 export interface  IWebFrontAuthResponse {
     info?: IResponseInfo;
     token?: string;
+    rememberMe?: boolean;
     refreshable?: boolean;
     schemes?: string[];
     loginFailureCode?: number;
