@@ -22,9 +22,9 @@ namespace Microsoft.AspNetCore.Http
         {
             IAuthenticationInfo authInfo = null;
             object o;
-            if( @this.Items.TryGetValue( typeof( IAuthenticationInfo ), out o ) )
+            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
             {
-                authInfo = (IAuthenticationInfo)o;
+                authInfo = ((FrontAuthenticationInfo)o).Info;
             }
             else
             {
