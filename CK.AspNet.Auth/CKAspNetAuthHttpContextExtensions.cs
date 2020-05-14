@@ -30,7 +30,7 @@ namespace Microsoft.AspNetCore.Http
             {
                 WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetService( typeof( WebFrontAuthService ) );
                 if( s == null ) throw new InvalidOperationException( "Missing WebFrontAuthService registration in Services." );
-                authInfo = s.ReadAndCacheAuthenticationHeader( @this );
+                authInfo = s.ReadAndCacheAuthenticationHeader( @this ).Info;
             }
             return authInfo;
         }

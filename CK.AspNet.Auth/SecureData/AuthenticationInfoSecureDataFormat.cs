@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json.Linq;
@@ -13,9 +13,9 @@ namespace CK.AspNet.Auth
     /// Secure <see cref="IAuthenticationInfo"/> data, using a binary serialization 
     /// thanks to <see cref="IAuthenticationTypeSystem"/>.
     /// </summary>
-    public class AuthenticationInfoSecureDataFormat : SecureDataFormat<IAuthenticationInfo>
+    class AuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
     {
-        class Serializer : IDataSerializer<IAuthenticationInfo>
+        class Serializer : IDataSerializer<FrontAuthenticationInfo>
         {
             readonly IAuthenticationInfoType _t;
 
@@ -24,20 +24,22 @@ namespace CK.AspNet.Auth
                 _t = t.AuthenticationInfo;
             }
 
-            public IAuthenticationInfo Deserialize(byte[] data)
+            public FrontAuthenticationInfo Deserialize( byte[] data )
             {
-                using (var s = new MemoryStream(data))
-                using (var r = new BinaryReader(s))
+                using( var s = new MemoryStream( data ) )
+                using( var r = new BinaryReader( s ) )
                 {
-                    return _t.Read(r);
+                    return new FrontAuthenticationInfo( _t.Read( r ), r.ReadBoolean() );
                 }
             }
-            public byte[] Serialize(IAuthenticationInfo model)
+
+            public byte[] Serialize(FrontAuthenticationInfo model)
             {
                 using (var s = new MemoryStream())
                 using (var w = new BinaryWriter(s))
                 {
-                    _t.Write(w, model);
+                    _t.Write(w, model.Info);
+                    w.Write( model.RememberMe );
                     return s.ToArray();
                 }
             }

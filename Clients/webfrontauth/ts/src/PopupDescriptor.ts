@@ -46,23 +46,18 @@ export class PopupDescriptor {
     public set basicInvalidCredentialsError( basicInvalidCredentialsError: string ) {
         if( basicInvalidCredentialsError ) { this._basicInvalidCredentialsError = basicInvalidCredentialsError; }
     }
-    private _basicRememberMeDefault: boolean = true;
-    public get basicRememberMeDefault(): boolean { return this._basicRememberMeDefault; }
-    public set basicRememberMeDefault( rememberMe: boolean ) {
-        this._basicRememberMeDefault = rememberMe;
-    }
     private _basicRememberMeLabel: string = 'Remember me';
     public get basicRememberMeLabel(): string { return this._basicRememberMeLabel; }
     public set basicRememberMeLabel( basicRememberMeLabel: string ) {
         if( basicRememberMeLabel ) { this._basicRememberMeLabel = basicRememberMeLabel; }
     }
 
-    public generateBasicHtml(): string {
+    public generateBasicHtml(rememberMe: boolean): string {
         const buffer: string[] = [];
 
         buffer.push( '<!DOCTYPE html> <html>' );
         this.generateHeader( (s: string) => buffer.push( s ) );
-        this.generateBody( (s: string) => buffer.push( s ) );
+        this.generateBody( rememberMe, (s: string) => buffer.push( s ) );
         buffer.push( '</html>' );
 
         return buffer.join( ' ' );
@@ -103,7 +98,7 @@ display: none;
         collector( '</style>' );
     }
     
-    protected generateBody( collector: Collector ): void {
+    protected generateBody( rememberMe: boolean, collector: Collector ): void {
         collector( '<body> <h1>' );
         collector( this.basicFormTitle );
         collector( '</h1> <div id="error-div" class="error"> <span id="error"></span> </div> <div class="form"> <input type="text" id="username-input" placeholder="' );
@@ -111,7 +106,7 @@ display: none;
         collector( '" class="username-input"/> <input type="password" id="password-input" placeholder="' );
         collector( this.basicPasswordPlaceholder );
         collector( '" class="password-input"/> <input type="checkbox" id="remember-me-input"' );
-        if( this.basicRememberMeDefault ) collector( 'checked' );
+        if( rememberMe ) collector( 'checked' );
         collector( 'class="remember-me-input"/> <label for="remember-me-input" class="remember-me-label">' );
         collector( this.basicRememberMeLabel );
         collector( '</label> </div> <button id="submit-button">' );

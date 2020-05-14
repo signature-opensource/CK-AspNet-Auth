@@ -56,7 +56,12 @@ namespace CK.AspNet.Auth
             LoginMode = loginMode;
             CallingScheme = callingScheme;
             Payload = payload;
-            RememberMe = rememberMe;
+
+            // Use the CookieMode != None to set RememberMe to false, not CurrentOptions.UseLongTermCookie
+            // since a non-session authentication cookie provide a "short term resiliency", a "remember me for
+            // the next xxx minutes even if I close my browser" functionality.
+            RememberMe = rememberMe && authService.CookieMode != AuthenticationCookieMode.None;
+
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
@@ -115,6 +120,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets whether the authentication should be memorized (or be as transient as possible).
+        /// Note that this is always false when <see cref="AuthenticationCookieMode.None"/> is used.
         /// </summary>
         public bool RememberMe { get; }
 
@@ -248,7 +254,7 @@ namespace CK.AspNet.Auth
                 }
                 return SendRemoteAuthenticationError();
             }
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, RememberMe );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )

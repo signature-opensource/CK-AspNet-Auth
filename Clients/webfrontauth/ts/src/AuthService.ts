@@ -9,9 +9,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private _authenticationInfo: IAuthenticationInfoImpl<T>;
     private _token: string;
+    private _rememberMe: boolean;
     private _refreshable: boolean;
     private _availableSchemes: ReadonlyArray<string>;
-    private _version: string;
+    private _endPointVersion: string;
     private _configuration: AuthServiceConfiguration;    
     private _currentError?: IWebFrontAuthError;
 
@@ -29,10 +30,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get token(): string { return this._token; }
     /** Gets whether this service will automatically refreshes the authentication. */
     public get refreshable(): boolean { return this._refreshable; }
+    /** Gets whether the current authentication should be memorized or considered a transient one. */
+    public get rememberMe(): boolean { return this._rememberMe; }
     /** Gets the available authentication schemes names. */
     public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
     /** Gets the Authentication server version. */
-    public get version(): string { return this._version; }
+    public get endPointVersion(): string { return this._endPointVersion; }
     /** Gets the current error if any. */
     public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
@@ -61,13 +64,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._axiosInstance.interceptors.request.use(this.onIntercept());
 
         this._typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
-        this._version = '';
+        this._endPointVersion = '';
         this._availableSchemes = [];
         this._subscribers = new Set<() => void>();
         this._expTimer = undefined;
         this._cexpTimer = undefined;
         this._authenticationInfo = this._typeSystem.authenticationInfo.none;
         this._refreshable = false;
+        this._rememberMe = false;
         this._token = '';
         this._popupDescriptor = undefined;
 
@@ -276,7 +280,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             return;
         }
 
-        if (r.version) { this._version = r.version; }
+        if (r.version) { this._endPointVersion = r.version; }
         if (r.schemes) { this._availableSchemes = r.schemes; }
 
         if (!r.info) {
@@ -286,6 +290,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
         this._token = r.token ? r.token : '';
         this._refreshable = r.refreshable ? r.refreshable : false;
+        this._rememberMe = r.rememberMe ? r.rememberMe : false;
         
         const info = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes);
         if( info ) this._authenticationInfo = info;
@@ -307,6 +312,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private localDisconnect( authInfo?: IAuthenticationInfoImpl<T> ): void {
+        // Keep the current rememberMe configuration: this is the "local" disconnect. 
         this._token = '';
         this._refreshable = false;
         this._authenticationInfo = authInfo || this._typeSystem.authenticationInfo.none;
@@ -322,19 +328,22 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * Triggers a basic login with a user name and password.
      * @param userName The user name.
      * @param password The password to use.
-     * @param rememberMe False to avoid any memorization: session cookies are used.
+     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param userData Optional user data that the server may use.
      */
-    public async basicLogin(userName: string, password: string, rememberMe: boolean, userData?: object): Promise<void> {
+    public async basicLogin(userName: string, password: string, rememberMe?: boolean, userData?: object): Promise<void> {
+        if( rememberMe === undefined ) rememberMe = this._rememberMe;
         await this.sendRequest('basicLogin', { body: { userName, password, userData, rememberMe } });
     }
 
     /**
      * Triggers a direct, unsafe login (this has to be explicitly allowed by the server).
      * @param provider The authentication scheme to use.
+     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param payload The object payload that contain any information required to authenticate with the scheme.
      */
-    public async unsafeDirectLogin(provider: string, payload: object): Promise<void> {
+    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean): Promise<void> {
+        if( rememberMe === undefined ) rememberMe = this._rememberMe;
         await this.sendRequest('unsafeDirectLogin', { body: { provider, payload } });
     }
 
@@ -343,15 +352,15 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param full True to force a full refresh of the authentication: the server will 
      * challenge again the authentication against its backend.
      * @param requestSchemes True to force a refresh of the availableSchemes (this is automatically 
-     * true when availableSchemes is empty). 
+     * true when current availableSchemes is empty). 
      * @param requestVersion True to force a refresh of the version (this is automatically 
-     * true when version is the empty string).
+     * true when current endPointVersion is the empty string).
      */
     public async refresh(full: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false): Promise<void> {
         const queries: string[] = [];
         if (full) { queries.push('full'); }
         if (requestSchemes || this._availableSchemes.length === 0 ) { queries.push('schemes'); }
-        if (requestVersion || this._version === '') { queries.push('version'); }
+        if (requestVersion || this._endPointVersion === '') { queries.push('version'); }
         await this.sendRequest('refresh', { queries });
     }
 
@@ -384,7 +393,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         await this.refresh();
     }
 
-    public async startInlineLogin(scheme: string, returnUrl: string, userData?: object): Promise<void> {
+    public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, userData?: object): Promise<void> {
         if (!returnUrl) { throw new Error('returnUrl must be defined.'); }
         if (!(returnUrl.startsWith('http://') || returnUrl.startsWith('https://'))) {
             if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
@@ -393,18 +402,22 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const queries = [
             { key: 'scheme', value: scheme }, 
             { key: 'returnUrl', value: encodeURI(returnUrl) },
-            { key: 'callerOrigin', value: encodeURI(document.location.origin) } ];
-
+            { key: 'callerOrigin', value: encodeURI(document.location.origin) }            
+         ];
+        // If rememberMe is not defined, the backend will use the current one (if any) and 
+        // will eventually default to false. 
+        if( rememberMe !== undefined ) queries.push( { key: 'rememberMe', value: rememberMe ? "1" : "0" } );
         await this.sendRequest('startLogin', { body: userData, queries });
     }
 
-    public async startPopupLogin(scheme: string, userData?: {[index:string]: any}): Promise<void> {
+    public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
 
+        if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {
             const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
             if( popup == null ) throw new Error( "Unable to open popup window." );
 
-            popup.document.write(this.popupDescriptor.generateBasicHtml());
+            popup.document.write(this.popupDescriptor.generateBasicHtml( rememberMe ));
             const onClick = async () => {
 
                 const usernameInput = popup!.document.getElementById('username-input') as HTMLInputElement;
@@ -434,7 +447,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         } 
         else {
             const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
-            userData = { ...userData, callerOrigin: document.location.origin };
+            userData = { ...userData, callerOrigin: document.location.origin, rememberMe: rememberMe };
             const queryString = userData 
                                 ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key] as string)).join('&')
                                 : '';
