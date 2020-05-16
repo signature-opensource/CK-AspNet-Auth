@@ -16,6 +16,8 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 
+#nullable enable
+
 namespace CK.AspNet.Auth
 {
     /// <summary>
@@ -51,10 +53,10 @@ namespace CK.AspNet.Auth
         readonly string _bearerHeaderName;
         readonly CookieSecurePolicy _cookiePolicy;
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
-        readonly IWebFrontAuthValidateLoginService _validateLoginService;
-        readonly IWebFrontAuthAutoCreateAccountService _autoCreateAccountService;
-        readonly IWebFrontAuthAutoBindingAccountService _autoBindingAccountService;
-        readonly IWebFrontAuthDynamicScopeProvider _dynamicScopeProvider;
+        readonly IWebFrontAuthValidateLoginService? _validateLoginService;
+        readonly IWebFrontAuthAutoCreateAccountService? _autoCreateAccountService;
+        readonly IWebFrontAuthAutoBindingAccountService? _autoBindingAccountService;
+        readonly IWebFrontAuthDynamicScopeProvider? _dynamicScopeProvider;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -72,10 +74,10 @@ namespace CK.AspNet.Auth
             IWebFrontAuthLoginService loginService,
             IDataProtectionProvider dataProtectionProvider,
             IOptionsMonitor<WebFrontAuthOptions> options,
-            IWebFrontAuthValidateLoginService validateLoginService = null,
-            IWebFrontAuthAutoCreateAccountService autoCreateAccountService = null,
-            IWebFrontAuthAutoBindingAccountService autoBindingAccountService = null,
-            IWebFrontAuthDynamicScopeProvider dynamicScopeProvider = null )
+            IWebFrontAuthValidateLoginService? validateLoginService = null,
+            IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
+            IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
+            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
@@ -178,8 +180,8 @@ namespace CK.AspNet.Auth
         /// </returns>
         internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c )
         {
-            FrontAuthenticationInfo authInfo = null;
-            object o;
+            FrontAuthenticationInfo? authInfo = null;
+            object? o;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
             {
                 authInfo = (FrontAuthenticationInfo)o;
@@ -204,7 +206,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( FrontAuthenticationInfo ) ) );
             var monitor = GetRequestMonitor( c );
-            FrontAuthenticationInfo fAuth = null;
+            FrontAuthenticationInfo? fAuth = null;
             try
             {
                 // First try from the bearer: this is always the preferred way.
@@ -236,17 +238,21 @@ namespace CK.AspNet.Auth
                 }
                 else
                 {
+                    var info = fAuth.Info;
+                    Debug.Assert( info != null );
                     TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
                     TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                    var info = fAuth.Info;
                     // Upon each authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
                     if( info.Level >= AuthLevel.Normal
                         && CookieMode == AuthenticationCookieMode.RootPath
-                        && halfSlidingExpirationTime > TimeSpan.Zero
-                        && info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                        && halfSlidingExpirationTime > TimeSpan.Zero )
                     {
-                        fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
-                        SetCookies( c, fAuth );
+                        Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
+                        if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                        {
+                            fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
+                            SetCookies( c, fAuth );
+                        }
                     }
                 }
             }
@@ -267,7 +273,7 @@ namespace CK.AspNet.Auth
             if( ctx.Request.Query.ContainsKey( "full" ) ) ClearCookie( ctx, UnsafeCookieName );
         }
 
-        internal void SetCookies( HttpContext ctx, FrontAuthenticationInfo authInfo )
+        internal void SetCookies( HttpContext ctx, FrontAuthenticationInfo? authInfo )
         {
             if( authInfo != null
                 && authInfo.RememberMe
@@ -341,9 +347,9 @@ namespace CK.AspNet.Auth
             /// <summary>
             /// Info can be null.
             /// </summary>
-            public readonly IAuthenticationInfo Info;
+            public readonly IAuthenticationInfo? Info;
 
-            public LoginResult( JObject r, IAuthenticationInfo a )
+            public LoginResult( JObject r, IAuthenticationInfo? a )
             {
                 Response = r;
                 Info = a;
@@ -359,7 +365,7 @@ namespace CK.AspNet.Auth
         /// <returns>A login result with the JSON response and authentication info.</returns>
         internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme, bool rememberMe )
         {
-            IAuthenticationInfo authInfo = u.IsSuccess
+            IAuthenticationInfo? authInfo = u.IsSuccess
                                             ? _typeSystem.AuthenticationInfo.Create( u.UserInfo, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
                                             : null;
             if( authInfo != null )
@@ -396,10 +402,10 @@ namespace CK.AspNet.Auth
             string callerOrigin,
             string errorId,
             string errorText,
-            string initialScheme = null,
-            string callingScheme = null,
-            IEnumerable<KeyValuePair<string, StringValues>> userData = null,
-            UserLoginResult failedLogin = null )
+            string? initialScheme = null,
+            string? callingScheme = null,
+            IEnumerable<KeyValuePair<string, StringValues>>? userData = null,
+            UserLoginResult? failedLogin = null )
         {
             if( returnUrl != null )
             {
@@ -443,11 +449,11 @@ namespace CK.AspNet.Auth
         internal JObject CreateErrorAuthResponse(
                         HttpContext c,
                         string errorId,
-                        string errorText,
-                        string initialScheme,
-                        string callingScheme,
-                        IEnumerable<KeyValuePair<string, StringValues>> userData,
-                        UserLoginResult failedLogin )
+                        string? errorText,
+                        string? initialScheme,
+                        string? callingScheme,
+                        IEnumerable<KeyValuePair<string, StringValues>>? userData,
+                        UserLoginResult? failedLogin )
         {
             var response = CreateAuthResponse( c, null, false, failedLogin );
             response.Add( new JProperty( "errorId", errorId ) );
@@ -469,13 +475,13 @@ namespace CK.AspNet.Auth
         /// <param name="refreshable">Whether the info is refreshable or not.</param>
         /// <param name="onLogin">Not null when this response is the result of an actual login (and not a refresh).</param>
         /// <returns>A {info,token,refreshable} object.</returns>
-        internal JObject CreateAuthResponse( HttpContext c, FrontAuthenticationInfo? fAuth, bool refreshable, UserLoginResult onLogin = null )
+        internal JObject CreateAuthResponse( HttpContext c, FrontAuthenticationInfo? fAuth, bool refreshable, UserLoginResult? onLogin = null )
         {
             var j = new JObject(
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth?.Info ) ),
                         new JProperty( "token", (fAuth?.Info).IsNullOrNone()
                                                     ? null
-                                                    : ProtectAuthenticationInfo( c, fAuth ) ),
+                                                    : ProtectAuthenticationInfo( c, fAuth! ) ),
                         new JProperty( "refreshable", refreshable ),
                         new JProperty( "rememberMe", fAuth?.RememberMe ?? false ) );
             if( onLogin != null && !onLogin.IsSuccess )
@@ -486,7 +492,7 @@ namespace CK.AspNet.Auth
             return j;
         }
 
-        static string GetTlsTokenBinding( HttpContext c )
+        static string? GetTlsTokenBinding( HttpContext c )
         {
             var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
             return binding == null ? null : Convert.ToBase64String( binding );
@@ -527,7 +533,7 @@ namespace CK.AspNet.Auth
             // been called directly: LoginMode is WebFrontAuthLoginMode.None
             // and we steal the context.RedirectUri as being the final redirect url.
             bool fRememberMe = false;
-            string initialScheme, c = null, d = null, returnUrl = null, callerOrigin = null;
+            string? initialScheme, c = null, d = null, returnUrl = null, callerOrigin = null;
             if( (fRememberMe = context.Properties.Items.TryGetValue( "WFA-S", out initialScheme ))
                 || context.Properties.Items.TryGetValue( "WFA-N", out initialScheme ) )
             {
@@ -581,7 +587,7 @@ namespace CK.AspNet.Auth
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
                 monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
             }
-            UserLoginResult u = null;
+            UserLoginResult? u = null;
             if( !ctx.HasError )
             {
                 // The logger function must kindly return an unlogged UserLoginResult if it cannot log the user in.
@@ -664,8 +670,8 @@ namespace CK.AspNet.Auth
                 }
                 // Eventuallly...
                 if( !ctx.HasError )
-                { 
-                    // Login succeeds.
+                {
+                    Debug.Assert( u != null, "Login succeeds." );
                     if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
                         monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} relogged as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
@@ -686,9 +692,9 @@ namespace CK.AspNet.Auth
         /// <param name="logger">The actual login function.</param>
         /// <param name="actualLogin">True for an actual login, false otherwise.</param>
         /// <returns>A login result (that mey be unsuccessful).</returns>
-        static async Task<UserLoginResult> SafeCallLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
+        static async Task<UserLoginResult?> SafeCallLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
         {
-            UserLoginResult u = null;
+            UserLoginResult? u = null;
             try
             {
                 u = await logger( actualLogin );

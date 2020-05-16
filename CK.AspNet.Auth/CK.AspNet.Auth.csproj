@@ -5,7 +5,7 @@
     <Description>Implements CK.AspNet.Auth.WebFrontAuthMiddleware CK.AspNet.Auth.WebFrontAuthService abstract base class.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSemVer" Version="8.0.1" />
+    <PackageReference Include="CSemVer" Version="[8.0.1,9.0.0-0)" />
     <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="$(CKActivityMonitorVersion)" />
     <PackageReference Include="CK.AspNet" Version="$(CKAspNetVersion)" />
