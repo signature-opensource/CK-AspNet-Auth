@@ -22,15 +22,15 @@ namespace Microsoft.AspNetCore.Http
         {
             IAuthenticationInfo authInfo = null;
             object o;
-            if( @this.Items.TryGetValue( typeof( IAuthenticationInfo ), out o ) )
+            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
             {
-                authInfo = (IAuthenticationInfo)o;
+                authInfo = ((FrontAuthenticationInfo)o).Info;
             }
             else
             {
                 WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetService( typeof( WebFrontAuthService ) );
                 if( s == null ) throw new InvalidOperationException( "Missing WebFrontAuthService registration in Services." );
-                authInfo = s.ReadAndCacheAuthenticationHeader( @this );
+                authInfo = s.ReadAndCacheAuthenticationHeader( @this ).Info;
             }
             return authInfo;
         }

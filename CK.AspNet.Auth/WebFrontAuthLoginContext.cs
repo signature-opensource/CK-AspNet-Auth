@@ -41,6 +41,7 @@ namespace CK.AspNet.Auth
             WebFrontAuthLoginMode loginMode,
             string callingScheme,
             object payload,
+            bool rememberMe,
             AuthenticationProperties authProps,
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
@@ -55,6 +56,12 @@ namespace CK.AspNet.Auth
             LoginMode = loginMode;
             CallingScheme = callingScheme;
             Payload = payload;
+
+            // Use the CookieMode != None to set RememberMe to false, not CurrentOptions.UseLongTermCookie
+            // since a non-session authentication cookie provide a "short term resiliency", a "remember me for
+            // the next xxx minutes even if I close my browser" functionality.
+            RememberMe = rememberMe && authService.CookieMode != AuthenticationCookieMode.None;
+
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
@@ -110,6 +117,12 @@ namespace CK.AspNet.Auth
         /// This is usually the same as the <see cref="InitialScheme"/>.
         /// </summary>
         public string CallingScheme { get; }
+
+        /// <summary>
+        /// Gets whether the authentication should be memorized (or be as transient as possible).
+        /// Note that this is always false when <see cref="AuthenticationCookieMode.None"/> is used.
+        /// </summary>
+        public bool RememberMe { get; }
 
         /// <summary>
         /// Gets the provider payload (type is provider dependent).
@@ -241,7 +254,7 @@ namespace CK.AspNet.Auth
                 }
                 return SendRemoteAuthenticationError();
             }
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, RememberMe );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )

@@ -1,5 +1,4 @@
 import { IAuthServiceConfiguration, IEndPoint, ILocalStoragePersistence, IAuthenticationInfo, IUserInfo } from './authService.model.public';
-import { IAuthenticationInfoTypeSystem } from './type-system/type-system.model';
 
 export class AuthServiceConfiguration {
     private readonly _identityServerEndPoint: string;

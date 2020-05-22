@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using CK.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -56,6 +57,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage response = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
+                Debug.Assert( c.Info != null );
                 c.Info.User.UserId.Should().Be( 2 );
                 c.Info.User.UserName.Should().Be( "Albert" );
                 c.Info.User.Schemes.Should().HaveCount( 1 );
@@ -93,29 +95,27 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( AuthenticationCookieMode.RootPath, true )]
         public async Task successful_login_set_the_cookies_on_the_webfront_c_path_and_these_cookies_can_be_used_to_restore_the_authentication( AuthenticationCookieMode mode, bool useGenericWrapper )
         {
-            using( var s = new AuthServer(
-                opt =>
-            {
-                opt.CookieMode = mode;
-            },
-            services =>
-            {
-                if( useGenericWrapper )
-                {
-                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,BasicDirectLoginAllower>();
-                }
-            } ) )
+            using( var s = new AuthServer( opt => opt.CookieMode = mode,
+                                           services =>
+                                           {
+                                               if( useGenericWrapper )
+                                               {
+                                                   services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,BasicDirectLoginAllower>();
+                                               }
+                                           } ) )
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
                 var login = await s.LoginAlbertViaBasicProvider( useGenericWrapper );
+                Debug.Assert( login.Info != null );
                 DateTime basicLoginTime = login.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-                string originalToken = login.Token;
+                string? originalToken = login.Token;
                 // Request with token: the authentication is based on the token.
                 {
                     s.Client.Token = originalToken;
                     HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
+                    Debug.Assert( c.Info != null );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserName.Should().Be( "Albert" );
                     c.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
@@ -126,6 +126,7 @@ namespace CK.AspNet.Auth.Tests
                     HttpResponseMessage tokenLessRefresh = await s.Client.Get( refreshUri );
                     tokenLessRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, tokenLessRefresh.Content.ReadAsStringAsync().Result );
+                    Debug.Assert( c.Info != null );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserName.Should().Be( "Albert" );
                     c.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
@@ -136,6 +137,7 @@ namespace CK.AspNet.Auth.Tests
                     HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri + "?schemes" );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
+                    Debug.Assert( c.Info != null );
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserName.Should().Be( "Albert" );
                     c.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
@@ -156,7 +158,7 @@ namespace CK.AspNet.Auth.Tests
                 RefreshResponse c = await s.CallRefreshEndPoint();
                 c.Info.Should().BeNull();
                 HttpResponseMessage tokenRead = await s.Client.Get( tokenExplainUri );
-                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{}" );
+                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":null,\"rememberMe\":false}" );
             }
         }
 
@@ -261,22 +263,35 @@ namespace CK.AspNet.Auth.Tests
         }
 
 
-        [Test]
-        public async Task SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint()
+        [TestCase( true, false )]
+        [TestCase( true, true )]
+        [TestCase( false, true )]
+        [TestCase( false, false )]
+        public async Task SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint( bool useGenericWrapper, bool rememberMe )
         {
-            
             using( var s = new AuthServer( opt =>
             {
                 opt.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
                 opt.SlidingExpirationTime = TimeSpan.FromSeconds( 10 );
+                opt.CookieMode = AuthenticationCookieMode.None;
+            }, services =>
+            {
+                if( useGenericWrapper )
+                {
+                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
+                }
             } ) )
             {
                 // This test is far from perfect but does the job without clock injection.
-                RefreshResponse auth = await s.LoginAlbertViaBasicProvider();
+                RefreshResponse auth = await s.LoginAlbertViaBasicProvider( useGenericWrapper, rememberMe );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
+
+                s.Client.Token = auth.Token;
                 RefreshResponse refresh = await s.CallRefreshEndPoint();
                 refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Refresh increased the expiration time." );
+
+                refresh.RememberMe.Should().BeFalse( "In CookieMode None, RememberMe is always false, no matter what." );
             }
         }
 
@@ -299,7 +314,11 @@ namespace CK.AspNet.Auth.Tests
 
                 // Calling token endpoint (like any other endpoint that sollicitates authentication) is enough.
                 HttpResponseMessage req = await s.Client.Get( tokenExplainUri );
-                IAuthenticationInfo refresh = s.TypeSystem.AuthenticationInfo.FromJObject( JObject.Parse( req.Content.ReadAsStringAsync().Result ) );
+                var response = JObject.Parse( req.Content.ReadAsStringAsync().Result );
+
+                ((bool)response["rememberMe"]).Should().BeTrue();
+                IAuthenticationInfo refresh = s.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
+
                 refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
 
                 DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
