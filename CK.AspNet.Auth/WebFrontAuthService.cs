@@ -103,17 +103,52 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
+        /// Gets the cookie mode. This is not a dynamic option: this is the value
+        /// captured when this service has been instanciated. 
+        /// </summary>
+        public AuthenticationCookieMode CookieMode { get; }
+
+        /// <summary>
+        /// Direct generation of an authentication token from any <see cref="IAuthenticationInfo"/>.
+        /// <see cref="IAuthenticationInfo.CheckExpiration(DateTime)"/> is called with <see cref="DateTime.UtcNow"/>.
+        /// This is to be used with caution: the authentication token should never be sent to any client and should be
+        /// used only for secure server to server temporary authentication.
+        /// The authentication token is signed with the token binding protocol (when on htpps): it is valid only for the
+        /// provided HttpContext.
+        /// </summary>
+        /// <param name="c">The Httpcontext.</param>
+        /// <param name="info">The authentication info for which an authentication token must be obtained.</param>
+        /// <returns>The url-safe secured authentication token string.</returns>
+        public string UnsafeGetAuthenticationToken( HttpContext c, IAuthenticationInfo info )
+        {
+            if( c == null ) throw new ArgumentNullException( nameof( c ) );
+            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            info = info.CheckExpiration();
+            return ProtectAuthenticationInfo( c, new FrontAuthenticationInfo( info, false ) );
+        }
+
+        /// <summary>
+        /// Simple helper that calls <see cref="UnsafeGetAuthenticationToken(HttpContext, IAuthenticationInfo)"/>.
+        /// </summary>
+        /// <param name="c">The Httpcontext.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="userName">The user name.</param>
+        /// <param name="validity">The validity time span: the shorter the better.</param>
+        /// <returns>The url-safe secured authentication token string.</returns>
+        public string UnsafeGetAuthenticationToken( HttpContext c, int userId, string userName, TimeSpan validity )
+        {
+            if( userName == null ) throw new ArgumentNullException( nameof( userName ) );
+            var u = _typeSystem.UserInfo.Create( userId, userName );
+            var info = _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow.Add( validity ) );
+            return UnsafeGetAuthenticationToken( c, info );
+        }
+
+        /// <summary>
         /// Gets the current options.
         /// This must be used for configurations that can be changed dynamically like <see cref="WebFrontAuthOptions.ExpireTimeSpan"/>
         /// but not for non dynamic ones like <see cref="WebFrontAuthOptions.CookieMode"/>.
         /// </summary>
         internal WebFrontAuthOptions CurrentOptions => _options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme );
-
-        /// <summary>
-        /// Gets the cookie mode. This is not a dynamic option: this is the value
-        /// captured when this service has been instanciated. 
-        /// </summary>
-        public AuthenticationCookieMode CookieMode { get; }
 
         /// <summary>
         /// Gets the monitor from the request service.
