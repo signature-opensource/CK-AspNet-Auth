@@ -16,11 +16,15 @@ using CK.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
+using System.Xml;
+using System.Reflection;
 
 namespace CK.AspNet.Auth
 {
     sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
     {
+        readonly static CSemVer.SVersion _version = CSemVer.InformationalVersion.ReadFromAssembly(Assembly.GetExecutingAssembly() ).Version ?? CSemVer.SVersion.ZeroVersion;
         readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
@@ -48,7 +52,7 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
-        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>( false );
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
 
         public Task<bool> HandleRequestAsync()
         {
@@ -103,19 +107,20 @@ namespace CK.AspNet.Auth
 
         async Task<bool> HandleRefresh()
         {
-            IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
-            Debug.Assert( authInfo != null );
+            FrontAuthenticationInfo fAuth = _authService.EnsureAuthenticationInfo( Context );
+            Debug.Assert( fAuth != null );
             if( Request.Query.Keys.Contains( "full" ) )
             {
                 var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
-                authInfo = await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), authInfo, newExpires );
+                fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), fAuth.Info, newExpires ) );
             }
-            JObject response = GetRefreshResponseAndSetCookies( authInfo, Request.Query.Keys.Contains( "schemes" ) );
+            JObject response = GetRefreshResponseAndSetCookies( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
             return await WriteResponseAsync( response );
         }
 
-        JObject GetRefreshResponseAndSetCookies( IAuthenticationInfo authInfo, bool addSchemes )
+        JObject GetRefreshResponseAndSetCookies( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
         {
+            var authInfo = fAuth.Info;
             bool refreshable = false;
             if( authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero )
             {
@@ -123,17 +128,18 @@ namespace CK.AspNet.Auth
                 DateTime newExp = DateTime.UtcNow + Options.SlidingExpirationTime;
                 if( newExp > authInfo.Expires.Value )
                 {
-                    authInfo = authInfo.SetExpires( newExp );
+                    fAuth = fAuth.SetInfo( authInfo.SetExpires( newExp ) );
                 }
             }
-            JObject response = _authService.CreateAuthResponse( Context, authInfo, refreshable );
+            JObject response = _authService.CreateAuthResponse( Context, fAuth, refreshable );
             if( addSchemes )
             {
                 IReadOnlyList<string> list = Options.AvailableSchemes;
                 if( list == null || list.Count == 0 ) list = _loginService.Providers;
                 response.Add( "schemes", new JArray( _loginService.Providers ) );
             }
-            _authService.SetCookies( Context, authInfo );
+            if( addVersion ) response.Add( "version", _version.ToString() );
+            _authService.SetCookies( Context, fAuth );
             return response;
         }
 
@@ -154,19 +160,29 @@ namespace CK.AspNet.Auth
             }
             string returnUrl = Request.Query["returnUrl"];
             string callerOrigin = Request.Query["callerOrigin"];
+            string rememberMe = Request.Query["rememberMe"];
 
             IEnumerable<KeyValuePair<string, StringValues>> userData;
             if( HttpMethods.IsPost( Request.Method ) )
             {
                 if( callerOrigin == null ) callerOrigin = Request.Form["callerOrigin"];
+                if( rememberMe == null ) rememberMe = Request.Form["rememberMe"];
                 userData = Request.Form;
             }
             else userData = Request.Query;
             userData = userData.Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
-                                            && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase ) );
-            var current = _authService.EnsureAuthenticationInfo( Context );
-            Debug.Assert( current != null );
+                                            && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase )
+                                            && !string.Equals( k.Key, "rememberMe", StringComparison.OrdinalIgnoreCase ) );
+
+            var fAuthCurrent = _authService.EnsureAuthenticationInfo( Context );
+
+            // If "rememberMe" is not found, we keep the previous one (that is false if no current authentication exists).
+            // RememberMe defaults to false.
+            bool fRememberMe = fAuthCurrent.RememberMe;
+            if( rememberMe != null ) fRememberMe = rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase );
+
+            var current = fAuthCurrent.Info;
             var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, current, userData, returnUrl, callerOrigin );
             // We test impersonation here: login is forbidden whenever the user is impersonated.
             // This check will also be done by WebFrontAuthService.UnifiedLogin.
@@ -186,9 +202,12 @@ namespace CK.AspNet.Auth
             else
             {
                 AuthenticationProperties p = new AuthenticationProperties();
-                p.Items.Add( "WFA-S", startContext.Scheme );
+                // I don't want to use yet another key to handle the RememberMe flag.
+                // This is ugly... but who cares? This is and must remain an implementation detail
+                // between this entry point and the WebFrountAuthService.HandleRemoteAuthentication method.
+                p.Items.Add( fRememberMe ? "WFA-S" : "WFA-N", startContext.Scheme );
                 if( !String.IsNullOrWhiteSpace( startContext.CallerOrigin ) ) p.Items.Add( "WFA-O", startContext.CallerOrigin );
-                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, current ) );
+                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, fAuthCurrent ) );
                 if( startContext.ReturnUrl != null ) p.Items.Add( "WFA-R", startContext.ReturnUrl );
                 else if( startContext.UserData.Count != 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
                 if( startContext.DynamicScopes != null )
@@ -205,6 +224,7 @@ namespace CK.AspNet.Auth
         {
             public string Scheme { get; set; }
             public object Payload { get; set; }
+            public bool RememberMe { get; set; }
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
@@ -213,7 +233,8 @@ namespace CK.AspNet.Auth
             Response.StatusCode = StatusCodes.Status403Forbidden;
             if( _unsafeDirectLoginAllower != null )
             {
-                ProviderLoginRequest req = ReadDirectLoginRequest( monitor );
+                string body = await Request.TryReadSmallBodyAsString( 4096 );
+                ProviderLoginRequest req = body != null ? ReadDirectLoginRequest( monitor, body ) : null;
                 if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
                     // The req.Payload my be null here. We map it to an empty object to preserve the invariant of the context.
@@ -225,9 +246,10 @@ namespace CK.AspNet.Auth
                                         WebFrontAuthLoginMode.UnsafeDirectLogin,
                                         req.Scheme,
                                         payload,
+                                        req.RememberMe, 
                                         null,
                                         req.Scheme,
-                                        _authService.EnsureAuthenticationInfo( Context ),
+                                        _authService.EnsureAuthenticationInfo( Context ).Info,
                                         null,
                                         null,
                                         req.UserData.ToList()
@@ -242,13 +264,11 @@ namespace CK.AspNet.Auth
             return true;
         }
 
-        ProviderLoginRequest ReadDirectLoginRequest( IActivityMonitor monitor )
+        ProviderLoginRequest ReadDirectLoginRequest( IActivityMonitor monitor, string body )
         {
             ProviderLoginRequest req = null;
             try
             {
-                string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 4096 ) ) return null;
                 // By using our poor StringMatcher here, we parse the JSON
                 // to basic List<KeyValuePair<string, object>> because 
                 // JObject are IEnumerable<KeyValuePair<string, JToken>> and
@@ -256,7 +276,7 @@ namespace CK.AspNet.Auth
                 // convertible (to basic types) without using the JToken type.
                 // A dependency on NewtonSoft.Json may not be suitable for some 
                 // providers.
-                var m = new StringMatcher( b );
+                var m = new StringMatcher( body );
                 if( m.MatchJSONObject( out object val )
                     && val is List<KeyValuePair<string, object>> o )
                 {
@@ -268,6 +288,13 @@ namespace CK.AspNet.Auth
                             Scheme = provider,
                             Payload = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "payload" ) ).Value
                         };
+                        object rem = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "rememberMe" ) ).Value;
+                        req.RememberMe = rem != null
+                                         && (
+                                             ((rem is bool rb) && rb)
+                                             ||
+                                             (rem is string s && (s == "1" || s.Equals( "true", StringComparison.OrdinalIgnoreCase )))
+                                            );
                         var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "userData" ) ).Value;
                         if( userData is List<KeyValuePair<string, object>> data )
                         {
@@ -286,6 +313,7 @@ namespace CK.AspNet.Auth
             if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
             return req;
         }
+
         #endregion
 
         #region Basic Authentication support
@@ -294,13 +322,15 @@ namespace CK.AspNet.Auth
         {
             public string UserName { get; set; }
             public string Password { get; set; }
+            public bool RememberMe { get; set; }
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
         async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
         {
             Debug.Assert( _loginService.HasBasicLogin );
-            BasicLoginRequest req = ReadBasicLoginRequest( monitor );
+            string body  = await Request.TryReadSmallBodyAsString( 4096 );
+            BasicLoginRequest req = body != null ? ReadBasicLoginRequest( monitor, body ) : null;
             if( req != null )
             {
                 var wfaSC = new WebFrontAuthLoginContext(
@@ -310,9 +340,10 @@ namespace CK.AspNet.Auth
                     WebFrontAuthLoginMode.BasicLogin,
                     "Basic",
                     Tuple.Create( req.UserName, req.Password ),
+                    req.RememberMe,
                     null,
                     "Basic",
-                    _authService.EnsureAuthenticationInfo( Context ),
+                    _authService.EnsureAuthenticationInfo( Context ).Info,
                     null,
                     null,
                     req.UserData.ToList()
@@ -326,14 +357,12 @@ namespace CK.AspNet.Auth
             return true;
         }
 
-        BasicLoginRequest ReadBasicLoginRequest( IActivityMonitor monitor )
+        BasicLoginRequest ReadBasicLoginRequest( IActivityMonitor monitor, string body )
         {
             BasicLoginRequest req = null;
             try
             {
-                string b;
-                if( !Request.TryReadSmallBodyAsString( out b, 2048 ) ) return null;
-                var r = JsonConvert.DeserializeObject<BasicLoginRequest>( b );
+                var r = JsonConvert.DeserializeObject<BasicLoginRequest>( body );
                 if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
             }
             catch( Exception ex )
@@ -351,76 +380,72 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
             Response.StatusCode = StatusCodes.Status403Forbidden;
-            IAuthenticationInfo info = _authService.EnsureAuthenticationInfo( Context );
-            if( info.ActualUser.UserId != 0 )
+            var fAuth = _authService.EnsureAuthenticationInfo( Context );
+            if( fAuth.Info.ActualUser.UserId != 0 )
             {
+                string body = await Request.TryReadSmallBodyAsString( 1024 );
                 int userId = -1;
                 string userName = null;
-                if( TryReadUserKey( monitor, ref userId, ref userName ) )
+                if( body != null && TryReadUserKey( monitor, ref userId, ref userName, body ) )
                 {
-                    if( userName == info.ActualUser.UserName || userId == info.ActualUser.UserId )
+                    if( userName == fAuth.Info.ActualUser.UserName || userId == fAuth.Info.ActualUser.UserId )
                     {
-                        info = info.ClearImpersonation();
+                        fAuth = fAuth.SetInfo( fAuth.Info.ClearImpersonation() );
                         Response.StatusCode = StatusCodes.Status200OK;
                     }
                     else
                     {
                         IUserInfo target = userName != null
-                                            ? await _impersonationService.ImpersonateAsync( Context, monitor, info, userName )
-                                            : await _impersonationService.ImpersonateAsync( Context, monitor, info, userId );
+                                            ? await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userName )
+                                            : await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userId );
                         if( target != null )
                         {
-                            info = info.Impersonate( target );
+                            fAuth = fAuth.SetInfo( fAuth.Info.Impersonate( target ) );
                             Response.StatusCode = StatusCodes.Status200OK;
                         }
                     }
                     if( Response.StatusCode == StatusCodes.Status200OK )
                     {
-                        await Response.WriteAsync( GetRefreshResponseAndSetCookies( info, addSchemes: false ) );
+                        await Response.WriteAsync( GetRefreshResponseAndSetCookies( fAuth, addSchemes: false, addVersion: false ) );
                     }
                 }
             }
             return true;
         }
 
-        bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string userName )
+        bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string userName, string body )
         {
-            string b;
-            if( Request.TryReadSmallBodyAsString( out b, 512 ) )
+            var m = new StringMatcher( body );
+            List<KeyValuePair<string, object>> param;
+            if( m.MatchJSONObject( out object val )
+                && (param = val as List<KeyValuePair<string, object>>) != null
+                && param.Count == 1 )
             {
-                var m = new StringMatcher( b );
-                List<KeyValuePair<string, object>> param;
-                if( m.MatchJSONObject( out object val )
-                    && (param = val as List<KeyValuePair<string, object>>) != null
-                    && param.Count == 1 )
+                if( param[0].Key == "userName" )
                 {
-                    if( param[0].Key == "userName" )
+                    if( param[0].Value is string n )
                     {
-                        if( param[0].Value is string n )
-                        {
-                            userName = n;
-                            return true;
-                        }
-                    }
-                    if( param[0].Key == "userId" )
-                    {
-                        if( param[0].Value is string n )
-                        {
-                            if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
-                            {
-                                return true;
-                            }
-                        }
-                        else if( param[0].Value is double d )
-                        {
-                            userId = (int)d;
-                            return true;
-                        }
+                        userName = n;
+                        return true;
                     }
                 }
-                Response.StatusCode = StatusCodes.Status400BadRequest;
+                if( param[0].Key == "userId" )
+                {
+                    if( param[0].Value is string n )
+                    {
+                        if( Int32.TryParse( n, NumberStyles.Integer, CultureInfo.InvariantCulture, out userId ) )
+                        {
+                            return true;
+                        }
+                    }
+                    else if( param[0].Value is double d )
+                    {
+                        userId = (int)d;
+                        return true;
+                    }
+                }
             }
-            Debug.Assert( Response.StatusCode == StatusCodes.Status400BadRequest );
+            Response.StatusCode = StatusCodes.Status400BadRequest;
             return false;
         }
 
@@ -430,14 +455,13 @@ namespace CK.AspNet.Auth
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            IAuthenticationInfo authInfo = _authService.EnsureAuthenticationInfo( Context );
-            if( authInfo.IsNullOrNone() )
+            var fAuth = _authService.EnsureAuthenticationInfo( Context );
+            if( fAuth.Info.IsNullOrNone() )
             {
                 return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
-            }
-            
+            }           
             var principal = new ClaimsPrincipal();
-            principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( authInfo, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
+            principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( fAuth.Info, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );
             return Task.FromResult( AuthenticateResult.Success( ticket ) );
         }
@@ -446,8 +470,10 @@ namespace CK.AspNet.Auth
 
         Task<bool> HandleToken()
         {
-            var info = _authService.EnsureAuthenticationInfo( Context );
-            var o = _typeSystem.AuthenticationInfo.ToJObject( info );
+            var fAuth = _authService.EnsureAuthenticationInfo( Context );
+            var o = new JObject(
+                        new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
+                        new JProperty( "rememberMe", fAuth.RememberMe ) );
             return WriteResponseAsync( o );
         }
 

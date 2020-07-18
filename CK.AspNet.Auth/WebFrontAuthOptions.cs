@@ -53,6 +53,7 @@ namespace CK.AspNet.Auth
         /// and <see cref="CookieMode"/> is not <see cref="AuthenticationCookieMode.None"/>.
         /// When true a long-lived cookie is used to store the unsafe, but long term, authentication information.
         /// Its <see cref="CookieOptions.Path"/> depends on <see cref="CookieMode"/>.
+        /// Since the expiration is a dynamic configuration, this is also a dynamic configuration.
         /// </summary>
         public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue
                                             && UnsafeExpireTimeSpan > ExpireTimeSpan

@@ -22,7 +22,9 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Encapsulates the sign in data issued by an external provider.
     /// </summary>
-    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext, IWebFrontAuthAutoCreateAccountContext
+    internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext,
+                                              IWebFrontAuthAutoCreateAccountContext,
+                                              IWebFrontAuthAutoBindingAccountContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult _successfulLogin;
@@ -39,6 +41,7 @@ namespace CK.AspNet.Auth
             WebFrontAuthLoginMode loginMode,
             string callingScheme,
             object payload,
+            bool rememberMe,
             AuthenticationProperties authProps,
             string initialScheme, 
             IAuthenticationInfo initialAuth, 
@@ -53,6 +56,12 @@ namespace CK.AspNet.Auth
             LoginMode = loginMode;
             CallingScheme = callingScheme;
             Payload = payload;
+
+            // Use the CookieMode != None to set RememberMe to false, not CurrentOptions.UseLongTermCookie
+            // since a non-session authentication cookie provide a "short term resiliency", a "remember me for
+            // the next xxx minutes even if I close my browser" functionality.
+            RememberMe = rememberMe && authService.CookieMode != AuthenticationCookieMode.None;
+
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
             InitialAuthentication = initialAuth;
@@ -110,6 +119,12 @@ namespace CK.AspNet.Auth
         public string CallingScheme { get; }
 
         /// <summary>
+        /// Gets whether the authentication should be memorized (or be as transient as possible).
+        /// Note that this is always false when <see cref="AuthenticationCookieMode.None"/> is used.
+        /// </summary>
+        public bool RememberMe { get; }
+
+        /// <summary>
         /// Gets the provider payload (type is provider dependent).
         /// This is never null but may be an empty object when unsafe login is used with no payload.
         /// </summary>
@@ -162,6 +177,12 @@ namespace CK.AspNet.Auth
             return null;
         }
 
+        UserLoginResult IWebFrontAuthAutoBindingAccountContext.SetError( string errorId, string errorText )
+        {
+            SetError( errorId, errorText );
+            return null;
+        }
+
         /// <summary>
         /// Sets an error message.
         /// The returned error has "errorId" set to the full name of the exception
@@ -180,6 +201,12 @@ namespace CK.AspNet.Auth
         }
 
         UserLoginResult IWebFrontAuthAutoCreateAccountContext.SetError( Exception ex )
+        {
+            SetError( ex );
+            return null;
+        }
+
+        UserLoginResult IWebFrontAuthAutoBindingAccountContext.SetError( Exception ex )
         {
             SetError( ex );
             return null;
@@ -227,7 +254,7 @@ namespace CK.AspNet.Auth
                 }
                 return SendRemoteAuthenticationError();
             }
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, RememberMe );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )

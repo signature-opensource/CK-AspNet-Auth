@@ -12,6 +12,7 @@ using CK.Text;
 using CK.Core;
 using System.Diagnostics;
 using CK.SqlServer;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.DB.AspNet.Auth
 {
@@ -65,7 +66,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
         public virtual async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r ); 
@@ -81,7 +82,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>A new, empty, provider dependent login payload.</returns>
         public virtual object CreatePayload( HttpContext ctx, IActivityMonitor monitor, string scheme )
         {
-            return FindProvider( scheme, mustHavePayload: true ).CreatePayload();
+            return _authPackage.FindRequiredProvider( scheme, mustHavePayload: true ).CreatePayload();
         }
 
         /// <summary>
@@ -100,8 +101,8 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The login result.</returns>
         public virtual async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
-            IGenericAuthenticationProvider p = FindProvider( scheme, false );
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            IGenericAuthenticationProvider p = _authPackage.FindRequiredProvider( scheme, false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
@@ -118,7 +119,7 @@ namespace CK.DB.AspNet.Auth
         public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
         {
             if( current.IsNullOrNone() ) return _typeSystem.AuthenticationInfo.None;
-            var c = ctx.RequestServices.GetService<ISqlCallContext>( false );
+            var c = ctx.RequestServices.GetService<ISqlCallContext>();
             IUserAuthInfo dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
             IUserInfo actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
             IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires );
@@ -131,24 +132,5 @@ namespace CK.DB.AspNet.Auth
             return refreshed;
         }
 
-        /// <summary>
-        /// Returns a provider that may be required to be able to create a payload
-        /// (it must be a <see cref="IGenericAuthenticationProvider{T}"/>) or throws an exception
-        /// if it can't be found.
-        /// </summary>
-        /// <param name="scheme">The scheme to find.</param>
-        /// <param name="mustHavePayload">True if the provider must handle payload. An <see cref="ArgumentException"/>
-        /// is thrown if this is not the case.</param>
-        /// <returns>The provider.</returns>
-        protected virtual IGenericAuthenticationProvider FindProvider( string scheme, bool mustHavePayload )
-        {
-            IGenericAuthenticationProvider p = _authPackage.FindProvider( scheme );
-            if( p == null ) throw new ArgumentException( $"Unable to find a database provider for scheme '{scheme}'. Available: {_providers.Concatenate()}.", nameof( scheme ) );
-            if( mustHavePayload && !p.HasPayload() )
-            {
-                throw new ArgumentException( $"Database provider '{p.GetType().FullName}' does not handle generic payload." );
-            }
-            return p;
-        }
     }
 }

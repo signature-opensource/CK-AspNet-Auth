@@ -14,7 +14,11 @@ namespace CK.AspNet.Auth
         /// Initializes a new login result.
         /// </summary>
         /// <param name="info">The user info. When null or anonymous, failure code and reason must indicate an error.</param>
-        /// <param name="failureCode">Failure code must be positive on failure, zero on success.</param>
+        /// <param name="failureCode">
+        /// Failure code must be positive on failure, zero on success.
+        /// Standard <see cref="IWebFrontAuthLoginService"/> implementation by CK.DB.AspNetAuth (the SqlWebFrontAuthLoginService class) uses
+        /// the CK.DB.Auth.KnownLoginFailureCode that is defined here: https://github.com/Invenietis/CK-DB/blob/develop/CK.DB.Auth/KnownLoginFailureCode.cs.
+        /// </param>
         /// <param name="failureReason">Failure reason must be not null on failure, null on success.</param>
         /// <param name="unregisteredUser">
         /// Indicates that the login failed because the user is not registered in the provider: this may be
@@ -73,8 +77,9 @@ namespace CK.AspNet.Auth
         public bool IsUnregisteredUser { get; }
 
         /// <summary>
-        /// Gets the login failure code.
-        /// This value is positive if login failed.
+        /// Gets the login failure code. This value is positive if login failed. 
+        /// Standard <see cref="IWebFrontAuthLoginService"/> implementation by CK.DB.AspNetAuth (the SqlWebFrontAuthLoginService class) uses
+        /// the CK.DB.Auth.KnownLoginFailureCode that is defined here: https://github.com/Invenietis/CK-DB/blob/develop/CK.DB.Auth/KnownLoginFailureCode.cs.
         /// </summary>
         public int LoginFailureCode { get; }
 

@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -25,9 +27,9 @@ namespace CK.AspNet.Auth.Tests
         IAuthenticationTypeSystem _typeSystem;
 
         public AuthServer(
-            Action<WebFrontAuthOptions> options = null,
-            Action<IServiceCollection> configureServices = null,
-            Action<IApplicationBuilder> configureApplication = null )
+            Action<WebFrontAuthOptions>? options = null,
+            Action<IServiceCollection>? configureServices = null,
+            Action<IApplicationBuilder>? configureApplication = null )
         {
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
@@ -39,16 +41,19 @@ namespace CK.AspNet.Auth.Tests
                 },
                 app =>
                 {
-                    app.UseRequestMonitor();
+                    app.UseGuardRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     configureApplication?.Invoke( app );
-                } );
-            b.UseMonitoring();
-            b.UseScopedHttpContext();
-            Server = new TestServer( b );
-            Client = new TestServerClient( Server );
+                }, builder => builder.UseScopedHttpContext()
+            ).UseMonitoring();
+            var host = b.Build();
+            host.Start();
+            Client = new TestServerClient( host );
+            Server = Client.Server;
+            Debug.Assert( _typeSystem != null );
+            Debug.Assert( Options != null );
         }
 
         public IAuthenticationTypeSystem TypeSystem => _typeSystem;
@@ -60,27 +65,69 @@ namespace CK.AspNet.Auth.Tests
         public TestServerClient Client { get; }
 
 
-        public async Task<RefreshResponse> LoginAlbertViaBasicProvider( bool useGenericWrapper = false )
+        public async Task<RefreshResponse> LoginAlbertViaBasicProvider( bool useGenericWrapper = false, bool rememberMe = true )
         {
-            HttpResponseMessage response = useGenericWrapper
-                                            ? await Client.PostJSON( UnsafeDirectLoginUri, "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }" )
-                                            : await Client.PostJSON( BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+            string uri;
+            string body;
+            if( useGenericWrapper )
+            {
+                uri = UnsafeDirectLoginUri;
+                if( rememberMe )
+                {
+                    body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }";
+                }
+                else
+                {
+                    body = "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }";
+                }
+            }
+            else
+            {
+                uri = BasicLoginUri;
+                if( rememberMe )
+                {
+                    body = "{\"userName\":\"Albert\",\"password\":\"success\",\"rememberMe\":true}";
+                }
+                else
+                {
+                    body = "{\"userName\":\"Albert\",\"password\":\"success\"}";
+                }
+            }
+            HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
             switch( Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode )
             {
                 case AuthenticationCookieMode.WebFrontPath:
                     {
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
-                        Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) ).Should().HaveCount( 2 );
+                        var all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
+                        if( rememberMe )
+                        {
+                            all.Should().HaveCount( 2 );
+                        }
+                        else
+                        {
+                            all.Should().HaveCount( 1 );
+                        }
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
-                        Client.Cookies.GetCookies( Server.BaseAddress ).Should().HaveCount( 2 );
+                        var all = Client.Cookies.GetCookies( Server.BaseAddress );
+                        if( rememberMe )
+                        {
+                            all.Should().HaveCount( 2 );
+                        }
+                        else
+                        {
+                            all.Should().HaveCount( 1 );
+                        }
                         break;
                     }
                 case AuthenticationCookieMode.None:
                     {
+                        // RemeberMe returned by the server is always false when CookieMode is None.
+                        rememberMe = false;
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
                         Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) ).Should().BeEmpty();
                         break;
@@ -89,6 +136,7 @@ namespace CK.AspNet.Auth.Tests
             var c = RefreshResponse.Parse( TypeSystem, response.Content.ReadAsStringAsync().Result );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserName.Should().Be( "Albert" );
+            c.RememberMe.Should().Be( rememberMe );
             return c;
         }
 

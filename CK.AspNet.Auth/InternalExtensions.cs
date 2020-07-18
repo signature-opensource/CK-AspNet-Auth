@@ -31,20 +31,24 @@ namespace CK.AspNet.Auth
             @this.StatusCode = defaultStatusCode;
         }
 
-        static public bool TryReadSmallBodyAsString( this HttpRequest @this, out string body, int maxLen )
+        /// <summary>
+        /// Reads a limited number of characters from the request body (with an UTF8 encoding).
+        /// </summary>
+        /// <param name="this">This request.</param>
+        /// <param name="maxLen">The maximal number of characters to read.</param>
+        /// <returns>The string or null on error.</returns>
+        static public async Task<string> TryReadSmallBodyAsString( this HttpRequest @this, int maxLen )
         {
-           body = null;
-           using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
+            using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
             {
-                char[] max = new char[maxLen];
-                int len = s.ReadBlock( max, 0, maxLen );
-                if( !s.EndOfStream )
+                char[] max = new char[maxLen + 1];
+                int len = await s.ReadBlockAsync( max, 0, maxLen + 1 );
+                if( len >= maxLen )
                 {
                     @this.HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    return false;
+                    return null;
                 }
-                body = new String( max, 0, len );
-                return true;
+                return new String( max, 0, len );
             }
         }
 
@@ -64,6 +68,7 @@ namespace CK.AspNet.Auth
 <html>
 <head>
     <meta name=""viewport"" content=""width=device-width"" />
+    <meta charset=""UTF-8"">
     <title>Conclusion</title>
 </head>
 <body>

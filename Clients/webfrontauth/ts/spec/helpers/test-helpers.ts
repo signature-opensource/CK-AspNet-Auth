@@ -1,20 +1,25 @@
-import { IUserInfo, IAuthenticationInfo } from '../..';
+import { IUserSchemeInfo, IUserInfo, IAuthenticationInfo } from '../..';
 
-export function areUserInfoEquals( userInfo1: IUserInfo, userInfo2: IUserInfo ): boolean {
-    if( userInfo1 === userInfo2 ) { return true; }
-    if( !userInfo1 || !userInfo2 ) { return false; }
-    if( userInfo1.userId !== userInfo2.userId || userInfo1.userName !== userInfo2.userName ) { return false; }
-    const s1 = userInfo1.schemes;
-    const s2 = userInfo2.schemes;
-    if( s1.length !== s2.length ) { return false; }
+
+export function areSchemesEquals( s1: ReadonlyArray<IUserSchemeInfo>, s2: ReadonlyArray<IUserSchemeInfo> ): boolean {
+    if( s1.length !== s2.length ) return false;
     if( s1.length > 0 ) {
         for( let i = 0; i < s1.length; ++i ) {
-            if( s1[i].name !== s2[i].name || s1[i].lastUsed.getDate() !== s2[i].lastUsed.getDate() ) {
+            if( s1[i].name !== s2[i].name 
+                || s1[i].lastUsed.getDate() !== s2[i].lastUsed.getDate()
+                || s1[i].status !== s2[i].status ) {
                 return false;
             }
         }
     }
     return true;
+}
+
+export function areUserInfoEquals( userInfo1: IUserInfo, userInfo2: IUserInfo ): boolean {
+    if( userInfo1 === userInfo2 ) return true;
+    if( !userInfo1 || !userInfo2 ) return false;
+    if( userInfo1.userId !== userInfo2.userId || userInfo1.userName !== userInfo2.userName ) return false;
+    return areSchemesEquals( userInfo1.schemes, userInfo2.schemes );
 }
 
 export function areAuthenticationInfoEquals( info1: IAuthenticationInfo, info2: IAuthenticationInfo ): boolean {
