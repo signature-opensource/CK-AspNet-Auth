@@ -39,14 +39,9 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( configureServices: services =>
             {
-                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is automatically
-                // registered in the DI container, we must remove it.
-                // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: BasicDirectLoginAllower
-                // is not automatically registered.
-                if( !allowed )
+                if( allowed )
                 {
-                    int idx = services.IndexOf( s => s.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
-                    services.RemoveAt( idx );
+                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,BasicDirectLoginAllower>();
                 }
             } ) )
             {
@@ -206,10 +201,8 @@ namespace CK.DB.AspNet.Auth.Tests
                 // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower and NoEvilZoneForPaula are
                 // automatically registered in the DI container.
                 // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add them.
-#if !NET461
                 services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
-#endif
             } ) )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
