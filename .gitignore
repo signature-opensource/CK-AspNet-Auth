@@ -335,3 +335,4 @@ jspm_packages/
 
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
+$StObjGen/
