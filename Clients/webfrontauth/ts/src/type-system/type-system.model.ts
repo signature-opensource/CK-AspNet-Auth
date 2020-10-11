@@ -30,6 +30,14 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
     setCriticalExpires(criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<T>;
 
     /**
+     * Sets the device identifier (and checks expiration based on utcNow parameter).
+     * Returns this StdAuthenticationInfo or an updated one if changed.
+     * @param deviceId The new device identifier.
+     * @param utcNow The date to consider to challenge expirations.
+     */
+    setDeviceId(deviceId: string, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo>
+
+    /**
      * Returns a new StdAuthenticationInfo where the user may no more be the actualUser.
      * Note that the expiration dates are checked based on the utcNow parameter.
      * @param user Creates a new StdAuthenticationInfo where the user is changed.
@@ -128,4 +136,5 @@ export class StdKeyType {
   public static readonly criticalExpiration: string = 'cexp';
   public static readonly user: string = 'user';
   public static readonly actualUser: string = 'actualUser';
+  public static readonly deviceId: string = 'device';
 }
