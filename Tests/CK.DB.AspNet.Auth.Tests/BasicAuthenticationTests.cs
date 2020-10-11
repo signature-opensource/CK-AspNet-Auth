@@ -198,9 +198,6 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( services =>
             {
-                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower and NoEvilZoneForPaula are
-                // automatically registered in the DI container.
-                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add them.
                 services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
                 services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
             } ) )
