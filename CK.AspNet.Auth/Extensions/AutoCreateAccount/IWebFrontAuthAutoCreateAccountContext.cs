@@ -32,13 +32,14 @@ namespace CK.AspNet.Auth
         /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
         /// Null otherwise.
         /// </summary>
-        string ReturnUrl { get; }
+        string? ReturnUrl { get; }
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
-        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>. 
+        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// and null when LoginMode is <see cref="WebFrontAuthLoginMode.None"/>. 
         /// </summary>
-        string InitialScheme { get; }
+        string? InitialScheme { get; }
 
         /// <summary>
         /// Gets the calling authentication scheme.
@@ -65,7 +66,7 @@ namespace CK.AspNet.Auth
         /// <param name="errorId">Error identifier (a dotted identifier string). Must not be null or empty.</param>
         /// <param name="errorText">The optional error message in clear text (typically in english).</param>
         /// <returns>Always null.</returns>
-        UserLoginResult SetError( string errorId, string errorText = null );
+        UserLoginResult? SetError( string errorId, string? errorText = null );
 
         /// <summary>
         /// Sets an error and always returns null to easily return
@@ -75,7 +76,8 @@ namespace CK.AspNet.Auth
         /// Can be called multiple times: new error information replaces the previous one.
         /// </summary>
         /// <param name="ex">The exception. Can not be null.</param>
-        UserLoginResult SetError( Exception ex );
+        /// <returns>Always null.</returns>
+        UserLoginResult? SetError( Exception ex );
 
     }
 }

@@ -32,13 +32,14 @@ namespace CK.AspNet.Auth
         /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
         /// Null otherwise.
         /// </summary>
-        string ReturnUrl { get; }
+        string? ReturnUrl { get; }
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
-        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>. 
+        /// This is "Basic" when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
+        /// and null when LoginMode is <see cref="WebFrontAuthLoginMode.None"/>. 
         /// </summary>
-        string InitialScheme { get; }
+        string? InitialScheme { get; }
 
         /// <summary>
         /// Gets the calling authentication scheme.

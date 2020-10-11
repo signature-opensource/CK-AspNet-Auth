@@ -118,12 +118,12 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The refreshed information. Never null but may be the None authentication info.</returns>
         public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
         {
-            if( current.IsNullOrNone() ) return _typeSystem.AuthenticationInfo.None;
+            if( current == null ) return _typeSystem.AuthenticationInfo.None;
             var c = ctx.RequestServices.GetService<ISqlCallContext>();
             IUserAuthInfo dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
             IUserInfo actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
-            IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires );
-            if( !refreshed.IsNullOrNone() && current.IsImpersonated )
+            IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires, current.DeviceId );
+            if( refreshed.Level != AuthLevel.None && current.IsImpersonated )
             {
                 IUserAuthInfo dbUser = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeUser.UserId, current.UnsafeUser.UserId );
                 IUserInfo user = _typeSystem.UserInfo.FromUserAuthInfo( dbUser ) ?? _typeSystem.UserInfo.Anonymous;

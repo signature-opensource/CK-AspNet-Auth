@@ -215,9 +215,8 @@ namespace CK.AspNet.Auth
         /// </returns>
         internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c )
         {
-            FrontAuthenticationInfo? authInfo = null;
-            object? o;
-            if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
+            FrontAuthenticationInfo? authInfo;
+            if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
             {
                 authInfo = (FrontAuthenticationInfo)o;
             }
@@ -262,13 +261,17 @@ namespace CK.AspNet.Auth
                     }
                     else if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
                     {
-                        IUserInfo info = _typeSystem.UserInfo.FromJObject( JObject.Parse( cookie ) );
+                        var o = JObject.Parse( cookie );
+                        IUserInfo? info = _typeSystem.UserInfo.FromJObject( o );
                         // If there is a long term cookie, then we are "remembering"!
-                        fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.Create( info ), true );
+                        fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.Create( info ), rememberMe: true );
                     }
                 }
                 if( fAuth == null )
                 {
+                    // Creating a new unauthenticated info with no device identifier:
+                    // We don't manage devices for anonymous for the moment.
+                    // By default, we don't remember.
                     fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
                 }
                 else
@@ -315,7 +318,7 @@ namespace CK.AspNet.Auth
                 && CurrentOptions.UseLongTermCookie
                 && authInfo.Info.UnsafeActualUser.UserId != 0 )
             {
-                // The long term cookie stores the unsafe actual user: we are "remembering" so we don't need to store the RemeberMe flag.
+                // The long term cookie stores the unsafe actual user: we are "remembering" so we don't need to store the RememberMe flag.
                 string value = _typeSystem.UserInfo.ToJObject( authInfo.Info.UnsafeActualUser ).ToString( Formatting.None );
                 ctx.Response.Cookies.Append( UnsafeCookieName, value, CreateUnsafeCookieOptions( DateTime.UtcNow + CurrentOptions.UnsafeExpireTimeSpan ) );
             }
@@ -396,21 +399,38 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="c">The current Http context.</param>
         /// <param name="u">The user info to login.</param>
-        /// <param name="callingScheme">The calling scheme.</param>
+        /// <param name="callingScheme">
+        /// The calling scheme is used to set a critical expires depending on <see cref="WebFrontAuthOptions.SchemesCriticalTimeSpan"/>.
+        /// </param>
+        /// <param name="deviceId">
+        /// The current device identifier from the <see cref="WebFrontAuthLoginContext.InitialAuthentication"/>: if it is
+        /// empty, a new one is automatically created.
+        /// </param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme, bool rememberMe )
+        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme, string deviceId, bool rememberMe )
         {
-            IAuthenticationInfo? authInfo = u.IsSuccess
-                                            ? _typeSystem.AuthenticationInfo.Create( u.UserInfo, DateTime.UtcNow + CurrentOptions.ExpireTimeSpan )
-                                            : null;
-            if( authInfo != null )
+            IAuthenticationInfo? authInfo = null;
+            if( u.IsSuccess )
             {
+                if( deviceId.Length == 0 )
+                {
+                    deviceId = Convert.ToBase64String( Guid.NewGuid().ToByteArray() );
+                }
+                DateTime expires = DateTime.UtcNow + CurrentOptions.ExpireTimeSpan;
+                DateTime? criticalExpires = null;
                 // Handling Critical level configured for this scheme.
                 IDictionary<string, TimeSpan> scts = CurrentOptions.SchemesCriticalTimeSpan;
-                if( scts != null && scts.TryGetValue( callingScheme, out var criticalTimeSpan ) && criticalTimeSpan > TimeSpan.Zero )
+                if( scts != null
+                    && scts.TryGetValue( callingScheme, out var criticalTimeSpan )
+                    && criticalTimeSpan > TimeSpan.Zero )
                 {
-                    authInfo = authInfo.SetCriticalExpires( DateTime.UtcNow + criticalTimeSpan );
+                    criticalExpires = DateTime.UtcNow + criticalTimeSpan;
+                    if( expires < criticalExpires ) expires = criticalExpires.Value;
                 }
+                authInfo = _typeSystem.AuthenticationInfo.Create( u.UserInfo,
+                                                                  expires,
+                                                                  criticalExpires,
+                                                                  deviceId );
             }
             var fAuth = authInfo != null ? new FrontAuthenticationInfo( authInfo, rememberMe ) : null;
             JObject response = CreateAuthResponse( c, fAuth, refreshable: authInfo != null && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, onLogin: u );
@@ -433,8 +453,8 @@ namespace CK.AspNet.Auth
         /// <returns></returns>
         internal Task SendRemoteAuthenticationError(
             HttpContext c,
-            string returnUrl,
-            string callerOrigin,
+            string? returnUrl,
+            string? callerOrigin,
             string errorId,
             string errorText,
             string? initialScheme = null,
@@ -444,6 +464,7 @@ namespace CK.AspNet.Auth
         {
             if( returnUrl != null )
             {
+                Debug.Assert( callerOrigin != null, "Since returnUrl is not null: /c/startLogin has been used." );
                 int idxQuery = returnUrl.IndexOf( '?' );
                 var path = idxQuery > 0
                             ? returnUrl.Substring( 0, idxQuery )
@@ -514,7 +535,7 @@ namespace CK.AspNet.Auth
         {
             var j = new JObject(
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth?.Info ) ),
-                        new JProperty( "token", (fAuth?.Info).IsNullOrNone()
+                        new JProperty( "token", fAuth?.Info == null
                                                     ? null
                                                     : ProtectAuthenticationInfo( c, fAuth! ) ),
                         new JProperty( "refreshable", refreshable ),
@@ -544,7 +565,7 @@ namespace CK.AspNet.Auth
             }
             catch( Exception ex )
             {
-                startContext.SetError( ex.GetType().FullName, ex.Message ?? "Exception has null message!" );
+                startContext.SetError( ex.GetType().FullName!, ex.Message ?? "Exception has null message!" );
             }
         }
 
