@@ -7,10 +7,14 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -101,27 +105,15 @@ namespace CK.AspNet.Auth.Tests
                     {
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
                         var all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
-                        if( rememberMe )
-                        {
-                            all.Should().HaveCount( 2 );
-                        }
-                        else
-                        {
-                            all.Should().HaveCount( 1 );
-                        }
+                        all.Should().HaveCount( 2 );
+                        CheckLongTermCookie( rememberMe, all );
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
                         var all = Client.Cookies.GetCookies( Server.BaseAddress );
-                        if( rememberMe )
-                        {
-                            all.Should().HaveCount( 2 );
-                        }
-                        else
-                        {
-                            all.Should().HaveCount( 1 );
-                        }
+                        all.Should().HaveCount( 2 );
+                        CheckLongTermCookie( rememberMe, all );
                         break;
                     }
                 case AuthenticationCookieMode.None:
@@ -138,6 +130,15 @@ namespace CK.AspNet.Auth.Tests
             c.Info.User.UserName.Should().Be( "Albert" );
             c.RememberMe.Should().Be( rememberMe );
             return c;
+
+            static void CheckLongTermCookie( bool rememberMe, System.Net.CookieCollection all )
+            {
+                var cookie = all.Single( c => c.Name == WebFrontAuthService.UnsafeCookieName ).Value;
+                cookie = HttpUtility.UrlDecode( cookie );
+                var longTerm = JObject.Parse( cookie );
+                ((string)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeEmpty( "There is always a non empty 'device' member." );
+                longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).Should().Be( rememberMe, "The user is here only when remember is true." );
+            }
         }
 
         public async Task<RefreshResponse> CallRefreshEndPoint()

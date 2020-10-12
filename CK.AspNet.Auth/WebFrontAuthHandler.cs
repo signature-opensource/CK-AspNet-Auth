@@ -135,7 +135,7 @@ namespace CK.AspNet.Auth
             JObject response = _authService.CreateAuthResponse( Context, fAuth, refreshable );
             if( addSchemes )
             {
-                IReadOnlyList<string> list = Options.AvailableSchemes;
+                IReadOnlyList<string>? list = Options.AvailableSchemes;
                 if( list == null || list.Count == 0 ) list = _loginService.Providers;
                 response.Add( "schemes", new JArray( _loginService.Providers ) );
             }
@@ -198,18 +198,18 @@ namespace CK.AspNet.Auth
             }
             if( startContext.HasError )
             {
-                await startContext.SendError();
+                await startContext.SendError( current.DeviceId );
             }
             else
             {
                 AuthenticationProperties p = new AuthenticationProperties();
-                // I don't want to use yet another key to handle the RememberMe flag.
                 // This is ugly... but who cares? This is and must remain an implementation detail
-                // between this entry point and the WebFrountAuthService.HandleRemoteAuthentication method.
-                p.Items.Add( fRememberMe ? "WFA-S" : "WFA-N", startContext.Scheme );
+                // between this entry point and the ExtractClearWFAData helper method below.
+                p.Items.Add( fRememberMe ? "WFA-S" : "WFA-N", current.DeviceId + '|' + startContext.Scheme );
                 if( !String.IsNullOrWhiteSpace( startContext.CallerOrigin ) ) p.Items.Add( "WFA-O", startContext.CallerOrigin );
-                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, fAuthCurrent ) );
                 if( startContext.ReturnUrl != null ) p.Items.Add( "WFA-R", startContext.ReturnUrl );
+
+                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, fAuthCurrent ) );
                 else if( startContext.UserData.Count != 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
                 if( startContext.DynamicScopes != null )
                 {
@@ -219,6 +219,36 @@ namespace CK.AspNet.Auth
             }
             return true;
         }
+
+        internal static void ExtractClearWFAData( AuthenticationProperties props,
+                                                  out bool rememberMe,
+                                                  out string deviceId,
+                                                  out string? initialScheme,
+                                                  out string? returnUrl,
+                                                  out string? callerOrigin )
+        {
+            rememberMe = false;
+            string? sOrD = props.Items["WFA-S"];
+            if( sOrD == null )
+            {
+                sOrD = props.Items["WFA-N"];
+            }
+            else rememberMe = true;
+            if( sOrD != null )
+            {
+                int idx = sOrD.IndexOf( '|' );
+                deviceId = sOrD.Substring( 0, idx );
+                initialScheme = sOrD.Substring( idx + 1 );
+            }
+            else
+            {
+                deviceId = String.Empty;
+                initialScheme = null;
+            }
+            props.Items.TryGetValue( "WFA-R", out returnUrl );
+            props.Items.TryGetValue( "WFA-O", out callerOrigin );
+        }
+
 
         #region Unsafe Direct Login
         class ProviderLoginRequest

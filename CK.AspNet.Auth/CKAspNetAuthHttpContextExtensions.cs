@@ -21,8 +21,7 @@ namespace Microsoft.AspNetCore.Http
         static public IAuthenticationInfo WebFrontAuthenticate( this HttpContext @this )
         {
             IAuthenticationInfo? authInfo = null;
-            object o;
-            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
+            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out var o ) )
             {
                 authInfo = ((FrontAuthenticationInfo)o).Info;
             }

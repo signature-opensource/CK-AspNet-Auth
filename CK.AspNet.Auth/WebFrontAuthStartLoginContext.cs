@@ -17,8 +17,8 @@ namespace CK.AspNet.Auth
     {
         readonly WebFrontAuthService _webFrontAuthService;
 
-        string _errorId;
-        string _errorText;
+        string? _errorId;
+        string? _errorText;
 
         internal WebFrontAuthStartLoginContext(
             HttpContext ctx,
@@ -99,13 +99,16 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Captures dynamic scopes from optional IWebFrontAuthDynamicScopeProvider.GetScopesAsync call.
         /// </summary>
-        internal string[] DynamicScopes;
+        internal string[]? DynamicScopes;
 
-        internal Task SendError()
+        internal Task SendError( string deviceId )
         {
             Debug.Assert( HasError );
+            Debug.Assert( _errorId != null && _errorText != null );
+
             return _webFrontAuthService.SendRemoteAuthenticationError(
                         HttpContext,
+                        deviceId,
                         ReturnUrl,
                         CallerOrigin,
                         _errorId,

@@ -255,7 +255,7 @@ namespace CK.AspNet.Auth
                 return SendRemoteAuthenticationError();
             }
             Debug.Assert( _successfulLogin != null );
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, InitialAuthentication.DeviceId, RememberMe );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, InitialAuthentication, RememberMe );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )
@@ -267,7 +267,6 @@ namespace CK.AspNet.Auth
 
         Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
         {
-            Debug.Assert( r.Info != null );
             if( UserData != null ) r.Response.Add( UserData.ToJProperty() );
             return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
         }
@@ -276,7 +275,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( _errorId != null );
             int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
-            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
+            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, InitialAuthentication.DeviceId, _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
             return HttpContext.Response.WriteAsync( errObj, code );
         }
 
@@ -305,6 +304,7 @@ namespace CK.AspNet.Auth
             Debug.Assert( _errorId != null && _errorText != null );
             return _authenticationService.SendRemoteAuthenticationError(
                         HttpContext,
+                        InitialAuthentication.DeviceId,
                         ReturnUrl,
                         CallerOrigin,
                         _errorId,

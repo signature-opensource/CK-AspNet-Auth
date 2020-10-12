@@ -22,11 +22,13 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( true, true )]
         [TestCase( false, true )]
         [TestCase( false, false )]
-        public async Task remember_me_sets_no_LongTerm_cookie_and_a_Session_cookie( bool useGenericWrapper, bool rememberMe )
+        public async Task remember_me_sets_appropriate_cookies( bool useGenericWrapper, bool rememberMe )
         {
-            // The SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint test challenges the None cookie mode and the rememberMe option.
+            // Note: the SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint test challenges the
+            // None cookie mode and the rememberMe option.
             using( var s = new AuthServer( configureServices: services =>
             {
+                // To support useGenericWrapper = true, we need to allow UnsafeDirectLogin.
                 if( useGenericWrapper )
                 {
                     services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, AllDirectLoginAllower>();
@@ -37,15 +39,15 @@ namespace CK.AspNet.Auth.Tests
                 auth.Info.User.UserName.Should().Be( "Albert" );
                 auth.RememberMe.Should().Be( rememberMe );
                 var cookies = s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) );
+                cookies.Should().HaveCount( 2 );
                 if( rememberMe )
                 {
-                    cookies.Should().HaveCount( 2 );
-                    cookies.Should().Match( all => all.All( c => c.Expires > DateTime.MinValue ) );
+                    cookies.Should().Match( all => all.All( c => c.Expires > DateTime.UtcNow ) );
                 }
                 else
                 {
-                    cookies.Should().HaveCount( 1 );
-                    cookies[0].Expires.Should().Be( DateTime.MinValue );
+                    var authCookie = cookies.Single( c => c.Name == WebFrontAuthService.AuthCookieName );
+                    authCookie.Expires.Should().Be( DateTime.MinValue, "RememberMe is false: the authentication cookie uses a session lifetime." );
                 }
             }
         }

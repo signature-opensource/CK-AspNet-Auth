@@ -128,7 +128,7 @@ namespace CK.AspNet.Auth
         /// new schemes into account.
         /// </para>
         /// </summary>
-        public List<string> AvailableSchemes { get; set; }
+        public List<string>? AvailableSchemes { get; set; }
 
         /// <summary>
         /// Gets or sets the refresh validation time. 
@@ -151,6 +151,6 @@ namespace CK.AspNet.Auth
         /// Defines the initial critical time span when logged in through each schemes.
         /// It is null by default: no schemes elevate a critical authentication level.
         /// </summary>
-        public IDictionary<string, TimeSpan> SchemesCriticalTimeSpan { get; set; }
+        public IDictionary<string, TimeSpan>? SchemesCriticalTimeSpan { get; set; }
     }
 }
