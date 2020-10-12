@@ -39,9 +39,10 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( configureServices: services =>
             {
-                if( allowed )
+                if( !allowed )
                 {
-                    services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,BasicDirectLoginAllower>();
+                    var idx = services.IndexOf( d => d.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
+                    services.RemoveAt( idx );
                 }
             } ) )
             {
@@ -120,15 +121,7 @@ namespace CK.DB.AspNet.Auth.Tests
         [Test]
         public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
         {
-            using( var server = new AuthServer( configureServices: services =>
-            {
-                // In Net461, the StObjMap is done on this /bin: BasicDirectLoginAllower is
-                // automatically registered in the DI container.
-                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add it.
-#if !NET461
-                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
-#endif
-            } ) )
+            using( var server = new AuthServer() )
             {
                 // Missing userName or userId.
                 {
@@ -196,11 +189,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( services =>
-            {
-                services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
-                services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
-            } ) )
+            using( var server = new AuthServer() )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );
@@ -263,15 +252,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( services =>
-            {
-                // In Net461, the StObjMap is done on this /bin: NoEvilZoneForPaula is
-                // automatically registered in the DI container.
-                // In NetCoreApp, the StObjMap comed from the DBWithPasswordAndGoogle: we must add it.
-#if !NET461
-                services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
-#endif
-            } ) )
+            using( var server = new AuthServer() )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );
