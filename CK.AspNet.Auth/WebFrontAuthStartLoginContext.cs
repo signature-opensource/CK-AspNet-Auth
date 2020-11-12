@@ -98,6 +98,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Captures dynamic scopes from optional IWebFrontAuthDynamicScopeProvider.GetScopesAsync call.
+        /// This is internal since it is the optional <see cref="IWebFrontAuthDynamicScopeProvider"/> that is used
+        /// to set it from <see cref="WebFrontAuthService.OnHandlerStartLogin(Core.IActivityMonitor, WebFrontAuthStartLoginContext)"/>.
         /// </summary>
         internal string[]? DynamicScopes;
 

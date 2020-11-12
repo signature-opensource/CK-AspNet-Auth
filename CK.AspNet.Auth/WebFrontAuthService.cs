@@ -498,7 +498,9 @@ namespace CK.AspNet.Auth
         /// <returns>The new device identifier.</returns>
         static string CreateNewDeviceId()
         {
-            return Convert.ToBase64String( Guid.NewGuid().ToByteArray() );
+            // Uses only url compliant characters and removes the = padding if it exists.
+            // Similar to base64url. See https://en.wikipedia.org/wiki/Base64 and https://tools.ietf.org/html/rfc4648.
+            return Convert.ToBase64String( Guid.NewGuid().ToByteArray() ).Replace( '+', '-' ).Replace( '/', '_' ).TrimEnd( '=' );
         }
 
         /// <summary>

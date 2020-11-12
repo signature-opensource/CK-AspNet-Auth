@@ -228,12 +228,13 @@ namespace CK.AspNet.Auth
                                                   out string? callerOrigin )
         {
             rememberMe = false;
-            string? sOrD = props.Items["WFA-S"];
-            if( sOrD == null )
+            string? sOrD;
+            if( props.Items.TryGetValue( "WFA-S", out sOrD ) )
             {
-                sOrD = props.Items["WFA-N"];
+                rememberMe = true;
             }
-            else rememberMe = true;
+            else props.Items.TryGetValue( "WFA-N", out sOrD );
+
             if( sOrD != null )
             {
                 int idx = sOrD.IndexOf( '|' );
