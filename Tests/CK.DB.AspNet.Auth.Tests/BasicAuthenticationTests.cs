@@ -5,7 +5,6 @@ using CK.DB.Actor;
 using CK.DB.Auth;
 using CK.SqlServer;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -20,7 +19,7 @@ using static CK.Testing.DBSetupTestHelper;
 namespace CK.DB.AspNet.Auth.Tests
 {
     [TestFixture]
-    public class BasicAuthenticationTests
+    public partial class BasicAuthenticationTests
     {
         const string basicLoginUri = "/.webfront/c/basicLogin";
         const string unsafeDirectLoginUri = "/.webfront/c/unsafeDirectLogin";
@@ -39,11 +38,7 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( configureServices: services =>
             {
-                if( !allowed )
-                {
-                    var idx = services.IndexOf( d => d.ServiceType == typeof( IWebFrontAuthUnsafeDirectLoginAllowService ) );
-                    services.RemoveAt( idx );
-                }
+                if( allowed ) services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, BasicDirectLoginAllower>();
             } ) )
             {
                 string userName = Guid.NewGuid().ToString();
@@ -83,7 +78,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         [TestCase( "Albert", "pass" )]
         [TestCase( "Paula", "pass" )]
-        public async Task basic_authentication_on_userl( string userName, string password )
+        public async Task basic_authentication_on_user( string userName, string password )
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
@@ -121,7 +116,7 @@ namespace CK.DB.AspNet.Auth.Tests
         [Test]
         public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
         {
-            using( var server = new AuthServer() )
+            using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService,AllDirectLoginAllower>()) )
             {
                 // Missing userName or userId.
                 {
@@ -158,30 +153,6 @@ namespace CK.DB.AspNet.Auth.Tests
             }
         }
 
-        /// <summary>
-        /// Client calls login with userData that contains a Zone.
-        /// </summary>
-        public class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
-        {
-            public Task ValidateLoginAsync( IActivityMonitor monitor, IUserInfo loggedInUser, IWebFrontAuthValidateLoginContext context )
-            {
-                if( loggedInUser.UserName == "Paula"
-                    && context.UserData.Any( kv => kv.Key == "zone" && kv.Value == "<&>vil" ) )
-                {
-                    context.SetError( "Validation", "Paula must not go in the <&>vil Zone!" );
-                }
-                return Task.CompletedTask;
-            }
-        }
-
-        public class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
-        {
-            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload )
-            {
-                return Task.FromResult( scheme == "Basic" );
-            }
-        }
-
         [TestCase( "Albert", "pass", true )]
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login( string userName, string password, bool okInEvil )
@@ -189,7 +160,11 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer() )
+            using( var server = new AuthServer( sp =>
+            {
+                sp.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+                sp.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, AllDirectLoginAllower>();
+            } ) )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );
@@ -252,7 +227,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer() )
+            using( var server = new AuthServer( sp => sp.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>() ) )
             {
                 await ctx[user].Connection.EnsureOpenAsync();
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );

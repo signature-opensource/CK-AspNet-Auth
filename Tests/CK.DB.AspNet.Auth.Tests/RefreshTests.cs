@@ -31,7 +31,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer() )
+            using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthImpersonationService,ImpersonationForEverybodyService>() ) )
             {
                 int idAlbert = await SetupUser( ctx, "Albert", "pass", user, basic );
                 int idPaula = await SetupUser( ctx, "Paula", "pass", user, basic );

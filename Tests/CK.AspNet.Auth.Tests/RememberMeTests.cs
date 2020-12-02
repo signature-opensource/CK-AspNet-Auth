@@ -1,6 +1,4 @@
-using CK.Core;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -11,12 +9,8 @@ using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests
 {
-    public class RememberMeTests
+    public partial class RememberMeTests
     {
-        class AllDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
-        {
-            public Task<bool> AllowAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload ) => Task.FromResult( true );
-        }
 
         [TestCase( true, false )]
         [TestCase( true, true )]
