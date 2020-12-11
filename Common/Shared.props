@@ -8,7 +8,7 @@
     <CKAspNetVersion>5.3.2--0011-develop</CKAspNetVersion>
     <CKAuthAbstractionsVersion>0.10.1--0015-develop</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>3.1.2--0005-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>9.0.2--0016-develop</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>9.0.2--0017-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
