@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text;
 
 #nullable enable
 
@@ -49,6 +50,7 @@ namespace CK.AspNet.Auth
         readonly AuthenticationInfoSecureDataFormat _tokenFormat;
         readonly AuthenticationInfoSecureDataFormat _cookieFormat;
         readonly ExtraDataSecureDataFormat _extraDataFormat;
+        readonly ServerKeyProvider _serverKeyProvider;
         readonly string _cookiePath;
         readonly string _bearerHeaderName;
         readonly CookieSecurePolicy _cookiePolicy;
@@ -92,6 +94,7 @@ namespace CK.AspNet.Auth
             var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
             var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
             var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
+            _serverKeyProvider = new ServerKeyProvider( dataProtector, initialOptions.Realm );
             _genericProtector = dataProtector;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
@@ -166,43 +169,25 @@ namespace CK.AspNet.Auth
         internal string ProtectAuthenticationInfo( HttpContext c, FrontAuthenticationInfo info )
         {
             Debug.Assert( info.Info != null );
-            return _tokenFormat.Protect( info, GetTlsTokenBinding( c ) );
+            return _tokenFormat.Protect( info, GetTlsTokenBindingAndServerKey( c ) );
         }
 
         internal FrontAuthenticationInfo UnprotectAuthenticationInfo( HttpContext c, string data )
         {
             Debug.Assert( data != null );
-            return _tokenFormat.Unprotect( data, GetTlsTokenBinding( c ) );
+            return _tokenFormat.Unprotect( data, GetTlsTokenBindingAndServerKey( c ) );
         }
 
         internal string ProtectExtraData( HttpContext c, IEnumerable<KeyValuePair<string, StringValues>> info )
         {
             Debug.Assert( info != null );
-            return _extraDataFormat.Protect( info, GetTlsTokenBinding( c ) );
+            return _extraDataFormat.Protect( info, GetTlsTokenBindingAndServerKey( c ) );
         }
 
         internal IEnumerable<KeyValuePair<string, StringValues>> UnprotectExtraData( HttpContext c, string data )
         {
             Debug.Assert( data != null );
-            return _extraDataFormat.Unprotect( data, GetTlsTokenBinding( c ) );
-        }
-
-        internal string ProtectString( HttpContext c, string data, TimeSpan duration )
-        {
-            Debug.Assert( data != null );
-            return _genericProtector
-                        .CreateProtector( GetTlsTokenBinding( c ) ?? "" )
-                        .ToTimeLimitedDataProtector()
-                        .Protect( data, duration );
-        }
-
-        internal string UnprotectString( HttpContext c, string data )
-        {
-            Debug.Assert( data != null );
-            return _genericProtector
-                        .CreateProtector( GetTlsTokenBinding( c ) ?? "" )
-                        .ToTimeLimitedDataProtector()
-                        .Unprotect( data );
+            return _extraDataFormat.Unprotect( data, GetTlsTokenBindingAndServerKey( c ) );
         }
 
         /// <summary>
@@ -229,7 +214,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Reads authentication header if possible or uses authentication Cookie (and ultimately falls back to 
-        /// long terme cookie) and caches authentication in request items.
+        /// long term cookie) and caches authentication in request items.
         /// </summary>
         /// <param name="c">The context.</param>
         /// <returns>
@@ -258,7 +243,7 @@ namespace CK.AspNet.Auth
                     // Best case is when we have the authentication cookie, otherwise use the long term cookie.
                     if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
                     {
-                        fAuth = _cookieFormat.Unprotect( cookie, GetTlsTokenBinding( c ) );
+                        fAuth = _cookieFormat.Unprotect( cookie, GetTlsTokenBindingAndServerKey( c ) );
                     }
                     else if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
                     {
@@ -351,7 +336,7 @@ namespace CK.AspNet.Auth
             if( CookieMode != AuthenticationCookieMode.None && fAuth.Info.Level >= AuthLevel.Normal )
             {
                 Debug.Assert( fAuth.Info.Expires.HasValue );
-                string value = _cookieFormat.Protect( fAuth, GetTlsTokenBinding( ctx ) );
+                string value = _cookieFormat.Protect( fAuth, GetTlsTokenBindingAndServerKey( ctx ) );
                 // If we don't remember, we create a session cookie (no expiration).
                 ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, fAuth.RememberMe ? fAuth.Info.Expires : null ) );
             }
@@ -603,10 +588,12 @@ namespace CK.AspNet.Auth
             return j;
         }
 
-        static string? GetTlsTokenBinding( HttpContext c )
+        string? GetTlsTokenBindingAndServerKey( HttpContext c )
         {
             var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
-            return binding == null ? null : Convert.ToBase64String( binding );
+            return binding == null
+                    ? _serverKeyProvider.GetKey()
+                    : Convert.ToBase64String( binding ) + _serverKeyProvider.GetKey();
         }
 
         internal async Task OnHandlerStartLogin( IActivityMonitor m, WebFrontAuthStartLoginContext startContext )
@@ -654,15 +641,15 @@ namespace CK.AspNet.Auth
             {
                 returnUrl = context.ReturnUri;
             }
-            context.Properties.Items.TryGetValue( "WFA-C", out var c );
-            context.Properties.Items.TryGetValue( "WFA-D", out var d );
+            context.Properties.Items.TryGetValue( "WFA-C", out var currentAuth );
+            context.Properties.Items.TryGetValue( "WFA-D", out var extraData );
 
-            FrontAuthenticationInfo initialAuth = c == null
+            FrontAuthenticationInfo initialAuth = currentAuth == null
                                         ? new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId ), false )
-                                        : UnprotectAuthenticationInfo( context.HttpContext, c );
-            List<KeyValuePair<string, StringValues>> userData = d == null
+                                        : UnprotectAuthenticationInfo( context.HttpContext, currentAuth );
+            List<KeyValuePair<string, StringValues>> userData = extraData == null
                                                                 ? new List<KeyValuePair<string, StringValues>>()
-                                                                : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, d );
+                                                                : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, extraData );
             string callingScheme = context.Scheme.Name;
             object payload = _loginService.CreatePayload( context.HttpContext, monitor, callingScheme );
             payloadConfigurator( (T)payload );
@@ -821,6 +808,48 @@ namespace CK.AspNet.Auth
                 ctx.SetError( ex );
             }
             return u;
+        }
+    }
+
+    class ServerKeyProvider
+    {
+        static readonly TimeSpan AutoRefreshProtected = TimeSpan.FromHours( 2 );
+        static readonly byte[] ConstantKey = Encoding.ASCII.GetBytes( "Cogito ergo sum." );
+
+        readonly IDataProtector? _protector;
+        DateTime _nextRefresh;
+        string _key;
+
+        public ServerKeyProvider( IDataProtector rootProtector, string realmConfiguration )
+        {
+            if( realmConfiguration.StartsWith( "UseDataProtector", StringComparison.OrdinalIgnoreCase ) )
+            {
+                Debug.Assert( "UseDataProtector".Length == 16 );
+                var purpose = realmConfiguration.Length > 16 ? realmConfiguration.Substring( 16 ) : "CK.DB.Auth";
+                _protector = rootProtector.CreateProtector( purpose );
+                _key = CreateProtectedKey( DateTime.UtcNow );
+            }
+            else
+            {
+                _key = realmConfiguration;
+            }
+        }
+
+        public string GetKey()
+        {
+            if( _protector != null )
+            {
+                var now = DateTime.UtcNow;
+                if( now > _nextRefresh ) return CreateProtectedKey( now );
+            }
+            return _key;
+        }
+
+        string CreateProtectedKey( in DateTime now )
+        {
+            Debug.Assert( _protector != null );
+            _nextRefresh = now + AutoRefreshProtected;
+            return _key = Convert.ToBase64String( _protector.Protect( ConstantKey ) );
         }
     }
 }
