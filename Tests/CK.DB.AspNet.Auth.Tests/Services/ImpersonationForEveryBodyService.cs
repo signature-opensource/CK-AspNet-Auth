@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
-    class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
+    public class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
     {
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IAuthenticationDatabaseService _db;

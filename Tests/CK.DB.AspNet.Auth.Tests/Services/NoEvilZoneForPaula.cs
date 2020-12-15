@@ -9,7 +9,7 @@ namespace CK.DB.AspNet.Auth.Tests
     /// <summary>
     /// Client calls login with userData that contains a Zone.
     /// </summary>
-    class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
+    public class NoEvilZoneForPaula : IWebFrontAuthValidateLoginService
     {
         public Task ValidateLoginAsync( IActivityMonitor monitor, IUserInfo loggedInUser, IWebFrontAuthValidateLoginContext context )
         {
