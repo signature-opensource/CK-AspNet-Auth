@@ -1,14 +1,14 @@
-﻿<Project>
+<Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>14.0.2--0062-develop</CKDatabaseVersion>
-    <CKDBVersion>9.0.2--0049-develop</CKDBVersion>
-    <CKActivityMonitorVersion>13.3.1--0016-develop</CKActivityMonitorVersion>
+    <CKDatabaseVersion>14.0.2--0064-develop</CKDatabaseVersion>
+    <CKDBVersion>9.0.2--0051-develop</CKDBVersion>
+    <CKActivityMonitorVersion>13.3.1--0018-develop</CKActivityMonitorVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
-    <CKAspNetVersion>5.3.2--0015-develop</CKAspNetVersion>
-    <CKAuthAbstractionsVersion>0.10.1--0016-develop</CKAuthAbstractionsVersion>
-    <CKAspNetTesterVersion>3.1.2--0006-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>9.0.2--0048-develop</CKDBUserUserPasswordVersion>
+    <CKAspNetVersion>5.3.2--0017-develop</CKAspNetVersion>
+    <CKAuthAbstractionsVersion>0.10.1--0017-develop</CKAuthAbstractionsVersion>
+    <CKAspNetTesterVersion>3.1.2--0007-develop</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>9.0.2--0050-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
@@ -77,7 +77,6 @@
     </ItemGroup>
   </Target>
   <!--</GenerateDocumentation>-->
-
   <!--<SourceLinkDebuggingWorkaround>: See  https://github.com/dotnet/sdk/issues/1458#issuecomment-695119194 -->
   <PropertyGroup Condition=" '$(GenerateDocumentationFile)' == '' And '$(IsInTestsFolder)' != 'true' And ('$(ContinuousIntegrationBuild)' == 'true' Or '$(Configuration)' == 'Release') ">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
