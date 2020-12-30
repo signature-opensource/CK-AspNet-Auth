@@ -36,6 +36,7 @@ describe('AuthService', function() {
         unsafeActualUser: anonymous,
         expires: undefined,
         criticalExpires: undefined,
+        deviceId:"",
         isImpersonated: false,
         level: AuthLevel.None
     };

@@ -31,16 +31,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( configureServices: services =>
-                    {
-                        // In Net461, the StObjMap is done on this /bin: ImpersonationForEverybodyService is automatically
-                        // registered in the DI container.
-                        // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: ImpersonationForEverybodyService
-                        // is not automatically registered.
-#if !NET461
-                        services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
-#endif
-                    } ) )
+            using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthImpersonationService,ImpersonationForEverybodyService>() ) )
             {
                 int idAlbert = await SetupUser( ctx, "Albert", "pass", user, basic );
                 int idPaula = await SetupUser( ctx, "Paula", "pass", user, basic );

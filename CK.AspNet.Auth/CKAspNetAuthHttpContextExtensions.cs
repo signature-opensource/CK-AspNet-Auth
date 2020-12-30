@@ -20,9 +20,8 @@ namespace Microsoft.AspNetCore.Http
         /// <returns>Never null, can be <see cref="IAuthenticationInfoType.None"/>.</returns>
         static public IAuthenticationInfo WebFrontAuthenticate( this HttpContext @this )
         {
-            IAuthenticationInfo authInfo = null;
-            object o;
-            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out o ) )
+            IAuthenticationInfo? authInfo = null;
+            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out var o ) )
             {
                 authInfo = ((FrontAuthenticationInfo)o).Info;
             }

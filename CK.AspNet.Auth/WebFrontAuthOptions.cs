@@ -13,6 +13,8 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Options for <see cref="WebFrontAuthService"/>.
+    /// Note that WebFrountAuth uses the Data protection API (https://docs.microsoft.com/en-us/aspnet/core/security/data-protection/introduction)
+    /// to manage secrets: an important part of the security configuration is delegated to this API.
     /// </summary>
     public class WebFrontAuthOptions : AuthenticationSchemeOptions
     {
@@ -74,7 +76,7 @@ namespace CK.AspNet.Auth
         /// <see cref="System.Security.Claims.ClaimsIdentity.Actor"/>.
         /// </para>
         /// <para>
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </para>
         /// </summary>
         public bool UseFullClaimsPrincipalOnAuthenticate { get; set; }
@@ -84,7 +86,7 @@ namespace CK.AspNet.Auth
         /// Note that the long term cookie uses <see cref="CookieOptions.Secure"/> sets to false since it 
         /// does not require any protection.
         /// Defaults to <see cref="CookieSecurePolicy.SameAsRequest"/>.
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </summary>
         public CookieSecurePolicy CookieSecurePolicy { get; set; }
 
@@ -103,7 +105,7 @@ namespace CK.AspNet.Auth
         /// are no more "F5 resilient", this can be used for pure API implementations.
         /// </para>
         /// <para>
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </para>
         /// </summary>
         public AuthenticationCookieMode CookieMode { get; set; }
@@ -128,7 +130,7 @@ namespace CK.AspNet.Auth
         /// new schemes into account.
         /// </para>
         /// </summary>
-        public List<string> AvailableSchemes { get; set; }
+        public List<string>? AvailableSchemes { get; set; }
 
         /// <summary>
         /// Gets or sets the refresh validation time. 
@@ -143,14 +145,30 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets or sets the http header name. Defaults to "Authorization".
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </summary>
         public string BearerHeaderName { get; set; } = "Authorization";
+
+        /// <summary>
+        /// Gets or sets the server key that will be used to encrypt the tokens and cookies.
+        /// Can be any secret (that may be shared between machines), but the safest and easiest way
+        /// to configure this is to let the default that is "UseDataProtector".
+        /// <para>
+        /// This uses the current <see cref="IDataProtectionProvider"/> to create a <see cref="IDataProtector"/> for
+        /// the purpose "CK.DB.Auth" that ciphers a constant data to obtain the server key.
+        /// </para>
+        /// <para>
+        /// To create an independent "authentication realm", it's enough to append a name (after a colon) that overrides
+        /// the "CK.DB.Auth" name: "UseDataProtector:My specific kingdom".
+        /// </para>
+        /// This cannot be changed dynamically.
+        /// </summary>
+        public string Realm { get; set; } = "UseDataProtector";
 
         /// <summary>
         /// Defines the initial critical time span when logged in through each schemes.
         /// It is null by default: no schemes elevate a critical authentication level.
         /// </summary>
-        public IDictionary<string, TimeSpan> SchemesCriticalTimeSpan { get; set; }
+        public IDictionary<string, TimeSpan>? SchemesCriticalTimeSpan { get; set; }
     }
 }

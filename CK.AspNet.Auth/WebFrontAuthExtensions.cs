@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="this">This Authentication builder.</param>
         /// <param name="configure">Configuration action.</param>
         /// <returns>Authentication builder to enable fluent syntax.</returns>
-        public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this, Action<WebFrontAuthOptions> configure )
+        public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this, Action<WebFrontAuthOptions>? configure )
         {
             @this.Services.AddSingleton<WebFrontAuthService>();
             @this.AddScheme<WebFrontAuthOptions, WebFrontAuthHandler>( WebFrontAuthOptions.OnlyAuthenticationScheme, "Web Front Authentication", configure );

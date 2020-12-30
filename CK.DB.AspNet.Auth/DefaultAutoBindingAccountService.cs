@@ -54,16 +54,15 @@ namespace CK.DB.AspNet.Auth
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             var auth = context.InitialAuthentication;
-            if( auth.IsNullOrNone() ) throw new ArgumentNullException( nameof( context.InitialAuthentication ) );
             if( auth.IsImpersonated ) throw new ArgumentException( "Invalid impersonation.", nameof( context.InitialAuthentication ) );
 
-            if( auth.Level < AuthLevel.Normal )
-            {
-                return context.SetError( "User.AccountBinding.AtLeastNormalLevelRequired", "User must be logged at least in Normal level." );
-            }
             if( RequiresCriticalLevel && auth.Level != AuthLevel.Critical )
             {
                 return context.SetError( "User.AccountBinding.CriticalLevelRequired", "User must be logged in Critical level." );
+            }
+            if( auth.Level < AuthLevel.Normal )
+            {
+                return context.SetError( "User.AccountBinding.AtLeastNormalLevelRequired", "User must be logged at least in Normal level." );
             }
             IGenericAuthenticationProvider p = _authPackage.FindRequiredProvider( context.CallingScheme );
             var ctx = context.HttpContext.RequestServices.GetRequiredService<ISqlCallContext>();

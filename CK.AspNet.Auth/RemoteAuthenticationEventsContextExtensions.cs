@@ -40,15 +40,14 @@ namespace CK.AspNet.Auth
         /// </param>
         /// <param name="errorText">When null, <see cref="RemoteFailureContext.Failure"/>'s <see cref="Exception.Message"/> is used.</param>
         /// <returns>The awaitable.</returns>
-        public static Task WebFrontAuthRemoteFailureAsync( this RemoteFailureContext f, string errorId = "RemoteFailure", string errorText = null )
+        public static Task WebFrontAuthRemoteFailureAsync( this RemoteFailureContext f, string errorId = "RemoteFailure", string? errorText = null )
         {
             f.HandleResponse();
             if( errorText == null ) errorText = f.Failure.Message;
             var authService = f.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-            string initialScheme = f.Properties.Items["WFA-S"];
-            f.Properties.Items.TryGetValue( "WFA-R", out var returnUrl );
-            f.Properties.Items.TryGetValue( "WFA-O", out var callerOrigin );
-            return authService.SendRemoteAuthenticationError( f.HttpContext, returnUrl, callerOrigin, errorId, errorText, initialScheme );
+            WebFrontAuthHandler.ExtractClearWFAData( f.Properties, out _, out var deviceId, out var initialScheme, out var returnUrl, out var callerOrigin );
+            return authService.SendRemoteAuthenticationError( f.HttpContext, deviceId, returnUrl, callerOrigin, errorId, errorText, initialScheme );
         }
+
     }
 }

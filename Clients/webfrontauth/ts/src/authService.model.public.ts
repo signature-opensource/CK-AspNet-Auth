@@ -69,6 +69,12 @@ export interface IAuthenticationInfo<T extends IUserInfo = IUserInfo> {
     readonly criticalExpires?: Date;
     
     /** 
+     * Gets the device identifier. 
+     * Thhe empty string is the default (unset, unknown) device identifier.
+     */
+    readonly deviceId: string;
+    
+    /** 
      * Gets whether an impersonation is active here: unsafeUser is not the same as the unsafeActualUser.
      * Note that user and actualUser may be both the Anonymous user if level is AuthLevel.None 
      * or AuthLevel.Unsafe.

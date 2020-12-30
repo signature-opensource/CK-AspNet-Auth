@@ -26,6 +26,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// No authentication cookie is set (and no challenge is done).
+        /// This also forces the <see cref="WebFrontAuthOptions.UseLongTermCookie"/> to be false: this ensures that
+        /// the long term cookie is also removed.
         /// </summary>
         None = 2
 

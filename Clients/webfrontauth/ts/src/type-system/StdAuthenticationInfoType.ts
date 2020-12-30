@@ -40,7 +40,8 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         const actualUser = this._typeSystem.userInfo.fromJson(o[StdKeyType.actualUser], availableSchemes);
         const expires = this.parseOptionalDate(o[StdKeyType.expiration]);
         const criticalExpires = this.parseOptionalDate(o[StdKeyType.criticalExpiration]);
-        return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires);
+        const deviceId = o[StdKeyType.deviceId] as string;
+        return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires, deviceId);
     }
 
     private parseOptionalDate(s: string): Date|undefined {

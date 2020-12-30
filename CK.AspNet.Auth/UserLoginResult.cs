@@ -63,7 +63,7 @@ namespace CK.AspNet.Auth
         /// Gets the user information.
         /// Null if for any reason, login failed.
         /// </summary>
-        public IUserInfo UserInfo { get; }
+        public IUserInfo? UserInfo { get; }
 
         /// <summary>
         /// Gets whether the login succeeded.
@@ -87,6 +87,6 @@ namespace CK.AspNet.Auth
         /// Gets a string describing the reason of a login failure.
         /// Null on success.
         /// </summary>
-        public string LoginFailureReason { get; }
+        public string? LoginFailureReason { get; }
     }
 }

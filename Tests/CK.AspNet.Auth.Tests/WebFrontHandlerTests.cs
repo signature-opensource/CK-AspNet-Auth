@@ -26,30 +26,6 @@ namespace CK.AspNet.Auth.Tests
         const string tokenExplainUri = "/.webfront/token";
 
         [Test]
-        public async Task calling_c_refresh_from_scrath_returns_null_info_and_token()
-        {
-            using( var s = new AuthServer() )
-            {
-                HttpResponseMessage response = await s.Client.Get( refreshUri );
-                response.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() );
-            }
-        }
-
-        [Test]
-        public async Task calling_c_refresh_from_scrath_with_providers_query_parameter_returns_null_info_and_null_token_but_the_array_of_providers_name()
-        {
-            using( var s = new AuthServer() )
-            {
-                HttpResponseMessage response = await s.Client.Get( refreshUri + "?schemes" );
-                response.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() { Schemes = new[] { "Basic" } } );
-            }
-        }
-
-        [Test]
         public async Task a_successful_basic_login_returns_valid_info_and_token()
         {
             using( var s = new AuthServer() )
@@ -156,9 +132,10 @@ namespace CK.AspNet.Auth.Tests
                 string badToken = firstLogin.Token + 'B';
                 s.Client.Token = badToken;
                 RefreshResponse c = await s.CallRefreshEndPoint();
-                c.Info.Should().BeNull();
+                c.Info.Level.Should().Be( AuthLevel.None );
+                c.Info.DeviceId.Should().Be( String.Empty );
                 HttpResponseMessage tokenRead = await s.Client.Get( tokenExplainUri );
-                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":null,\"rememberMe\":false}" );
+                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":{\"user\":{\"id\":0,\"name\":\"\",\"schemes\":[]}},\"rememberMe\":false}" );
             }
         }
 
@@ -209,8 +186,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
-                c.Info.Should().BeNull();
-                c.Token.Should().BeNull();
+                c.Info.Level.Should().Be( AuthLevel.None );
             }
         }
 
