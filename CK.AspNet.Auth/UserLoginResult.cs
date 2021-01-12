@@ -25,7 +25,7 @@ namespace CK.AspNet.Auth
         /// corrected by registering the user for the provider.
         /// This can be true only on failure otherwise an argument exception is thrown.
         /// </param>
-        public UserLoginResult( IUserInfo info, int failureCode, string failureReason, bool unregisteredUser )
+        public UserLoginResult( IUserInfo? info, int failureCode, string failureReason, bool unregisteredUser )
         {
             if( info == null || info.UserId == 0 )
             {
