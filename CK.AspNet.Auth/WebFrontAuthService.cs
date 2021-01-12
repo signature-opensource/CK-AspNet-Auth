@@ -50,7 +50,6 @@ namespace CK.AspNet.Auth
         readonly AuthenticationInfoSecureDataFormat _tokenFormat;
         readonly AuthenticationInfoSecureDataFormat _cookieFormat;
         readonly ExtraDataSecureDataFormat _extraDataFormat;
-        readonly ServerKeyProvider _serverKeyProvider;
         readonly string _cookiePath;
         readonly string _bearerHeaderName;
         readonly CookieSecurePolicy _cookiePolicy;
@@ -94,7 +93,6 @@ namespace CK.AspNet.Auth
             var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
             var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
             var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
-            _serverKeyProvider = new ServerKeyProvider( dataProtector, initialOptions.Realm );
             _genericProtector = dataProtector;
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
@@ -591,9 +589,7 @@ namespace CK.AspNet.Auth
         string? GetTlsTokenBindingAndServerKey( HttpContext c )
         {
             var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
-            return binding == null
-                    ? _serverKeyProvider.GetKey()
-                    : Convert.ToBase64String( binding ) + _serverKeyProvider.GetKey();
+            return binding == null ? null : Convert.ToBase64String( binding );
         }
 
         internal async Task OnHandlerStartLogin( IActivityMonitor m, WebFrontAuthStartLoginContext startContext )
@@ -808,48 +804,6 @@ namespace CK.AspNet.Auth
                 ctx.SetError( ex );
             }
             return u;
-        }
-    }
-
-    class ServerKeyProvider
-    {
-        static readonly TimeSpan AutoRefreshProtected = TimeSpan.FromHours( 2 );
-        static readonly byte[] ConstantKey = Encoding.ASCII.GetBytes( "Cogito ergo sum." );
-
-        readonly IDataProtector? _protector;
-        DateTime _nextRefresh;
-        string _key;
-
-        public ServerKeyProvider( IDataProtector rootProtector, string realmConfiguration )
-        {
-            if( realmConfiguration.StartsWith( "UseDataProtector", StringComparison.OrdinalIgnoreCase ) )
-            {
-                Debug.Assert( "UseDataProtector".Length == 16 );
-                var purpose = realmConfiguration.Length > 16 ? realmConfiguration.Substring( 16 ) : "CK.DB.Auth";
-                _protector = rootProtector.CreateProtector( purpose );
-                _key = CreateProtectedKey( DateTime.UtcNow );
-            }
-            else
-            {
-                _key = realmConfiguration;
-            }
-        }
-
-        public string GetKey()
-        {
-            if( _protector != null )
-            {
-                var now = DateTime.UtcNow;
-                if( now > _nextRefresh ) return CreateProtectedKey( now );
-            }
-            return _key;
-        }
-
-        string CreateProtectedKey( in DateTime now )
-        {
-            Debug.Assert( _protector != null );
-            _nextRefresh = now + AutoRefreshProtected;
-            return _key = Convert.ToBase64String( _protector.Protect( ConstantKey ) );
         }
     }
 }
