@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>15.0.0</CKDatabaseVersion>
-    <CKDBVersion>10.0.0</CKDBVersion>
-    <CKActivityMonitorVersion>13.3.1</CKActivityMonitorVersion>
+    <CKDatabaseVersion>15.0.1</CKDatabaseVersion>
+    <CKDBVersion>10.0.1</CKDBVersion>
+    <CKActivityMonitorVersion>13.3.2</CKActivityMonitorVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
-    <CKAspNetVersion>6.0.0</CKAspNetVersion>
+    <CKAspNetVersion>6.0.1</CKAspNetVersion>
     <CKAuthAbstractionsVersion>1.0.0</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>3.1.2</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>10.0.0</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>10.0.1</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
@@ -58,7 +58,7 @@
     <PackageIcon>PackageIcon.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)PackageIcon.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)PackageIcon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
   <!--</StandardProperties>-->
   <!--<ZeroVersion>: When not building from the CI, assemblies always use the ZeroVersion (see CSemVer.InformationalVersion).-->

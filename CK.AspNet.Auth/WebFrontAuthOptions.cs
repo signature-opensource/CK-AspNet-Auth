@@ -150,22 +150,6 @@ namespace CK.AspNet.Auth
         public string BearerHeaderName { get; set; } = "Authorization";
 
         /// <summary>
-        /// Gets or sets the server key that will be used to encrypt the tokens and cookies.
-        /// Can be any secret (that may be shared between machines), but the safest and easiest way
-        /// to configure this is to let the default that is "UseDataProtector".
-        /// <para>
-        /// This uses the current <see cref="IDataProtectionProvider"/> to create a <see cref="IDataProtector"/> for
-        /// the purpose "CK.DB.Auth" that ciphers a constant data to obtain the server key.
-        /// </para>
-        /// <para>
-        /// To create an independent "authentication realm", it's enough to append a name (after a colon) that overrides
-        /// the "CK.DB.Auth" name: "UseDataProtector:My specific kingdom".
-        /// </para>
-        /// This cannot be changed dynamically.
-        /// </summary>
-        public string Realm { get; set; } = "UseDataProtector";
-
-        /// <summary>
         /// Defines the initial critical time span when logged in through each schemes.
         /// It is null by default: no schemes elevate a critical authentication level.
         /// </summary>
