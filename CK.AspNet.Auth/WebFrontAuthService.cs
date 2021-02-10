@@ -23,7 +23,7 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Sealed implementation of the actual authentication service.
-    /// This implementation is registered as a singleton by <see cref="Microsoft.Extensions.DependencyInjection.WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />.
+    /// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />.
     /// </summary>
     public sealed class WebFrontAuthService
     {
@@ -69,7 +69,7 @@ namespace CK.AspNet.Auth
         /// <param name="validateLoginService">Optional service that validates logins.</param>
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
-        /// <param name="dynamicScopeProvider">Optional service to suport scope augmentation.</param>
+        /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -97,6 +97,7 @@ namespace CK.AspNet.Auth
             _cookieFormat = cookieFormat;
             _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
+            Debug.Assert( WebFrontAuthHandler._cSegmentPath.ToString() == "/c" );
             _cookiePath = initialOptions.EntryPath + "/c/";
             _bearerHeaderName = initialOptions.BearerHeaderName;
             CookieMode = initialOptions.CookieMode;
@@ -105,7 +106,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets the cookie mode. This is not a dynamic option: this is the value
-        /// captured when this service has been instanciated. 
+        /// captured when this service has been instantiated. 
         /// </summary>
         public AuthenticationCookieMode CookieMode { get; }
 
@@ -114,10 +115,10 @@ namespace CK.AspNet.Auth
         /// <see cref="IAuthenticationInfo.CheckExpiration(DateTime)"/> is called with <see cref="DateTime.UtcNow"/>.
         /// This is to be used with caution: the authentication token should never be sent to any client and should be
         /// used only for secure server to server temporary authentication.
-        /// The authentication token is signed with the token binding protocol (when on htpps): it is valid only for the
+        /// The authentication token is signed with the token binding protocol (when on https): it is valid only for the
         /// provided HttpContext.
         /// </summary>
-        /// <param name="c">The Httpcontext.</param>
+        /// <param name="c">The HttpContext.</param>
         /// <param name="info">The authentication info for which an authentication token must be obtained.</param>
         /// <returns>The url-safe secured authentication token string.</returns>
         public string UnsafeGetAuthenticationToken( HttpContext c, IAuthenticationInfo info )
@@ -131,7 +132,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Simple helper that calls <see cref="UnsafeGetAuthenticationToken(HttpContext, IAuthenticationInfo)"/>.
         /// </summary>
-        /// <param name="c">The Httpcontext.</param>
+        /// <param name="c">The HttpContext.</param>
         /// <param name="userId">The user identifier.</param>
         /// <param name="userName">The user name.</param>
         /// <param name="validity">The validity time span: the shorter the better.</param>
@@ -261,29 +262,25 @@ namespace CK.AspNet.Auth
                     }
                     else
                     {
-                        // We have nothing: : we create a new unauthenticated info with a new device identifier.
-                        var deviceId = CreateNewDeviceId();
-                        var info = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
-                        fAuth = new FrontAuthenticationInfo( info, rememberMe: false );
-                        // We set the long lived cookie if possible: even if the caller doesn't handle the "CK-Anon-Device-Token"
-                        // the device identifier will be de facto persisted.
-                        SetCookies( c, fAuth );
+                        // We have nothing:
+                        // - If we could have something (either because CookieMode is AuthenticationCookieMode.RootPath or the request
+                        // is inside the /.webfront/c), then we create a new unauthenticated info with a new device identifier.
+                        // - If we are outside of the cookie context, we do nothing (otherwise we'll reset the current authentication).
+                        if( CookieMode == AuthenticationCookieMode.RootPath
+                            || (CookieMode == AuthenticationCookieMode.WebFrontPath
+                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase ) ) )
+                        {
+                            var deviceId = CreateNewDeviceId();
+                            var info = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
+                            fAuth = new FrontAuthenticationInfo( info, rememberMe: false );
+                            // We set the long lived cookie if possible. The device identifier will be de facto persisted.
+                            SetCookies( c, fAuth );
+                        }
+                        else
+                        {
+                            fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, rememberMe: false );
+                        }
                     }
-                    // This seems to be useless... as long as the client is a WebFrontAuth client.
-                    // Its first request is to retrieve any existing authentication (from cookies), so it will 
-                    // get and handle/store the anonymous device identifier.
-                    //
-                    //// Non-bearer cases: wherever the info comes from, give a chance to an anoymous device
-                    //// identifier to live longer than this request: if the caller is aware of this "CK-Anon-Device-Token"
-                    //// header it can resend the token to obtain a kind of "anonymous device identification".
-                    //// Note: a non anonymous authentication token MUST never be returned to the caller like this one.
-                    ////       We are doing this here ONLY for anonymous.
-                    //if( fAuth.Info.Level == AuthLevel.None )
-                    //{
-                    //    // This "magic string" is here, only here, and must remain only here: defining a const would
-                    //    // be useless and less maintainable.
-                    //    c.Response.Headers.Add( "CK-Anon-Device-Token", ProtectAuthenticationInfo( c, fAuth ) );
-                    //}
                 }
                 // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
                 if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
