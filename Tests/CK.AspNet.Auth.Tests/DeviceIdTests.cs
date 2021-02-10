@@ -71,7 +71,7 @@ namespace CK.AspNet.Auth.Tests
                 if( callRefreshFirst )
                 {
                     var refreshResponse = await s.CallRefreshEndPointAsync();
-                    refreshResponse.Info.User.UserName.Should().Be( "Albert" );
+                    refreshResponse.Info.Level.Should().Be( CK.Auth.AuthLevel.None );
                     var cookies = s.ReadClientCookies();
                     cookies.AuthCookie.Should().BeNull();
                     cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
