@@ -35,7 +35,7 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
      * @param deviceId The new device identifier.
      * @param utcNow The date to consider to challenge expirations.
      */
-    setDeviceId(deviceId: string, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo>
+    setDeviceId(deviceId: string, utcNow?: Date): IAuthenticationInfoImpl<T>
 
     /**
      * Returns a new StdAuthenticationInfo where the user may no more be the actualUser.

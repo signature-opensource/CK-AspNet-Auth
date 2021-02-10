@@ -57,10 +57,12 @@ describe('AuthService', function () {
 
     beforeEach(async function () {
         serverResponse = emptyResponse;
+        // logout fills the local storage (in 'full' mode).
         await authService.logout(true);
+        // We cleanup the localstorage AFTER logout to ensure tests isolation.
+        localStorage.clear();
         serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
         await authService.refresh( false, true );
-        localStorage.clear();
     });
 
     afterAll(function () {
@@ -156,6 +158,8 @@ describe('AuthService', function () {
             serverResponse = new ResponseBuilder()
                 .withLoginFailure({ loginFailureCode: 4, loginFailureReason: 'Invalid credentials.' })
                 .build();
+
+
             await authService.basicLogin('', '');
 
             expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).toBe(true);

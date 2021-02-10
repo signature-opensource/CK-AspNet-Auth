@@ -316,7 +316,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._token = '';
         this._refreshable = false;
         if( authInfo ) this._authenticationInfo = authInfo;
-        else this._authenticationInfo = this._authenticationInfo.setExpires();
+        else if( this._rememberMe ) {
+            this._authenticationInfo = this._authenticationInfo.setExpires();
+        }
+        else {
+            const deviceId = this._authenticationInfo.deviceId;
+            this._authenticationInfo = this._typeSystem.authenticationInfo.none.setDeviceId( deviceId );
+        }
         this.clearTimeouts();
         this.onChange();
     }
