@@ -49,6 +49,33 @@ namespace CK.AspNet.Auth.Tests
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
+                    app.Use( prev =>
+                    {
+                        return async ctx =>
+                        {
+                            if( ctx.Request.Path.StartsWithSegments( "/echo", out var remaining ) )
+                            {
+                                var echo = remaining.ToString();
+                                if( ctx.Request.QueryString.HasValue ) echo += " => " + ctx.Request.QueryString;
+
+                                if( remaining.StartsWithSegments( "/error", out var errorCode ) && Int32.TryParse( errorCode, out var error ) )
+                                {
+                                    ctx.Response.StatusCode = error;
+                                    echo += $" (StatusCode set to '{error}')";
+                                }
+                                if( ctx.Request.Query.ContainsKey( "userName" ) )
+                                {
+                                    var authInfo = Microsoft.AspNetCore.Http.CKAspNetAuthHttpContextExtensions.WebFrontAuthenticate( ctx );
+                                    echo += $" (UserName: '{authInfo.User.UserName}')";
+                                }
+                                await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
+                            }
+                            else
+                            {
+                                await prev( ctx );
+                            }
+                        };
+                    } );
                     configureApplication?.Invoke( app );
                 }, builder => builder.UseScopedHttpContext()
             ).UseMonitoring();
@@ -69,7 +96,7 @@ namespace CK.AspNet.Auth.Tests
         public TestServerClient Client { get; }
 
 
-        public async Task<RefreshResponse> LoginAlbertViaBasicProvider( bool useGenericWrapper = false, bool rememberMe = true )
+        public async Task<RefreshResponse> LoginAlbertViaBasicProviderAsync( bool useGenericWrapper = false, bool rememberMe = true )
         {
             string uri;
             string body;
@@ -141,9 +168,57 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        public async Task<RefreshResponse> CallRefreshEndPoint()
+        public (string? AuthCookie, JObject? LTCookie, string? LTDeviceId, string? LTUserId, string? LTUserName) ReadClientCookies()
         {
-            HttpResponseMessage tokenRefresh = await Client.Get( RefreshUri );
+            (bool HasWFACookie, JObject LTCookie, string? LTDeviceId, string? LTUserId) result;
+
+            var mode = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode;
+            System.Net.CookieCollection? all = null;
+            switch( mode )
+            {
+                case AuthenticationCookieMode.WebFrontPath:
+                    {
+                        all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
+                        break;
+                    }
+                case AuthenticationCookieMode.RootPath:
+                    {
+                        all = Client.Cookies.GetCookies( Server.BaseAddress );
+                        break;
+                    }
+                default: Debug.Assert( mode == AuthenticationCookieMode.None );
+                         break;
+            }
+
+            string? authCookie = all?.SingleOrDefault( c => c.Name == WebFrontAuthService.AuthCookieName )?.Value;
+            JObject ltCookie = null;
+            string? ltDeviceId = null;
+            string? ltUserId = null;
+            string? ltUserName = null;
+
+            var ltCookieStr = all?.SingleOrDefault( c => c.Name == WebFrontAuthService.UnsafeCookieName )?.Value;
+            if( ltCookieStr != null )
+            {
+                ltCookieStr = HttpUtility.UrlDecode( ltCookieStr );
+                ltCookie = JObject.Parse( ltCookieStr );
+                ltDeviceId = (string)ltCookie[StdAuthenticationTypeSystem.DeviceIdKeyType];
+                ltUserId = (string)ltCookie[StdAuthenticationTypeSystem.UserIdKeyType];
+                ltUserName = (string)ltCookie[StdAuthenticationTypeSystem.UserNameKeyType];
+            }
+            return (authCookie, ltCookie, ltDeviceId, ltUserId, ltUserName );
+        }
+
+        public async Task<RefreshResponse> CallRefreshEndPointAsync( bool withVersion = false, bool withSchemes = false )
+        {
+            var url = RefreshUri;
+            if( withVersion && withSchemes )
+            {
+                url += "?version&schemes";
+            }
+            else if( withVersion ) url += "?version";
+            else if( withSchemes ) url += "?schemes";
+
+            HttpResponseMessage tokenRefresh = await Client.Get( url );
             tokenRefresh.EnsureSuccessStatusCode();
             return RefreshResponse.Parse( TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
         }

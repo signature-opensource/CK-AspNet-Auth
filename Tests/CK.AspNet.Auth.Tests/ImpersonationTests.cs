@@ -22,7 +22,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
 
-                await s.LoginAlbertViaBasicProvider();
+                await s.LoginAlbertViaBasicProviderAsync();
                 m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
             }
@@ -39,7 +39,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
-                await s.LoginAlbertViaBasicProvider();
+                await s.LoginAlbertViaBasicProviderAsync();
                 m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = m.Content.ReadAsStringAsync().Result;
@@ -58,7 +58,7 @@ namespace CK.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                await s.LoginAlbertViaBasicProvider();
+                await s.LoginAlbertViaBasicProviderAsync();
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
                 m.EnsureSuccessStatusCode();
                 string content = m.Content.ReadAsStringAsync().Result;
@@ -77,7 +77,7 @@ namespace CK.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                await s.LoginAlbertViaBasicProvider();
+                await s.LoginAlbertViaBasicProviderAsync();
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 1e34 }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
@@ -101,7 +101,7 @@ namespace CK.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                await s.LoginAlbertViaBasicProvider();
+                await s.LoginAlbertViaBasicProviderAsync();
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, body );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
             }

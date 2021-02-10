@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests
 {
-    public partial class RememberMeTests
+    [TestFixture]
+    public class RememberMeTests
     {
 
         [TestCase( true, false )]
@@ -29,7 +30,7 @@ namespace CK.AspNet.Auth.Tests
                 }
             } ) )
             {
-                RefreshResponse auth = await s.LoginAlbertViaBasicProvider( useGenericWrapper, rememberMe );
+                RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
                 auth.Info.User.UserName.Should().Be( "Albert" );
                 auth.RememberMe.Should().Be( rememberMe );
                 var cookies = s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) );

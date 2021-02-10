@@ -315,7 +315,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         // Keep the current rememberMe configuration: this is the "local" disconnect. 
         this._token = '';
         this._refreshable = false;
-        this._authenticationInfo = authInfo || this._typeSystem.authenticationInfo.none;
+        if( authInfo ) this._authenticationInfo = authInfo;
+        else if( this._rememberMe ) {
+            this._authenticationInfo = this._authenticationInfo.setExpires();
+        }
+        else {
+            const deviceId = this._authenticationInfo.deviceId;
+            this._authenticationInfo = this._typeSystem.authenticationInfo.none.setDeviceId( deviceId );
+        }
         this.clearTimeouts();
         this.onChange();
     }

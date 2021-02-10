@@ -25,7 +25,7 @@ namespace CK.AspNet.Auth
     sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, IAuthenticationRequestHandler
     {
         readonly static CSemVer.SVersion _version = CSemVer.InformationalVersion.ReadFromAssembly(Assembly.GetExecutingAssembly() ).Version ?? CSemVer.SVersion.ZeroVersion;
-        readonly static PathString _cSegmentPath = "/c";
+        internal readonly static PathString _cSegmentPath = "/c";
 
         readonly WebFrontAuthService _authService;
         readonly IAuthenticationTypeSystem _typeSystem;

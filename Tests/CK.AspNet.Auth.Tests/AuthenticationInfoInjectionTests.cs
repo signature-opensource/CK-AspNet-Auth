@@ -52,7 +52,7 @@ namespace CK.AspNet.Auth.Tests
                  }
                ) )
             {
-                RefreshResponse r = await s.LoginAlbertViaBasicProvider();
+                RefreshResponse r = await s.LoginAlbertViaBasicProviderAsync();
                 s.Client.Token = r.Token;
                 var m = await s.Client.Get( "/TestAuth" );
                 m.StatusCode.Should().Be( HttpStatusCode.PaymentRequired );
