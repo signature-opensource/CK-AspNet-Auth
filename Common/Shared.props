@@ -2,13 +2,13 @@
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
     <CKDatabaseVersion>15.0.2--0015-develop</CKDatabaseVersion>
-    <CKDBVersion>10.0.2--0015-develop</CKDBVersion>
+    <CKDBVersion>10.0.2--0016-develop</CKDBVersion>
     <CKActivityMonitorVersion>13.3.3--0008-develop</CKActivityMonitorVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
     <CKAspNetVersion>6.0.2--0004-develop</CKAspNetVersion>
     <CKAuthAbstractionsVersion>1.0.1--0003-develop</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>3.1.3--0002-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>10.0.2--0012-develop</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>10.0.2--0013-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
