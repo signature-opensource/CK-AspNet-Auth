@@ -463,11 +463,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     /**
-     * Checking that url is the same as configuration to authorize the addition of the token.
-     * @param url url where add the bearer token.
+     * Checks whether calling the provided url requires the header bearer token to be added or not.
+     * Currently, only urls from the authentication endpoint should add the authentication token.
+     * The url must exactly starts with the authentication backend address.
+     * In the future, this may be extended to support other secure endpoints if needed.
+     * @param url The url to be checked.
      */
     public shouldSetToken(url : string) : boolean {
-        return url!.startsWith(this._configuration.webFrontAuthEndPoint);
+        if(!url) throw new Error("Url should not be null or undefined")
+        if(this._token != "") return false;
+        return url.startsWith(this._configuration.webFrontAuthEndPoint);
     }
 
     //#endregion
