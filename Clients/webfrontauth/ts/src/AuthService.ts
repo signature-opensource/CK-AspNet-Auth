@@ -13,7 +13,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _refreshable: boolean;
     private _availableSchemes: ReadonlyArray<string>;
     private _endPointVersion: string;
-    private _configuration: AuthServiceConfiguration;    
+    private _configuration: AuthServiceConfiguration;
     private _currentError?: IWebFrontAuthError;
 
     private _axiosInstance: AxiosInstance;
@@ -39,7 +39,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     /** Gets the current error if any. */
     public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
-    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }   
+    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this._popupDescriptor) { this._popupDescriptor = new PopupDescriptor(); }
@@ -163,8 +163,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private onIntercept(): (value: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig> {
         return (config: AxiosRequestConfig) => {
             if( this._token
-                && config.url 
-                && config.url.startsWith(this._configuration.webFrontAuthEndPoint) ) {
+                && this.shouldSetToken(config.url!) ) {
                     Object.assign(config.headers, { Authorization: `Bearer ${this._token}` });
             }
             return config;
@@ -214,20 +213,20 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 this.localDisconnect();
             }
         } catch (error) {
-            
+
             // This should not happen too often nor contain dangerous secrets...
             console.log( 'Exception while sending '+entryPoint+' request.', error );
-            
+
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
                 // Connection issue.
-                if( entryPoint !== 'impersonate' 
+                if( entryPoint !== 'impersonate'
                     && entryPoint !== 'logout' ) {
 
                     const storage = this._configuration.useLocalStorage( entryPoint );
                     if( storage ) {
-                        const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( storage, 
-                                                                                        this._configuration.webFrontAuthEndPoint, 
+                        const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( storage,
+                                                                                        this._configuration.webFrontAuthEndPoint,
                                                                                         this._availableSchemes );
                         if( auth )
                         {
@@ -291,7 +290,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._token = r.token ? r.token : '';
         this._refreshable = r.refreshable ? r.refreshable : false;
         this._rememberMe = r.rememberMe ? r.rememberMe : false;
-        
+
         const info = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes);
         if( info ) this._authenticationInfo = info;
         else this._authenticationInfo = this._typeSystem.authenticationInfo.none;
@@ -302,17 +301,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
         if( this._configuration.localStorage )
         {
-            this._typeSystem.authenticationInfo.saveToLocalStorage( 
-                    this._configuration.localStorage, 
-                    this._configuration.webFrontAuthEndPoint, 
-                    this._authenticationInfo, 
+            this._typeSystem.authenticationInfo.saveToLocalStorage(
+                    this._configuration.localStorage,
+                    this._configuration.webFrontAuthEndPoint,
+                    this._authenticationInfo,
                     this._availableSchemes );
             }
         this.onChange();
     }
 
     private localDisconnect( authInfo?: IAuthenticationInfoImpl<T> ): void {
-        // Keep the current rememberMe configuration: this is the "local" disconnect. 
+        // Keep the current rememberMe configuration: this is the "local" disconnect.
         this._token = '';
         this._refreshable = false;
         if( authInfo ) this._authenticationInfo = authInfo;
@@ -356,11 +355,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
      * Refreshes the current authentication.
-     * @param full True to force a full refresh of the authentication: the server will 
+     * @param full True to force a full refresh of the authentication: the server will
      * challenge again the authentication against its backend.
-     * @param requestSchemes True to force a refresh of the availableSchemes (this is automatically 
-     * true when current availableSchemes is empty). 
-     * @param requestVersion True to force a refresh of the version (this is automatically 
+     * @param requestSchemes True to force a refresh of the availableSchemes (this is automatically
+     * true when current availableSchemes is empty).
+     * @param requestVersion True to force a refresh of the version (this is automatically
      * true when current endPointVersion is the empty string).
      */
     public async refresh(full: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false): Promise<void> {
@@ -386,17 +385,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public async logout(full: boolean = false): Promise<void> {
         this._token = '';
-        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseHandling */ true);   
+        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseHandling */ true);
         if( full ) {
             if( this._configuration.localStorage ) {
-                this._typeSystem.authenticationInfo.saveToLocalStorage( 
-                    this._configuration.localStorage, 
+                this._typeSystem.authenticationInfo.saveToLocalStorage(
+                    this._configuration.localStorage,
                     this._configuration.webFrontAuthEndPoint,
                     null,
                     []
                      )
             }
-        }    
+        }
         await this.refresh();
     }
 
@@ -407,12 +406,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             returnUrl = document.location.origin + returnUrl;
         }
         const queries = [
-            { key: 'scheme', value: scheme }, 
+            { key: 'scheme', value: scheme },
             { key: 'returnUrl', value: encodeURI(returnUrl) },
-            { key: 'callerOrigin', value: encodeURI(document.location.origin) }            
+            { key: 'callerOrigin', value: encodeURI(document.location.origin) }
          ];
-        // If rememberMe is not defined, the backend will use the current one (if any) and 
-        // will eventually default to false. 
+        // If rememberMe is not defined, the backend will use the current one (if any) and
+        // will eventually default to false.
         if( rememberMe !== undefined ) queries.push( { key: 'rememberMe', value: rememberMe ? "1" : "0" } );
         await this.sendRequest('startLogin', { body: userData, queries });
     }
@@ -448,19 +447,32 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 }
             }
 
-            const eOnClick = popup.document.getElementById('submit-button'); 
+            const eOnClick = popup.document.getElementById('submit-button');
             if( eOnClick == null ) throw new Error( "Unable to find required 'submit-button' element." );
             eOnClick.onclick = (async () => await onClick());
-        } 
+        }
         else {
             const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
             userData = { ...userData, callerOrigin: document.location.origin, rememberMe: rememberMe };
-            const queryString = userData 
+            const queryString = userData
                                 ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key] as string)).join('&')
                                 : '';
             const finalUrl = url + '?scheme=' + scheme + ((queryString !== '') ? '&' + queryString : '');
             window.open(finalUrl, this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
+    }
+
+    /**
+     * Checks whether calling the provided url requires the header bearer token to be added or not.
+     * Currently, only urls from the authentication endpoint should add the authentication token.
+     * The url must exactly starts with the authentication backend address.
+     * In the future, this may be extended to support other secure endpoints if needed.
+     * @param url The url to be checked.
+     */
+    public shouldSetToken(url : string) : boolean {
+        if(!url) throw new Error("Url should not be null or undefined")
+        if(this._token !== "") return false;
+        return url.startsWith(this._configuration.webFrontAuthEndPoint);
     }
 
     //#endregion
