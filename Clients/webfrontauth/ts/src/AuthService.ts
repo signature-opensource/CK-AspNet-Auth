@@ -471,7 +471,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public shouldSetToken(url : string) : boolean {
         if(!url) throw new Error("Url should not be null or undefined")
-        if(this._token != "") return false;
+        if(this._token !== "") return false;
         return url.startsWith(this._configuration.webFrontAuthEndPoint);
     }
 
