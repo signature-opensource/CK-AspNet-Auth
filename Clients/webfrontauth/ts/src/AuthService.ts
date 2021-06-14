@@ -1,9 +1,11 @@
 import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './index';
-import { IAuthenticationInfoTypeSystem, StdAuthenticationTypeSystem, PopupDescriptor, IAuthenticationInfoImpl, WebFrontAuthError } from './index.extension';
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { AuthLevel } from './authService.model.public';
+import { AuthLevel, IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './authService.model.public';
+import { WebFrontAuthError } from './authService.model.extension';
+import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
+import { StdAuthenticationTypeSystem } from './type-system';
+import { PopupDescriptor } from './PopupDescriptor';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 

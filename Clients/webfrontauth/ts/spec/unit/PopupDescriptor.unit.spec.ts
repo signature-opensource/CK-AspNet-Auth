@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 import { AuthService } from '../../src';
-import { PopupDescriptor } from '../../src/index.extension';
+import { PopupDescriptor } from '../../src/index';
 
 describe('PopupDescriptor', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ModuleWithProviders, NgModule, Optional } from '@angular/core';
 import { AuthService, IUserInfo } from '@signature/webfrontauth';
-import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-system';
+import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth';
 import { AxiosInstance } from 'axios';
 import { AuthGuard } from './AuthGuard';
 import { AuthServiceClientConfiguration } from './AuthServiceClientConfiguration';
