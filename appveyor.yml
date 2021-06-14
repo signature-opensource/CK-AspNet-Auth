@@ -15,7 +15,7 @@ build_script:
   - dotnet run --project CodeCakeBuilder -nointeraction
 test: off
 install:
-  - cmd: npm install -g npm@6.9.0
+  - cmd: npm install -g npm@7.17.0
   - ps: Install-Product node 12
 artifacts:
   - path: '**\*.log'
