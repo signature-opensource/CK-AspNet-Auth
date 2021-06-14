@@ -151,6 +151,8 @@ namespace CodeCake
             {
                 Debug.Assert( scope[0] == '@' );
                 npmrc.Add( scope + ":registry=" + pushUri );
+                npmrc.Add( scope + ":username=VssSessionToken" );
+                npmrc.Add( scope + ":username=not-used@example.com" );
             }
             pushUri = pushUri.Replace( "https:", "" );
             npmrc.Add( pushUri + ":always-auth=true" );
