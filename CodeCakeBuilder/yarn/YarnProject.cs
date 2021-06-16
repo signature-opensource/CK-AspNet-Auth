@@ -63,10 +63,11 @@ namespace CodeCake
         /// <param name="globalInfo">The global information object.</param>
         public virtual void RunYarnCi()
         {
-            GlobalInfo.Cake.Information( $"Running 'yarn install --frozen-lockfile' in {DirectoryPath.Path}" );
+            GlobalInfo.Cake.Information( $"Running 'yarn install --immutable' in {DirectoryPath.Path}" );
             GlobalInfo.Cake.Yarn().Install(settings =>
             {
                 settings.WithArgument( "--immutable" );
+                settings.WorkingDirectory = DirectoryPath.Path;
             } );
         }
 
@@ -162,14 +163,13 @@ namespace CodeCake
         /// <param name="runInBuildDirectory">Whether the script should be run in <see cref="OutputPath"/> or <see cref="DirectoryPath"/> if false.</param>
         private protected virtual void DoRunScript( string scriptName, bool runInBuildDirectory )
         {
-            GlobalInfo.Cake.NpmRunScript(
-                    new NpmRunScriptSettings()
-                    {
-                        ScriptName = scriptName,
-                        LogLevel = NpmLogLevel.Info,
-                        WorkingDirectory = runInBuildDirectory ? OutputPath.Path : DirectoryPath.Path
-                    }
-                );
+            GlobalInfo.Cake.Yarn().RunScript(
+                scriptName,
+                settings =>
+                {
+                    settings.WorkingDirectory = runInBuildDirectory ? OutputPath.Path : DirectoryPath.Path;
+                }
+            );
         }
 
         /// <summary>
