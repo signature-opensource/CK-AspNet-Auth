@@ -13,8 +13,8 @@
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
+CodeCakeBuilder/[Rr]elease/
+CodeCakeBuilder/[Rr]eleases/
 x64/
 x86/
 bld/
@@ -336,3 +336,5 @@ jspm_packages/
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
+/Clients/webfrontauth/.yarn/cache/
+/Clients/webfrontauth-ngx/.yarn/cache/
