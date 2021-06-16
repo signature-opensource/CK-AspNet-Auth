@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Cake.Npm" Version="0.17.0" />
+    <PackageReference Include="Cake.Yarn" Version="0.4.8" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Protocol" Version="5.8.0" />

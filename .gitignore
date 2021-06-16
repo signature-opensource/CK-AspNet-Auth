@@ -336,3 +336,5 @@ jspm_packages/
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
+/Clients/webfrontauth/.yarn/cache/
+/Clients/webfrontauth-ngx/.yarn/cache/
