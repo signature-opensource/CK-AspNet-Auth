@@ -77,14 +77,10 @@ namespace CodeCake
             {
                 using( TemporaryPrePack( ArtifactInstance.Version, packageJsonPreProcessor, false ) )
                 {
-                    //GlobalInfo.Cake.NpmPack( new NpmPackSettings()
-                    //{
-                    //    LogLevel = NpmLogLevel.Info,
-                    //    WorkingDirectory = OutputPath.ToString()
-                    //} );
-                    GlobalInfo.Cake.Yarn().Pack( settings =>
+                    GlobalInfo.Cake.NpmPack( new NpmPackSettings()
                     {
-                        settings.WorkingDirectory = OutputPath.ToString();
+                        LogLevel = NpmLogLevel.Info,
+                        WorkingDirectory = OutputPath.ToString()
                     } );
                 }
 
