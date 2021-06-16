@@ -13,8 +13,8 @@
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
+CodeCakeBuilder/[Rr]elease/
+CodeCakeBuilder/[Rr]eleases/
 x64/
 x86/
 bld/
