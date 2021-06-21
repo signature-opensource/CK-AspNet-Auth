@@ -1,4 +1,4 @@
-﻿using CK.Auth;
+using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -24,13 +24,14 @@ namespace CK.AspNet.Auth
                 using (var s = new MemoryStream(data))
                 using (var r = new CKBinaryReader(s))
                 {
-                    string key;
+                    string? key;
                     while( (key = r.ReadNullableString()) != null )
                     {
                         var values = new string[r.ReadSmallInt32()];
                         for(int i = 0; i < values.Length; ++i )
                         {
-                            values[i] = r.ReadNullableString();
+                            // If the value was null, we restore a null.
+                            values[i] = r.ReadNullableString()!;
                         }
                         result.Add( new KeyValuePair<string, StringValues>( key, new StringValues( values ) ) );
                     }

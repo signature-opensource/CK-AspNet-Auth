@@ -159,9 +159,9 @@ namespace CK.AspNet.Auth
                 Response.StatusCode = StatusCodes.Status400BadRequest;
                 return true;
             }
-            string returnUrl = Request.Query["returnUrl"];
-            string callerOrigin = Request.Query["callerOrigin"];
-            string rememberMe = Request.Query["rememberMe"];
+            string? returnUrl = Request.Query["returnUrl"];
+            string? callerOrigin = Request.Query["callerOrigin"];
+            string? rememberMe = Request.Query["rememberMe"];
 
             IEnumerable<KeyValuePair<string, StringValues>> userData;
             if( HttpMethods.IsPost( Request.Method ) )
