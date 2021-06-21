@@ -407,21 +407,18 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
             returnUrl = document.location.origin + returnUrl;
         }
-        const queries = [
-            { key: 'scheme', value: scheme },
-            { key: 'returnUrl', value: encodeURI(returnUrl) },
-            { key: 'callerOrigin', value: encodeURI(document.location.origin) }
-         ];
-        // If rememberMe is not defined, the backend will use the current one (if any) and
-        // will eventually default to false.
-        if( rememberMe !== undefined ) queries.push( { key: 'rememberMe', value: rememberMe ? "1" : "0" } );
 
-        const query = queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&');
-        document.location.href= `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${query}`;
+        const params = {
+            returnUrl: encodeURI(returnUrl),
+            callerOrigin : encodeURI(document.location.origin),
+            rememberMe: rememberMe ? "1" : "0",
+            userData: userData
+        };
+        const queryString = this.buildQueryString( params, scheme );
+        document.location.href = this.buildStartLoginUrl( queryString );
     }
 
     public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
-
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {
             const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
@@ -456,13 +453,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             eOnClick.onclick = (async () => await onClick());
         }
         else {
-            const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
             userData = { ...userData, callerOrigin: document.location.origin, rememberMe: rememberMe };
-            const queryString = userData
-                                ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key] as string)).join('&')
-                                : '';
-            const finalUrl = url + '?scheme=' + scheme + ((queryString !== '') ? '&' + queryString : '');
-            window.open(finalUrl, this.popupDescriptor.popupTitle, this.popupDescriptor.features);
+            const queryString = this.buildQueryString( userData, scheme );
+            window.open(this.buildStartLoginUrl(queryString), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
     }
 
@@ -495,5 +488,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return this._subscribers.delete(func);
     }
 
+    public buildQueryString( params: { [index: string]: any }, scheme: string ) {
+        return params ? `?scheme=${scheme}&${Object.keys( params ).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(params[key] as string)).join('&')}` : '';
+    }
+
+    public buildStartLoginUrl( query: string ) {
+        return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${query}`;
+    }
     //#endregion
 }
