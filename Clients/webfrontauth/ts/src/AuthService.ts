@@ -415,7 +415,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         // If rememberMe is not defined, the backend will use the current one (if any) and
         // will eventually default to false.
         if( rememberMe !== undefined ) queries.push( { key: 'rememberMe', value: rememberMe ? "1" : "0" } );
-        await this.sendRequest('startLogin', { body: userData, queries });
+
+        const query = queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&');
+        document.location.href= `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${query}`;
     }
 
     public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
