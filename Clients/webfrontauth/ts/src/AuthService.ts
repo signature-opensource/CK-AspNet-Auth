@@ -409,7 +409,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const params = [
             { key: 'returnUrl', value: encodeURI(returnUrl) },
             { key: 'callerOrigin', value: encodeURI(document.location.origin) },
-            { key: 'rememberMe', value: rememberMe ? "1" : "0" }
+            rememberMe ? 'rememberMe' : ''
         ];
         document.location.href = this.buildStartLoginUrl( scheme, params, userData );
     }
@@ -451,7 +451,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         else {
             const data = [
                 { key: 'callerOrigin', value: document.location.origin },
-                { key: 'rememberMe', value: rememberMe ? '1' : '0' }
+                rememberMe ? 'rememberMe' : ''
             ];
             window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
@@ -486,22 +486,30 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return this._subscribers.delete(func);
     }
 
-    private buildQueryString( params? : Array<string | { key: string, value: string }>, scheme?: string ) {
+    private buildQueryString( params?: Array<string | { key: string, value: string }>, scheme?: string ): string {
         let query = params && params.length
                 ? `?${params.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
                 : '';
 
         let schemeParam = scheme ? `scheme=${scheme}` : '';
-        if (query && schemeParam)
+        if( query && schemeParam )
+        {
             query += `&${schemeParam}`;
-        else if (schemeParam)
+        }
+        else if( schemeParam )
+        {
             query += `?${schemeParam}`;
+        }
 
         return query;
     }
 
-    private buildStartLoginUrl( scheme: string, params: Array<string | { key: string, value: string }>, userData?: { [index: string]: any } ) {
-        if (userData) {
+    private buildStartLoginUrl(
+        scheme: string,
+        params: Array<string | { key: string, value: string }>,
+        userData?: { [index: string]: any }
+    ): string {
+        if( userData ) {
             Object.keys(userData).forEach( i => params.push({key: i, value: userData[i]}));
         }
         return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString(params, scheme)}`;
