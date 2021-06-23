@@ -107,7 +107,7 @@ namespace CK.AspNet.Auth
 
         async Task<bool> HandleRefresh( IActivityMonitor monitor )
         {
-            FrontAuthenticationInfo fAuth = _authService.EnsureAuthenticationInfo( Context, monitor );
+            FrontAuthenticationInfo fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             Debug.Assert( fAuth != null );
             if( Request.Query.Keys.Contains( "full" ) )
             {
@@ -176,7 +176,7 @@ namespace CK.AspNet.Auth
                                             && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "rememberMe", StringComparison.OrdinalIgnoreCase ) );
 
-            var fAuthCurrent = _authService.EnsureAuthenticationInfo( Context, monitor );
+            var fAuthCurrent = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
 
             // If "rememberMe" is not found, we keep the previous one (that is false if no current authentication exists).
             // RememberMe defaults to false.
@@ -285,7 +285,7 @@ namespace CK.AspNet.Auth
                                         req.RememberMe, 
                                         authProps: null,
                                         req.Scheme,
-                                        _authService.EnsureAuthenticationInfo( Context, monitor ).Info,
+                                        (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).Info,
                                         returnUrl: null,
                                         callerOrigin: null,
                                         req.UserData.ToList()
@@ -377,7 +377,7 @@ namespace CK.AspNet.Auth
                     req.RememberMe,
                     authProps: null,
                     initialScheme: "Basic",
-                    _authService.EnsureAuthenticationInfo( Context, monitor ).Info,
+                    (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).Info,
                     returnUrl: null,
                     callerOrigin: null,
                     req.UserData.ToList()
@@ -414,7 +414,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
             Response.StatusCode = StatusCodes.Status403Forbidden;
-            var fAuth = _authService.EnsureAuthenticationInfo( Context, monitor );
+            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             if( fAuth.Info.ActualUser.UserId != 0 )
             {
                 string? body = await Request.TryReadSmallBodyAsString( 1024 );
@@ -487,29 +487,29 @@ namespace CK.AspNet.Auth
 
         #region Authentication handling (handles standard Authenticate API).
 
-        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var monitor = GetRequestMonitor( Context );
-            var fAuth = _authService.EnsureAuthenticationInfo( Context, monitor );
+            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             if( fAuth.Info == null )
             {
-                return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
+                return AuthenticateResult.Fail( "No current Authentication." );
             }           
             var principal = new ClaimsPrincipal();
             principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( fAuth.Info, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );
-            return Task.FromResult( AuthenticateResult.Success( ticket ) );
+            return AuthenticateResult.Success( ticket );
         }
 
         #endregion
 
-        Task<bool> HandleToken( IActivityMonitor monitor )
+        async Task<bool> HandleToken( IActivityMonitor monitor )
         {
-            var fAuth = _authService.EnsureAuthenticationInfo( Context, monitor );
+            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             var o = new JObject(
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
                         new JProperty( "rememberMe", fAuth.RememberMe ) );
-            return WriteResponseAsync( o );
+            return await WriteResponseAsync( o );
         }
 
         /// <summary>

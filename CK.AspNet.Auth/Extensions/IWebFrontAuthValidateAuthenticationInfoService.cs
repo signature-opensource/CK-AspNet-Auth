@@ -27,6 +27,6 @@ namespace CK.AspNet.Auth
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="authInfo">The current authentication information.</param>
         /// <returns>The unchanged <paramref name="authInfo"/> or a new one or null to revoke it.</returns>
-        public IAuthenticationInfo? ValidateAuthenticationInfo( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo authInfo );
+        public ValueTask<IAuthenticationInfo?> ValidateAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo authInfo );
     }
 }

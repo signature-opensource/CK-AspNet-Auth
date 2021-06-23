@@ -200,7 +200,7 @@ namespace CK.AspNet.Auth
         /// <returns>
         /// The cached or resolved authentication info. 
         /// </returns>
-        internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c, IActivityMonitor monitor )
+        internal async ValueTask<FrontAuthenticationInfo> EnsureAuthenticationInfoAsync( HttpContext c, IActivityMonitor monitor )
         {
             FrontAuthenticationInfo? authInfo;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
@@ -216,7 +216,7 @@ namespace CK.AspNet.Auth
                 {
                     try
                     {
-                        var vInfo = _validateAuthenticationInfoService.ValidateAuthenticationInfo( c, monitor, authInfo.Info );
+                        var vInfo = await _validateAuthenticationInfoService.ValidateAuthenticationInfoAsync( c, monitor, authInfo.Info );
                         if( vInfo == null )
                         {
                             authInfo = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
