@@ -196,9 +196,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
 
-            const query = requestOptions.queries && requestOptions.queries.length
-                ? `?${requestOptions.queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
-                : '';
+            const query = this.buildQueryString( requestOptions.queries );
             const response = await this._axiosInstance.post<IWebFrontAuthResponse>(
                 `${this._configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
                 !!requestOptions.body ? JSON.stringify(requestOptions.body) : {},
@@ -408,14 +406,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             returnUrl = document.location.origin + returnUrl;
         }
 
-        const params = {
-            returnUrl: encodeURI(returnUrl),
-            callerOrigin : encodeURI(document.location.origin),
-            rememberMe: rememberMe ? "1" : "0",
-            userData: userData
-        };
-        const queryString = this.buildQueryString( params, scheme );
-        document.location.href = this.buildStartLoginUrl( queryString );
+        const params = [
+            { key: 'returnUrl', value: encodeURI(returnUrl) },
+            { key: 'callerOrigin', value: encodeURI(document.location.origin) },
+            { key: 'rememberMe', value: rememberMe ? "1" : "0" }
+        ];
+        document.location.href = this.buildStartLoginUrl( scheme, params, userData );
     }
 
     public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
@@ -453,9 +449,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             eOnClick.onclick = (async () => await onClick());
         }
         else {
-            userData = { ...userData, callerOrigin: document.location.origin, rememberMe: rememberMe };
-            const queryString = this.buildQueryString( userData, scheme );
-            window.open(this.buildStartLoginUrl(queryString), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
+            const data = [
+                { key: 'callerOrigin', value: document.location.origin },
+                { key: 'rememberMe', value: rememberMe ? '1' : '0' }
+            ];
+            window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
     }
 
@@ -488,12 +486,25 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return this._subscribers.delete(func);
     }
 
-    public buildQueryString( params: { [index: string]: any }, scheme: string ) {
-        return params ? `?scheme=${scheme}&${Object.keys( params ).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(params[key] as string)).join('&')}` : '';
+    private buildQueryString( params? : Array<string | { key: string, value: string }>, scheme?: string ) {
+        let query = params && params.length
+                ? `?${params.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
+                : '';
+
+        let schemeParam = scheme ? `scheme=${scheme}` : '';
+        if (query && schemeParam)
+            query += `&${schemeParam}`;
+        else if (schemeParam)
+            query += `?${schemeParam}`;
+
+        return query;
     }
 
-    public buildStartLoginUrl( query: string ) {
-        return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${query}`;
+    private buildStartLoginUrl( scheme: string, params: Array<string | { key: string, value: string }>, userData?: { [index: string]: any } ) {
+        if (userData) {
+            Object.keys(userData).forEach( i => params.push({key: i, value: userData[i]}));
+        }
+        return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString(params, scheme)}`;
     }
     //#endregion
 }
