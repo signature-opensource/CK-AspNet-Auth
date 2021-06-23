@@ -196,9 +196,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
 
-            const query = requestOptions.queries && requestOptions.queries.length
-                ? `?${requestOptions.queries.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
-                : '';
+            const query = this.buildQueryString( requestOptions.queries );
             const response = await this._axiosInstance.post<IWebFrontAuthResponse>(
                 `${this._configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
                 !!requestOptions.body ? JSON.stringify(requestOptions.body) : {},
@@ -407,19 +405,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
             returnUrl = document.location.origin + returnUrl;
         }
-        const queries = [
-            { key: 'scheme', value: scheme },
+
+        const params = [
             { key: 'returnUrl', value: encodeURI(returnUrl) },
-            { key: 'callerOrigin', value: encodeURI(document.location.origin) }
-         ];
-        // If rememberMe is not defined, the backend will use the current one (if any) and
-        // will eventually default to false.
-        if( rememberMe !== undefined ) queries.push( { key: 'rememberMe', value: rememberMe ? "1" : "0" } );
-        await this.sendRequest('startLogin', { body: userData, queries });
+            { key: 'callerOrigin', value: encodeURI(document.location.origin) },
+            rememberMe ? 'rememberMe' : ''
+        ];
+        document.location.href = this.buildStartLoginUrl( scheme, params, userData );
     }
 
     public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
-
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {
             const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
@@ -454,13 +449,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             eOnClick.onclick = (async () => await onClick());
         }
         else {
-            const url = `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin`;
-            userData = { ...userData, callerOrigin: document.location.origin, rememberMe: rememberMe };
-            const queryString = userData
-                                ? Object.keys(userData).map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(userData![key] as string)).join('&')
-                                : '';
-            const finalUrl = url + '?scheme=' + scheme + ((queryString !== '') ? '&' + queryString : '');
-            window.open(finalUrl, this.popupDescriptor.popupTitle, this.popupDescriptor.features);
+            const data = [
+                { key: 'callerOrigin', value: document.location.origin },
+                rememberMe ? 'rememberMe' : ''
+            ];
+            window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
     }
 
@@ -493,5 +486,33 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return this._subscribers.delete(func);
     }
 
+    private buildQueryString( params?: Array<string | { key: string, value: string }>, scheme?: string ): string {
+        let query = params && params.length
+                ? `?${params.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
+                : '';
+
+        let schemeParam = scheme ? `scheme=${scheme}` : '';
+        if( query && schemeParam )
+        {
+            query += `&${schemeParam}`;
+        }
+        else if( schemeParam )
+        {
+            query += `?${schemeParam}`;
+        }
+
+        return query;
+    }
+
+    private buildStartLoginUrl(
+        scheme: string,
+        params: Array<string | { key: string, value: string }>,
+        userData?: { [index: string]: any }
+    ): string {
+        if( userData ) {
+            Object.keys(userData).forEach( i => params.push({key: i, value: userData[i]}));
+        }
+        return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString(params, scheme)}`;
+    }
     //#endregion
 }
