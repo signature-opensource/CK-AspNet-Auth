@@ -9,7 +9,7 @@ import {
 } from '../../src';
 import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
-import { WebFrontAuthError } from '../../src/index.extension';
+import { WebFrontAuthError } from '../../src/index';
 import ResponseBuilder from '../helpers/response-builder';
 
 describe('AuthService', function () {

@@ -58,6 +58,7 @@ namespace CK.AspNet.Auth
         readonly IWebFrontAuthAutoCreateAccountService? _autoCreateAccountService;
         readonly IWebFrontAuthAutoBindingAccountService? _autoBindingAccountService;
         readonly IWebFrontAuthDynamicScopeProvider? _dynamicScopeProvider;
+        readonly IWebFrontAuthValidateAuthenticationInfoService? _validateAuthenticationInfoService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -70,6 +71,7 @@ namespace CK.AspNet.Auth
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
+        /// <param name="validateAuthenticationInfoService">Optional service that is called each time authentication information is restored.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -78,7 +80,8 @@ namespace CK.AspNet.Auth
             IWebFrontAuthValidateLoginService? validateLoginService = null,
             IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
             IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
-            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
+            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null,
+            IWebFrontAuthValidateAuthenticationInfoService? validateAuthenticationInfoService = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
@@ -87,7 +90,7 @@ namespace CK.AspNet.Auth
             _autoCreateAccountService = autoCreateAccountService;
             _autoBindingAccountService = autoBindingAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
-
+            _validateAuthenticationInfoService = validateAuthenticationInfoService;
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
             var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
@@ -197,7 +200,7 @@ namespace CK.AspNet.Auth
         /// <returns>
         /// The cached or resolved authentication info. 
         /// </returns>
-        internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c )
+        internal async ValueTask<FrontAuthenticationInfo> EnsureAuthenticationInfoAsync( HttpContext c, IActivityMonitor monitor )
         {
             FrontAuthenticationInfo? authInfo;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
@@ -207,6 +210,30 @@ namespace CK.AspNet.Auth
             else
             {
                 authInfo = ReadAndCacheAuthenticationHeader( c );
+                // If a IWebFrontAuthValidateAuthenticationInfoService is available, calls it.
+                // Exceptions are logged but not intercepted here: the request MUST fail!
+                if( _validateAuthenticationInfoService != null )
+                {
+                    try
+                    {
+                        var vInfo = await _validateAuthenticationInfoService.ValidateAuthenticationInfoAsync( c, monitor, authInfo.Info );
+                        if( vInfo == null )
+                        {
+                            authInfo = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
+                            monitor.Trace( $"The FrontAuthenticationInfo has been set to None by '{_validateAuthenticationInfoService.GetType()}' service." );
+                        }
+                        else if( vInfo != authInfo.Info )
+                        {
+                            monitor.Trace( $"The FrontAuthenticationInfo has been modified by '{_validateAuthenticationInfoService.GetType()}' service." );
+                            authInfo = new FrontAuthenticationInfo( vInfo, authInfo.RememberMe );
+                        }
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Fatal( $"While calling '{_validateAuthenticationInfoService.GetType()}' service. Exception is rethrown.", ex );
+                        throw;
+                    }
+                }
             }
             return authInfo;
         }
@@ -224,13 +251,14 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( FrontAuthenticationInfo ) ) );
             var monitor = GetRequestMonitor( c );
+            bool shouldSetCookies = false;
             FrontAuthenticationInfo fAuth;
             try
             {
                 // First try from the bearer: this is always the preferred way.
                 string authorization = c.Request.Headers[_bearerHeaderName];
                 bool fromBearer = !string.IsNullOrEmpty( authorization )
-                                  && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase );
+                              && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase );
                 if( fromBearer )
                 {
                     Debug.Assert( "Bearer ".Length == 7 );
@@ -274,7 +302,7 @@ namespace CK.AspNet.Auth
                             var info = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
                             fAuth = new FrontAuthenticationInfo( info, rememberMe: false );
                             // We set the long lived cookie if possible. The device identifier will be de facto persisted.
-                            SetCookies( c, fAuth );
+                            shouldSetCookies = true;
                         }
                         else
                         {
@@ -282,23 +310,32 @@ namespace CK.AspNet.Auth
                         }
                     }
                 }
-                // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
+                if( fAuth == null )
                 {
-                    var info = fAuth.Info;
-                    TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
-                    TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                    if( info.Level >= AuthLevel.Normal
-                        && CookieMode == AuthenticationCookieMode.RootPath
-                        && halfSlidingExpirationTime > TimeSpan.Zero )
+                    monitor.Error( $"Unable to extract a valid authentication information from {(fromBearer ? "Bearer" : "Cookies")}. Resolving to None authentication." );
+                    fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
+                }
+                else
+                {
+                    // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+                    if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
                     {
-                        Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
-                        if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                        var info = fAuth.Info;
+                        TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+                        TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
+                        if( info.Level >= AuthLevel.Normal
+                            && CookieMode == AuthenticationCookieMode.RootPath
+                            && halfSlidingExpirationTime > TimeSpan.Zero )
                         {
-                            fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
-                            SetCookies( c, fAuth );
+                            Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
+                            if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                            {
+                                fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
+                                shouldSetCookies = true;
+                            }
                         }
                     }
+                    if( shouldSetCookies ) SetCookies( c, fAuth );
                 }
             }
             catch( Exception ex )
