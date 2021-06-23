@@ -310,25 +310,33 @@ namespace CK.AspNet.Auth
                         }
                     }
                 }
-                // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
+                if( fAuth == null )
                 {
-                    var info = fAuth.Info;
-                    TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
-                    TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                    if( info.Level >= AuthLevel.Normal
-                        && CookieMode == AuthenticationCookieMode.RootPath
-                        && halfSlidingExpirationTime > TimeSpan.Zero )
+                    monitor.Error( $"Unable to extract a valid authentication information from {(fromBearer ? "Bearer" : "Cookies")}. Resolving to None authentication." );
+                    fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
+                }
+                else
+                {
+                    // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+                    if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
                     {
-                        Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
-                        if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                        var info = fAuth.Info;
+                        TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+                        TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
+                        if( info.Level >= AuthLevel.Normal
+                            && CookieMode == AuthenticationCookieMode.RootPath
+                            && halfSlidingExpirationTime > TimeSpan.Zero )
                         {
-                            fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
-                            shouldSetCookies = true;
+                            Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
+                            if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                            {
+                                fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
+                                shouldSetCookies = true;
+                            }
                         }
                     }
+                    if( shouldSetCookies ) SetCookies( c, fAuth );
                 }
-                if( shouldSetCookies ) SetCookies( c, fAuth );
             }
             catch( Exception ex )
             {
