@@ -407,8 +407,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
 
         const params = [
-            { key: 'returnUrl', value: encodeURI(returnUrl) },
-            { key: 'callerOrigin', value: encodeURI(document.location.origin) },
+            { key: 'returnUrl', value: encodeURIComponent(returnUrl) },
+            { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
             rememberMe ? 'rememberMe' : ''
         ];
         document.location.href = this.buildStartLoginUrl( scheme, params, userData );
@@ -450,7 +450,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
         else {
             const data = [
-                { key: 'callerOrigin', value: document.location.origin },
+                { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
                 rememberMe ? 'rememberMe' : ''
             ];
             window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
