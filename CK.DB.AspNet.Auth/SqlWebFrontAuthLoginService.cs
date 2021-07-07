@@ -13,6 +13,7 @@ using CK.Core;
 using System.Diagnostics;
 using CK.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication;
 
 namespace CK.DB.AspNet.Auth
 {
@@ -47,7 +48,7 @@ namespace CK.DB.AspNet.Auth
         public virtual bool HasBasicLogin => _authPackage.BasicProvider != null;
 
         /// <summary>
-        /// Gets the existing providers's name.
+        /// Gets the existing providers' name that have been installed in the database.
         /// </summary>
         public virtual IReadOnlyList<string> Providers => _providers;
 

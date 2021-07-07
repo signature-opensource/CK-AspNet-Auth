@@ -30,6 +30,7 @@ namespace CK.AspNet.Auth
         readonly WebFrontAuthService _authService;
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
+        readonly IAuthenticationSchemeProvider _schemeProvider;
         readonly IWebFrontAuthImpersonationService? _impersonationService;
         readonly IWebFrontAuthUnsafeDirectLoginAllowService? _unsafeDirectLoginAllower;
 
@@ -41,6 +42,7 @@ namespace CK.AspNet.Auth
             WebFrontAuthService authService,
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
+            IAuthenticationSchemeProvider schemeProvider,
             IWebFrontAuthImpersonationService? impersonationService = null,
             IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null
             ) : base( options, logger, encoder, clock )
@@ -48,6 +50,7 @@ namespace CK.AspNet.Auth
             _authService = authService;
             _typeSystem = typeSystem;
             _loginService = loginService;
+            _schemeProvider = schemeProvider;
             _impersonationService = impersonationService;
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
@@ -114,11 +117,11 @@ namespace CK.AspNet.Auth
                 var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
                 fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), fAuth.Info, newExpires ) );
             }
-            JObject response = GetRefreshResponseAndSetCookies( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
+            JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
             return await WriteResponseAsync( response );
         }
 
-        JObject GetRefreshResponseAndSetCookies( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
+        async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
         {
             var authInfo = fAuth.Info;
             bool refreshable = false;
@@ -135,9 +138,18 @@ namespace CK.AspNet.Auth
             JObject response = _authService.CreateAuthResponse( Context, fAuth, refreshable );
             if( addSchemes )
             {
-                IReadOnlyList<string>? list = Options.AvailableSchemes;
-                if( list == null || list.Count == 0 ) list = _loginService.Providers;
-                response.Add( "schemes", new JArray( _loginService.Providers ) );
+                IEnumerable<string>? list = Options.AvailableSchemes;
+                if( list == null || !list.Any() )
+                {
+                    list = (await _schemeProvider.GetAllSchemesAsync().ConfigureAwait(false))
+                            .Select( s => s.Name )
+                            .Where( n => n != WebFrontAuthOptions.OnlyAuthenticationScheme );
+                    if( _loginService.HasBasicLogin )
+                    {
+                        list = list.Prepend( "Basic" );
+                    }
+                }
+                response.Add( "schemes", new JArray( list ) );
             }
             if( addVersion ) response.Add( "version", _version.ToString() );
             _authService.SetCookies( Context, fAuth );
@@ -440,7 +452,7 @@ namespace CK.AspNet.Auth
                     }
                     if( Response.StatusCode == StatusCodes.Status200OK )
                     {
-                        await Response.WriteAsync( GetRefreshResponseAndSetCookies( fAuth, addSchemes: false, addVersion: false ) );
+                        await Response.WriteAsync( await GetRefreshResponseAndSetCookiesAsync( fAuth, addSchemes: false, addVersion: false ) );
                     }
                 }
             }
