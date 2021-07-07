@@ -13,7 +13,7 @@ namespace CK.AspNet.Auth
     /// and a <see cref="IAuthenticationInfo"/> is about to be associated to the current
     /// request.
     /// </summary>
-    public interface IWebFrontAuthValidateAuthenticationInfoService : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthValidateAuthenticationInfoService : ISingletonAutoService
     {
         /// <summary>
         /// Validates or changes the current authentication (returning null revokes it).

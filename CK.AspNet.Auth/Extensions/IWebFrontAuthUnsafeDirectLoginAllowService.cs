@@ -12,10 +12,7 @@ namespace CK.AspNet.Auth
     /// Enabling calls to to this endpoint must be explicit: by default "403 - Forbidden"
     /// is always returned.
     /// </summary>
-    /// <remarks>
-    /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
-    /// </remarks>
-    public interface IWebFrontAuthUnsafeDirectLoginAllowService : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthUnsafeDirectLoginAllowService : ISingletonAutoService
     {
         /// <summary>
         /// Predicate function that may allow calls to '/c/unsafeDirectLogin' for a

@@ -3,9 +3,9 @@
     <!-- Centralized dependencies versions. -->
     <CKDatabaseVersion>16.1.0</CKDatabaseVersion>
     <CKDBVersion>11.1.0</CKDBVersion>
-    <CKActivityMonitorVersion>14.1.0</CKActivityMonitorVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
     <CKAspNetVersion>7.1.0</CKAspNetVersion>
+    <CKStObjVersion>16.1.0</CKStObjVersion>
     <CKAuthAbstractionsVersion>1.1.0</CKAuthAbstractionsVersion>
     <CKAspNetTesterVersion>3.1.2</CKAspNetTesterVersion>
     <CKDBUserUserPasswordVersion>11.1.0</CKDBUserUserPasswordVersion>
