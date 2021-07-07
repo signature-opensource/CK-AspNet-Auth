@@ -57,7 +57,7 @@ describe('AuthService', function() {
     });
 
     beforeEach(async function() {
-        await authService.logout(true);
+        await authService.logout();
     });
 
     it('should basicLogin and logout.', async function() {
@@ -83,7 +83,7 @@ describe('AuthService', function() {
         expect(authService.token).not.toBe('');
         expect(authService.refreshable).toBe(false);
 
-        await authService.logout(true);
+        await authService.logout();
         expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
         expect(authService.token).toBe('');
         expect(authService.refreshable).toBe(false);
@@ -126,7 +126,7 @@ describe('AuthService', function() {
         expect(authService.token).not.toBe('');
         expect(authService.refreshable).toBe(false);
 
-        await authService.logout(true);
+        await authService.logout();
         expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
         expect(authService.token).toBe('');
         expect(authService.refreshable).toBe(false);

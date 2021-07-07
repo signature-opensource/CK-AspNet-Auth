@@ -381,20 +381,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
      * Revokes the current authentication.
-     * @param full True to remove any way to remmember the current authentication (long term cookie, local storage, etc.)
      */
-    public async logout(full: boolean = false): Promise<void> {
+    public async logout(): Promise<void> {
         this._token = '';
-        await this.sendRequest('logout', { queries: full ? ['full'] : [] }, /* skipResponseHandling */ true);
-        if( full ) {
-            if( this._configuration.localStorage ) {
-                this._typeSystem.authenticationInfo.saveToLocalStorage(
-                    this._configuration.localStorage,
-                    this._configuration.webFrontAuthEndPoint,
-                    null,
-                    []
-                     )
-            }
+        await this.sendRequest('logout', { queries: ['full'] }, /* skipResponseHandling */ true);
+        if( this._configuration.localStorage ) {
+            this._typeSystem.authenticationInfo.saveToLocalStorage(
+                this._configuration.localStorage,
+                this._configuration.webFrontAuthEndPoint,
+                null,
+                []
+                    )
         }
         await this.refresh();
     }

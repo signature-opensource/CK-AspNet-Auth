@@ -57,8 +57,8 @@ describe('AuthService', function () {
 
     beforeEach(async function () {
         serverResponse = emptyResponse;
-        // logout fills the local storage (in 'full' mode).
-        await authService.logout(true);
+        // logout fills the local storage.
+        await authService.logout();
         // We cleanup the localstorage AFTER logout to ensure tests isolation.
         localStorage.clear();
         serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
@@ -312,7 +312,7 @@ describe('AuthService', function () {
             expect(authService.currentError).toBeUndefined();
 
             serverResponse = emptyResponse;
-            await authService.logout(true);
+            await authService.logout();
 
             expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).toBe(true);
@@ -463,7 +463,7 @@ describe('AuthService', function () {
             expect(token).not.toEqual('');
 
             serverResponse = emptyResponse;
-            await authService.logout(true);
+            await authService.logout();
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
             expect(token).toBe('');
