@@ -352,7 +352,7 @@ namespace CK.AspNet.Auth
         internal void Logout( HttpContext ctx )
         {
             ClearCookie( ctx, AuthCookieName );
-            if( ctx.Request.Query.ContainsKey( "full" ) ) ClearCookie( ctx, UnsafeCookieName );
+            ClearCookie( ctx, UnsafeCookieName );
         }
 
         internal void SetCookies( HttpContext ctx, FrontAuthenticationInfo fAuth )

@@ -22,6 +22,7 @@ export interface IResponseInfo {
     actualUser?: IResponseUserInfo;
     exp?: Date;
     cexp?: Date;
+    deviceId: string;
 }
 
 export interface IResponseUserInfo {

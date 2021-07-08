@@ -92,7 +92,7 @@ describe('AuthService', function () {
             
             const expected = '{"user":{"name":"Alice","id":2,"schemes":[{"name":"Basic","lastUsed":"'
                                 + schemeLastUsed.toISOString() +'"}]},"exp":"'
-                                + exp.toISOString() +'"}';
+                                + exp.toISOString() +'","deviceId":""}';
             expect( JSON.stringify( authService.authenticationInfo ) ).toBe( expected );
         });
         

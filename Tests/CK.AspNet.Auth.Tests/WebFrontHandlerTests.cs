@@ -143,7 +143,7 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( AuthenticationCookieMode.RootPath, true )]
         [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
         [TestCase( AuthenticationCookieMode.RootPath, false )]
-        public async Task logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one( AuthenticationCookieMode mode, bool logoutWithToken )
+        public async Task logout_removes_both_cookies( AuthenticationCookieMode mode, bool logoutWithToken )
         {
             using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
             {
@@ -154,32 +154,6 @@ namespace CK.AspNet.Auth.Tests
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.Get( logoutUri );
-                logout.EnsureSuccessStatusCode();
-                // Refresh: we have the Unsafe Albert.
-                s.Client.Token = null;
-                RefreshResponse c = await s.CallRefreshEndPointAsync();
-                c.Info.Level.Should().Be( AuthLevel.Unsafe );
-                c.Info.User.UserName.Should().Be( "" );
-                c.Info.UnsafeUser.UserName.Should().Be( "Albert" );
-                c.Info.UnsafeUser.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
-            }
-        }
-
-        [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
-        [TestCase( AuthenticationCookieMode.RootPath, true )]
-        [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
-        [TestCase( AuthenticationCookieMode.RootPath, false )]
-        public async Task logout_with_full_query_parameter_removes_both_cookies( AuthenticationCookieMode mode, bool logoutWithToken )
-        {
-            using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
-            {
-                // Login: the 2 cookies are set.
-                var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
-                DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-                string originalToken = firstLogin.Token;
-                // Logout 
-                if( logoutWithToken ) s.Client.Token = originalToken;
-                HttpResponseMessage logout = await s.Client.Get( logoutUri + "?full" );
                 logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
                 s.Client.Token = null;

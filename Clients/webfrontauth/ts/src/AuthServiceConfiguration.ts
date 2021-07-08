@@ -1,29 +1,17 @@
-import { IAuthServiceConfiguration, IEndPoint, ILocalStoragePersistence, IAuthenticationInfo, IUserInfo } from './authService.model.public';
+import { IAuthServiceConfiguration, IEndPoint, IAuthenticationInfo, IUserInfo } from './authService.model.public';
 
 export class AuthServiceConfiguration {
     private readonly _identityServerEndPoint: string;
-    private readonly _localStorageConfig: ILocalStoragePersistence;
-    
-    /** Not null means that the local storage is available. */
+
+    /** When defined, the local storage is available. */
     public readonly localStorage?: Storage;
 
     /** Gets the end point address. */
     public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
-;
-    /** Gets the Storage API if it is available and enabled for the given action. */
-    public useLocalStorage( action: 'basicLogin' | 'refresh' | 'unsafeDirectLogin' | 'startLogin' ) : Storage|undefined {
-        return this._localStorageConfig['on'+action[0].toUpperCase()+action.slice(1)]
-                ? this.localStorage
-                : undefined;
-    }
 
     constructor(config: IAuthServiceConfiguration) {
         this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
-        const s = this.localStorage = this.getAvailableStorage('localStorage');
-        this._localStorageConfig = s 
-                                    ? config.localStoragePersistence 
-                                        || { onBasicLogin: true, onRefresh: true, onStartLogin: true, onUnsafeDirectLogin: true }
-                                    : { onBasicLogin: false, onRefresh: false, onStartLogin: false, onUnsafeDirectLogin: false };
+        if(  config.useLocalStorage ) this.localStorage = this.getAvailableStorage('localStorage');
     }
 
     private static getUrlFromEndPoint(endPoint: IEndPoint): string {

@@ -112,6 +112,25 @@ export interface IUserSchemeInfo {
     readonly status: SchemeUsageStatus;
 }
 
+/** Describes the AuthService configuration. */
+export interface IAuthServiceConfiguration {
+    /** Gets the endpoint to use. */
+    readonly identityEndPoint: IEndPoint;
+    /** True to enable local storage: current authentication is stored and 
+     * restored (at Unsafe level) if server cannot be initially reached. */
+    readonly useLocalStorage?: boolean;
+}
+
+/** Defines the server address. */
+export interface IEndPoint {
+    /** Gets the host name. Can be the an ip address. */
+    readonly hostname?: string;
+    /** Gets the port Can be undefined if standard port is used (440 for https, 80 for http). */
+    readonly port?: number;
+    /** Gets whether http should be used instead of https. Obviously defaults to false. */
+    readonly disableSsl?: boolean;
+}
+
 export interface IWebFrontAuthError {
     readonly type: string;
     readonly errorId: string;
@@ -129,35 +148,4 @@ export interface ILoginError {
     readonly loginFailureReason: string;
 }
 
-export interface IAuthServiceConfiguration {
-    readonly identityEndPoint: IEndPoint;
-    /** 
-     * Gets the configuration of the local storage persistence.
-     * When not defined, local storage is enabled (if available) for the 4 actions.
-     * @see ILocalStoragePersistence.
-     */
-    readonly localStoragePersistence?: ILocalStoragePersistence;
-}
 
-export interface IEndPoint {
-    readonly hostname?: string;
-    readonly port?: number;
-    readonly disableSsl?: boolean;
-}
-
-/** 
- * Defines whether unsafe authentication info should be stored into the local storage (if available)
- * and used as a fallback whenever the specified action failed to reach the server.
- */
-export interface ILocalStoragePersistence {
-    /** True to allow basic login to reuse the saved unsafe authentication info whenever the server is not reachable. */
-    readonly onBasicLogin: boolean;
-    /** True to allow refresh to reuse the saved unsafe authentication info whenever the server is not reachable. */
-    readonly onRefresh: boolean;
-    /** True to allow an unsafe direct login to reuse the saved unsafe authentication info whenever the server is not reachable. */
-    readonly onUnsafeDirectLogin: boolean;
-    /** True to allow a start login to reuse the saved unsafe authentication info whenever the server is not reachable. */
-    readonly onStartLogin: boolean;
-    /** Gets the boolean configuration by its name. */
-    [index: string] : boolean | undefined;
-}

@@ -11,6 +11,20 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Optional service that, when registered, enables login validations.
+    /// When this service is available, the login process follows the 3 steps below:
+    /// <list type="bullet">
+    ///  <item>
+    ///  First, the <see cref="IWebFrontAuthLoginService.LoginAsync(HttpContext, IActivityMonitor, string, object, bool)"/> is called
+    ///  with a false <c>actualLogin</c> parameter.
+    ///  </item>
+    ///  <item>
+    ///  On success, this <see cref="ValidateLoginAsync(IActivityMonitor, IUserInfo, IWebFrontAuthValidateLoginContext)"/> is called.
+    ///  </item>
+    ///  <item>
+    ///  Then, only if this validation succeeds, the <see cref="IWebFrontAuthLoginService.LoginAsync(HttpContext, IActivityMonitor, string, object, bool)"/>
+    ///  is called again with a true <c>actualLogin</c> parameter.
+    ///  </item>
+    /// </list>
     /// </summary>
     public interface IWebFrontAuthValidateLoginService : ISingletonAutoService
     {

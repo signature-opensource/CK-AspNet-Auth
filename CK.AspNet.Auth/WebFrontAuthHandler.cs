@@ -112,7 +112,7 @@ namespace CK.AspNet.Auth
         {
             FrontAuthenticationInfo fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             Debug.Assert( fAuth != null );
-            if( Request.Query.Keys.Contains( "full" ) )
+            if( Request.Query.Keys.Contains( "callBackend" ) )
             {
                 var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
                 fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), fAuth.Info, newExpires ) );

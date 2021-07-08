@@ -26,7 +26,7 @@ namespace CK.DB.AspNet.Auth.Tests
         const string impersonateUri = "/.webfront/c/impersonate";
 
         [Test]
-        public async Task refreshing_full_correctly_handles_impersonation_changes()
+        public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes()
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
@@ -94,9 +94,9 @@ namespace CK.DB.AspNet.Auth.Tests
             return r;
         }
 
-        static async Task<RefreshResponse> RefreshSuccess( AuthServer server, bool full, AuthLevel expectedLevel )
+        static async Task<RefreshResponse> RefreshSuccess( AuthServer server, bool callBackend, AuthLevel expectedLevel )
         {
-            HttpResponseMessage m = await server.Client.Get( full ? refreshUri + "?full" : refreshUri );
+            HttpResponseMessage m = await server.Client.Get( callBackend ? refreshUri + "?callBackend" : refreshUri );
             var r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
             r.Info.Level.Should().Be( expectedLevel );
             return r;
