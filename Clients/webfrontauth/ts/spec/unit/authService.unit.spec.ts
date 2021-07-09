@@ -227,7 +227,7 @@ describe('AuthService', function () {
                 .withExpires(exp)
                 .withToken('CfDJ8CS62…pLB10X')
                 .withRefreshable(false)
-                .withVersion('v0.0.0-alpha')
+                .withVersion(AuthService.clientVersion)
                 .build();
             await authService.refresh();
 
@@ -239,7 +239,7 @@ describe('AuthService', function () {
             expect(authService.token).toBe('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).toBe(false);
             expect(authService.currentError).toBeUndefined();
-            expect(authService.endPointVersion).toBe('v0.0.0-alpha');
+            expect(authService.endPointVersion).toBe( AuthService.clientVersion );
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })

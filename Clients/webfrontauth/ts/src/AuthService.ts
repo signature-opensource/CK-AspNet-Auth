@@ -6,7 +6,7 @@ import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';
 import { PopupDescriptor } from './PopupDescriptor';
-
+import { version } from "../../package.json";
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -29,6 +29,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _subscribers: Set<(eventSource: AuthService) => void>;
     private _onMessage?: (this: Window, ev: MessageEvent) => void;
     private _closed: boolean;
+    private _checkVersion: boolean;
 
     /** Gets the current authentication information. */
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
@@ -40,8 +41,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get rememberMe(): boolean { return this._rememberMe; }
     /** Gets the available authentication schemes names. */
     public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
-    /** Gets the Authentication server version. */
+    /** Gets the Authentication server version. This must be the same as this clientVersion otherwise behavior is not guaranteed. */
     public get endPointVersion(): string { return this._endPointVersion; }
+    /** Gets this client version. This must be the same as the endPointVersion otherwise behavior is not guaranteed. */
+    public static get clientVersion(): string { return version; }
     /** Gets the current error if any. */
     public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
@@ -60,8 +63,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region constructor
 
     /**
-     * Instantiates a new AuthService. Note that the {@link refresh} method must be called.
-     * It is simpler and safer to use the factory method {@link createAsync} that fully initializes
+     * Instantiates a new AuthService. Note that the 'refresh' method must be called.
+     * It is simpler and safer to use the factory method 'createAsync' that fully initializes
      * the AuthService before returning it.
      * @param configuration The required configuration (endpoint and whether local storage should be used).
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
@@ -71,7 +74,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         configuration: IAuthServiceConfiguration,
         axiosInstance: AxiosInstance,
         typeSystem?: IAuthenticationInfoTypeSystem<T>
-    ) {
+        ) {
         if (!configuration) { throw new Error('Configuration must be defined.'); }
         this._configuration = new AuthServiceConfiguration(configuration);
 
@@ -80,6 +83,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._interceptor = this._axiosInstance.interceptors.request.use(this.onIntercept());
 
         this._closed = false;
+        this._checkVersion = !configuration.skipVersionsCheck;
         this._typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
         this._endPointVersion = '';
         this._availableSchemes = [];
@@ -106,14 +110,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param configuration The required configuration (endpoint and whether local storage should be used).
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
-     * @param throwOnError True to throw is any error occurred (server cannot be reached, protocol error, etc.) 
+     * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.) 
      * @returns A new AuthService that may have a currentError if parameter throwOnError is false (the default).
      */
     public static async createAsync<T extends IUserInfo = IUserInfo>(
         configuration: IAuthServiceConfiguration,
         axiosInstance: AxiosInstance,
         typeSystem?: IAuthenticationInfoTypeSystem<T>,
-        throwOnError: boolean = false
+        throwOnError: boolean = false 
     ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         await authService.refresh(true);
@@ -141,6 +145,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     {
         if(!this._closed){
             this._closed = true;
+            this.clearTimeouts();
             this._subscribers.clear();
             this._axiosInstance.interceptors.request.eject(this._interceptor);
             if( this._onMessage ) window.removeEventListener('message', this._onMessage, false);
@@ -336,6 +341,22 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
         this._currentError = undefined;
 
+        // Checking the version first.
+        if (r.version) { 
+            // Only refresh returns the version.
+            this._endPointVersion = r.version;
+            if( this._checkVersion && this._endPointVersion != AuthService.clientVersion )
+            {
+                const msg = `Client/Server version mismatch! this client version is '${AuthService.clientVersion}' but endpoint's version is '${this._endPointVersion}'.`;
+                this._currentError = new WebFrontAuthError({
+                    errorId: 'ClientEndPointVersionMismatch',
+                    errorReason: msg
+                });
+                throw new Error(msg);
+            }
+        }
+       if (r.schemes) { this._availableSchemes = r.schemes; }
+        
         if (r.loginFailureCode && r.loginFailureReason) {
             this._currentError = new WebFrontAuthError({
                 loginFailureCode: r.loginFailureCode,
@@ -355,8 +376,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             return;
         }
 
-        if (r.version) { this._endPointVersion = r.version; }
-        if (r.schemes) { this._availableSchemes = r.schemes; }
 
         if (!r.info) {
             this.localDisconnect();

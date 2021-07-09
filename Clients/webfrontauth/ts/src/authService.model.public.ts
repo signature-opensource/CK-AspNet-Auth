@@ -119,6 +119,12 @@ export interface IAuthServiceConfiguration {
     /** True to enable local storage: current authentication is stored and 
      * restored (at Unsafe level) if server cannot be initially reached. */
     readonly useLocalStorage?: boolean;
+    /**
+     * When false (that is the default), as soon as the refresh method has obtained the endPointVersion 
+     * and it doesn't match, an error is thrown and the currentError is set.
+     * Set this to true to allow this clientVersion to interact with a different endPointVersion.   
+     */
+    readonly skipVersionsCheck?: boolean;
 }
 
 /** Defines the server address. */
