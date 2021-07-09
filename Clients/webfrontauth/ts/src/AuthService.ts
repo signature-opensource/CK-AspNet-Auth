@@ -112,14 +112,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param configuration The required configuration (endpoint and whether local storage should be used).
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
-     * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.) 
+     * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.)
      * @returns A new AuthService that may have a currentError if parameter throwOnError is false (the default).
      */
     public static async createAsync<T extends IUserInfo = IUserInfo>(
         configuration: IAuthServiceConfiguration,
         axiosInstance: AxiosInstance,
         typeSystem?: IAuthenticationInfoTypeSystem<T>,
-        throwOnError: boolean = false 
+        throwOnError: boolean = false
     ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         await authService.refresh(true);
@@ -140,7 +140,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
      * Closes this AuthService, ejecting the axios interceptor, the window message hook
-     * and clearing onChange subscriptions. 
+     * and clearing onChange subscriptions.
      * This can be called multiple times.
      */
     public close(): void
@@ -236,29 +236,29 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     /**
      * When the server cannot be reached, there is no point to call localDisconnect(): we'd better wait its availability.
      * Actually, when we are refreshing and the current authentication is None and the LocalStorage
-     * is enabled, we restore the available schemes and the Authentication info from the local storage.   
-     * 
+     * is enabled, we restore the available schemes and the Authentication info from the local storage.
+     *
      * When the server returns an HTTP error, whether we should lose the local authentication
      * (i.e call localDisconnect) is questionable...
      * 4XX (Client errors) means that someting's wrong in the payload we sent (an invalid user data for instance): such a client
      * error should not lose the current authentication.
      * Same for 5XX (server errors), it may be a bad handling of a Client error, or the server is temporary unavailable.
-     * However, a 1XX (information), a 3XX (redirection) are NOT in the protocol (and browsers silently follow them anyway). 
-     * This is weird. Just like if we receive an out-of-band status (600). 
+     * However, a 1XX (information), a 3XX (redirection) are NOT in the protocol (and browsers silently follow them anyway).
+     * This is weird. Just like if we receive an out-of-band status (600).
      * But how does this impact our current local authentication information?
      * Disconnecting the user here doesn't seem to provide any benefits...
-     * 
+     *
      * The only thing we can do on error is checking the current authentication expiration to update it
      * regardless of the timeouts (since they have been disabled) and reenable them.
-     * 
-     * When the server returned a 200, then the repsonse is applied, no matter what: it may result in a 
-     * localDisconnect and this is fine. 
-     *  
+     *
+     * When the server returned a 200, then the repsonse is applied, no matter what: it may result in a
+     * localDisconnect and this is fine.
+     *
      * Error handling is never easy...
-     * 
-     * @param entryPoint 
-     * @param requestOptions 
-     * @param skipResponseHandling 
+     *
+     * @param entryPoint
+     * @param requestOptions
+     * @param skipResponseHandling
      */
     private async sendRequest(
         entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
@@ -276,12 +276,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
             const status = response.status;
             if (status === 200 ) {
-                if (!skipResponseHandling ) { 
-                    this.handleServerResponse(response.data); 
+                if (!skipResponseHandling ) {
+                    this.handleServerResponse(response.data);
                 }
                 // Done (handleServerResponse did its job or there is nothing to do).
                 return;
-            } 
+            }
             // Sets the current error (weird success status).
             this._currentError = new WebFrontAuthError({
                 errorId: `HTTP.Status.${status}`,
@@ -302,7 +302,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 // If we are refreshing and there is no connection to the server, and the current level is None,
                 /// we challenge the local storage and try to restore the available schemes and (unsafe) authentication.
                 if( this._authenticationInfo.level == AuthLevel.None
-                    && entryPoint === 'refresh' 
+                    && entryPoint === 'refresh'
                     && this._configuration.localStorage ) {
 
                     const [auth,schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( this._configuration.localStorage,
@@ -316,7 +316,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                         return;
                     }
                 }
-            } 
+            }
             else {
             // Sets the current error.
             const errorResponse = axiosError.response;
@@ -344,7 +344,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._currentError = undefined;
 
         // Checking the version first.
-        if (r.version) { 
+        if (r.version) {
             // Only refresh returns the version.
             this._endPointVersion = r.version;
             if( this._checkVersion && this._endPointVersion != AuthService.clientVersion )
@@ -358,7 +358,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             }
         }
        if (r.schemes) { this._availableSchemes = r.schemes; }
-        
+
         if (r.loginFailureCode && r.loginFailureReason) {
             this._currentError = new WebFrontAuthError({
                 loginFailureCode: r.loginFailureCode,
@@ -388,8 +388,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = r.refreshable ? r.refreshable : false;
         this._rememberMe = r.rememberMe ? r.rememberMe : false;
 
-        this._authenticationInfo = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes) 
-                                   ?? this._typeSystem.authenticationInfo.none.setDeviceId(this._authenticationInfo.deviceId);
+        const info = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes) ;
+        this._authenticationInfo = info !== null ? info : this._typeSystem.authenticationInfo.none.setDeviceId(this._authenticationInfo.deviceId);
 
         this.onNewAuthenticationInfo();
     }
@@ -455,9 +455,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
      * Refreshes the current authentication.
-     * @param callBackend True to trigger a refresh of the authentication on the backend: the backend IWebFrontAuthLoginService.RefreshAuthenticationInfoAsync 
+     * @param callBackend True to trigger a refresh of the authentication on the backend: the backend IWebFrontAuthLoginService.RefreshAuthenticationInfoAsync
      * is called so that user information (the user name) can be updated.
-     *  When false (the default), the server trusts the current authentication and may renew its expiration (according to its configuration). 
+     *  When false (the default), the server trusts the current authentication and may renew its expiration (according to its configuration).
      * @param requestSchemes True to force a refresh of the availableSchemes (this is automatically
      * true when current availableSchemes is empty).
      * @param requestVersion True to force a refresh of the version (this is automatically
@@ -602,7 +602,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return this._subscribers.delete(func);
     }
     //#endregion
-    
+
     private buildQueryString( params?: Array<string | { key: string, value: string }>, scheme?: string ): string {
         let query = params && params.length
                 ? `?${params.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
