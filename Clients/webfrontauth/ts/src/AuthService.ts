@@ -6,7 +6,9 @@ import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';
 import { PopupDescriptor } from './PopupDescriptor';
-import { version } from "../../package.json";
+//import { version } from "../../package.json";
+
+const version = "0.0.0-0";
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 

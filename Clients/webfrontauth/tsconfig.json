@@ -14,7 +14,7 @@
         "removeComments": true
     },
     "include": [
-        "ts/**/*"
+        "ts/src/**/*"
     ],
     "exclude": [
         ".vscode",
