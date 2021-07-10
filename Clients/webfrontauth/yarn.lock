@@ -633,7 +633,6 @@ __metadata:
     axios-cookiejar-support: 0.5.1
     jest: 25.5.4
     jest-localstorage-mock: ^2.4.14
-    jest-nyancat-reporter: ^2.0.0
     rimraf: ^3.0.2
     tough-cookie: 2.3.4
     ts-jest: ^25.4.6
@@ -3069,16 +3068,6 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"jest-nyancat-reporter@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "jest-nyancat-reporter@npm:2.0.0"
-  dependencies:
-    ms: ^2.1.1
-    supports-color: ^7.0.0
-  checksum: ecbd507aa54ecbcd42dbec286e85385ca0626af35596c2bb8bb2a16e026db584881353ccf919e401fca12d538a13a33020fd94d6c1e88b63a51c5d7951227397
-  languageName: node
-  linkType: hard
-
 "jest-pnp-resolver@npm:^1.2.1":
   version: 1.2.2
   resolution: "jest-pnp-resolver@npm:1.2.2"
@@ -3776,7 +3765,7 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"ms@npm:^2.0.0, ms@npm:^2.1.1":
+"ms@npm:^2.0.0":
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
   checksum: 6e721e648a544154d5de4c114b32f573d8027ca8ec505cf6c1105e505986d6ac46934a1256735aa0eece8eb2f5b2a1230503b2dddd3b100f9f016fd8a4f15f33
