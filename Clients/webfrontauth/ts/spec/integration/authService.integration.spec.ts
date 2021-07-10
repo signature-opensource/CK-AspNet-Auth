@@ -145,17 +145,4 @@ describe('AuthService', function() {
         await authService.basicLogin('admin','admin');
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
     });
-
-    it('should call OnChange() for every subscribed functions.', async function() {
-        const booleanArray: boolean[] = [false, false, false];
-        const functionArray: (() => void)[] = [];
-
-        for(let i=0; i<booleanArray.length; ++i) functionArray.push(function() { booleanArray[i] = true; });
-        functionArray.forEach(func => authService.addOnChange(() => func()));
-
-        await authService.logout();
-        booleanArray.forEach(bool => expect(bool).toBe(true));
-
-        functionArray.forEach(func => authService.removeOnChange(() => func()));
-    });
 });

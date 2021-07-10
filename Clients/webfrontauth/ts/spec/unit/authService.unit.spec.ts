@@ -18,24 +18,30 @@ describe('AuthService', function () {
     let responseInterceptorId: number;
 
     const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-    const emptyResponse: IWebFrontAuthResponse = {
-        info: undefined,
-        token: undefined,
-        refreshable: false
-    }
-    let serverResponse: IWebFrontAuthResponse = emptyResponse;
-
     const schemeLastUsed = new Date();
     const exp = new Date();
     exp.setHours(exp.getHours() + 6);
     const cexp = new Date();
     cexp.setHours(cexp.getHours() + 3);
 
+    const emptyResponse: IWebFrontAuthResponse = {};
+    let serverResponse: IWebFrontAuthResponse = emptyResponse;
+
     const anonymous: IUserInfo = {
         userId: 0,
         userName: '',
         schemes: []
     };
+
+    async function doLogin(name:string) {
+        serverResponse = new ResponseBuilder()
+        .withUser({ id: 2, name: 'Alice', schemes: [{ name: name, lastUsed: schemeLastUsed }] })
+        .withExpires(exp)
+        .withToken('CfDJ8CS62…pLB10X')
+        .withRefreshable(true)
+        .build();
+        await authService.basicLogin('', '');
+    }
 
     beforeAll(function () {
         requestInterceptorId = axiosInstance.interceptors.request.use((config: AxiosRequestConfig) => {
@@ -451,13 +457,7 @@ describe('AuthService', function () {
             authService.addOnChange(updateAuthenticationInfo);
             authService.addOnChange(updateToken);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(false);
             expect(token).not.toEqual('');
@@ -470,34 +470,25 @@ describe('AuthService', function () {
 
             authService.removeOnChange(updateAuthenticationInfo);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
             expect(token).not.toEqual('');
         });
 
         it('should contains the source as an Event parameter.', async function () {
-            const assertEventSource = (source: AuthService) => expect(source).toEqual(authService);
+            let eventSource: AuthService;
+            const assertEventSource = (source: AuthService) => eventSource = source;
             authService.addOnChange(assertEventSource);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
+
+            expect(eventSource).toEqual(authService);
         });
 
         /**
          * NOTE
-         * Do not use async here. Otherwise an "method is overspecified" error will be throw.
+         * Do not use async here. Otherwise a "method is overspecified" error will be throw.
          * This error is thrown whenever a function returns a promise and uses the done callback.
          * Since this test relies on events' callback, we call done() after the last expectation.
          */
@@ -531,6 +522,32 @@ describe('AuthService', function () {
                 authService.addOnChange(assertCriticalExpiresDemoted);
             });
         });
+
+        it('should call OnChange() for every subscribed functions.', async function() {
+            const booleanArray: boolean[] = [false, false, false];
+            const functionArray: (() => void)[] = [];
+    
+            expect(false);
+            throw new Error("Never called :(");
+
+            for(let i=0; i<booleanArray.length; ++i) functionArray.push(function() { booleanArray[i] = true; });
+            functionArray.forEach(func => authService.addOnChange(() => func()));
+
+            await doLogin( 'Alice' );
+            booleanArray.forEach(b => expect(b).toBe(true));
+            // Clears the array.
+            for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
+
+            await authService.logout();
+            booleanArray.forEach(b => expect(b).toBe(true));
+            // Clears the array.
+            for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
+    
+            functionArray.forEach(func => authService.removeOnChange(() => func()));
+            await doLogin( 'Alice' );
+            booleanArray.forEach(b => expect(b).toBe(false));
+        });
+    
     });
 
 });
