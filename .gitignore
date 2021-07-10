@@ -341,3 +341,6 @@ $StObjGen/
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+# Using genversion in the package.json build script to generate this file.
+AuthService.version.ts
