@@ -17,7 +17,7 @@ describe('AuthService', function () {
     let requestInterceptorId: number;
     let responseInterceptorId: number;
 
-    const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+    let authService!: AuthService;
     const schemeLastUsed = new Date();
     const exp = new Date();
     exp.setHours(exp.getHours() + 6);
@@ -44,6 +44,8 @@ describe('AuthService', function () {
     }
 
     beforeAll(function () {
+        authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+        
         requestInterceptorId = axiosInstance.interceptors.request.use((config: AxiosRequestConfig) => {
             return config;
         });
@@ -63,10 +65,7 @@ describe('AuthService', function () {
 
     beforeEach(async function () {
         serverResponse = emptyResponse;
-        // logout fills the local storage.
         await authService.logout();
-        // We cleanup the localstorage AFTER logout to ensure tests isolation.
-        localStorage.clear();
         serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
         await authService.refresh( false, true );
     });
@@ -74,17 +73,15 @@ describe('AuthService', function () {
     afterAll(function () {
         axiosInstance.interceptors.request.eject(requestInterceptorId);
         axiosInstance.interceptors.response.eject(responseInterceptorId);
+        authService.close();
     });
 
     describe('when using localStorage', function() {
         
-        // Nicole used the 'Provider' scheme.
-        const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
-        const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
-        const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
-        const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
-
         it('JSON.stringify( StdAuthenticationInfo ) is safe (calls TypeSystem.toJSON) and is actually like a Server Response.', async function() {
+
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
             expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( authService.typeSystem.authenticationInfo.toJSON( nicoleAuth ) ) );
 
             const user = { id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] };
@@ -117,7 +114,9 @@ describe('AuthService', function () {
         });
 
         it('AuthenticationInfo is restored as unsafe user.', function() {
-            
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+           
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'theEndPoint', nicoleAuth );
 
@@ -132,7 +131,12 @@ describe('AuthService', function () {
         });
 
         it('AuthenticationInfo and Schemes are stored by end point.', function() {
-            
+
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+            const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
+               
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth ); 
             expect( momoAuth.level ).toBe( AuthLevel.Normal );
@@ -477,7 +481,7 @@ describe('AuthService', function () {
         });
 
         it('should contains the source as an Event parameter.', async function () {
-            let eventSource: AuthService;
+            let eventSource = null;
             const assertEventSource = (source: AuthService) => eventSource = source;
             authService.addOnChange(assertEventSource);
 
@@ -526,12 +530,9 @@ describe('AuthService', function () {
         it('should call OnChange() for every subscribed functions.', async function() {
             const booleanArray: boolean[] = [false, false, false];
             const functionArray: (() => void)[] = [];
-    
-            expect(false);
-            throw new Error("Never called :(");
 
             for(let i=0; i<booleanArray.length; ++i) functionArray.push(function() { booleanArray[i] = true; });
-            functionArray.forEach(func => authService.addOnChange(() => func()));
+            functionArray.forEach(func => authService.addOnChange(func));
 
             await doLogin( 'Alice' );
             booleanArray.forEach(b => expect(b).toBe(true));
@@ -543,7 +544,7 @@ describe('AuthService', function () {
             // Clears the array.
             for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
     
-            functionArray.forEach(func => authService.removeOnChange(() => func()));
+            functionArray.forEach(func => authService.removeOnChange(func));
             await doLogin( 'Alice' );
             booleanArray.forEach(b => expect(b).toBe(false));
         });
