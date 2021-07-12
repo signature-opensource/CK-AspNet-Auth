@@ -3,12 +3,12 @@
   "version": "0.0.0-0",
   "description": "CK-AspNet-Auth-Client",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "build": "genversion --es6 --semi ts/src/AuthService.version.ts && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
     "watch": "tsc -w",
-    "test": "npm run test:unit",
+    "test": "yarn run test:unit",
     "test:unit": "jest ts-node/register \"spec/.*\\.unit\\.spec\\.ts\"",
     "test:integration": "jest ts-node/register \"spec/.*\\.integration\\.spec\\.ts\"",
-    "clean": "rimraf ./src && rimraf ./spec",
+    "clean": "rimraf ./dist",
     "prepublishOnly": "npm run clean && npm run build && npm test"
   },
   "license": "MIT",
@@ -18,18 +18,19 @@
     "dist/"
   ],
   "devDependencies": {
-    "@types/jest": "25.1.4",
+    "@types/jest": "25.2.3",
+    "@types/tough-cookie": "2.3.4",
     "axios-cookiejar-support": "0.5.1",
-    "jest": "^27.0.4",
+    "genversion": "^3.0.1",
+    "jest": "25.5.4",
     "jest-localstorage-mock": "^2.4.14",
     "rimraf": "^3.0.2",
-    "ts-jest": "^27.0.3",
-    "typescript": "~3.5.3"
+    "tough-cookie": "2.3.4",
+    "ts-jest": "^25.4.6",
+    "typescript": "3.5.3"
   },
   "dependencies": {
-    "@types/tough-cookie": "2.3.4",
-    "axios": "0.21.1",
-    "tough-cookie": "2.3.4"
+    "axios": "0.21.1"
   },
   "repository": {
     "type": "git",

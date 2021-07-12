@@ -21,13 +21,6 @@ The following features are exposed:
 - `NgxAuthService`: A wrapper around `AuthService` that provides an `Observable<IAuthenticationInfo>` emitted every time authentication changes.
 - The WFA `AuthService` can be injected into your components, or services.
 
-## Side effects
-
-`@signature/webfrontauth-ngx` provides some services which may affect your entire application:
-
-- With `AuthInterceptor`: All requests made using the Angular `HttpService` will be authenticated by injecting the user token from `AuthService` into the `Authorization: Bearer` HTTP request header.
-  - **No domain check is made.** Ensure your application does *not* call third party or untrusted domains with the Angular `HttpService`, or **your user token will leak to the outside.**
-
 ## Requirements
 
 **Using NgxAuthModule requires you to inject configuration *before `bootstrapModule()` is called*, most likely in your `main.ts`,** by providing the following injection tokens:

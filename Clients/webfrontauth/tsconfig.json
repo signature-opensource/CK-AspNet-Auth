@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "strict": true,
         "target": "es5",
         "module": "ES6",
         "moduleResolution": "node",
@@ -9,10 +10,12 @@
         "sourceMap": true,
         "declaration": true,
         "esModuleInterop": true,
-        "strict": true
+        "resolveJsonModule": true,
+        "removeComments": true,
+        "rootDir": "ts/src"
     },
     "include": [
-        "ts/**/*"
+        "ts/src/**/*"
     ],
     "exclude": [
         ".vscode",
