@@ -30,6 +30,7 @@ namespace CK.AspNet.Auth.Tests
                 }
             } ) )
             {
+                var options = new WebFrontAuthOptions();
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
                 auth.Info.User.UserName.Should().Be( "Albert" );
                 auth.RememberMe.Should().Be( rememberMe );
@@ -41,7 +42,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 else
                 {
-                    var authCookie = cookies.Single( c => c.Name == WebFrontAuthService.AuthCookieName );
+                    var authCookie = cookies.Single( c => c.Name == options.AuthCookieName );
                     authCookie.Expires.Should().Be( DateTime.MinValue, "RememberMe is false: the authentication cookie uses a session lifetime." );
                 }
             }
