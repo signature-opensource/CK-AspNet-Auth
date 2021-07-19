@@ -36,12 +36,12 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Name of the authentication cookie.
         /// </summary>
-        public const string AuthCookieName = ".webFront";
+        public string AuthCookieName { get; }
 
         /// <summary>
         /// Name of the long term authentication cookie.
         /// </summary>
-        public const string UnsafeCookieName = ".webFrontLT";
+        public string UnsafeCookieName => AuthCookieName + "LT";
 
         readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
@@ -105,6 +105,7 @@ namespace CK.AspNet.Auth
             _bearerHeaderName = initialOptions.BearerHeaderName;
             CookieMode = initialOptions.CookieMode;
             _cookiePolicy = initialOptions.CookieSecurePolicy;
+            AuthCookieName = initialOptions.AuthCookieName;
         }
 
         /// <summary>

@@ -126,6 +126,8 @@ namespace CK.AspNet.Auth.Tests
             }
             HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
+
+            var LTCookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName + "LT";
             switch( Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode )
             {
                 case AuthenticationCookieMode.WebFrontPath:
@@ -133,14 +135,14 @@ namespace CK.AspNet.Auth.Tests
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
                         var all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all );
+                        CheckLongTermCookie( rememberMe, all, LTCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
                         var all = Client.Cookies.GetCookies( Server.BaseAddress );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all );
+                        CheckLongTermCookie( rememberMe, all, LTCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.None:
@@ -158,9 +160,9 @@ namespace CK.AspNet.Auth.Tests
             c.RememberMe.Should().Be( rememberMe );
             return c;
 
-            static void CheckLongTermCookie( bool rememberMe, System.Net.CookieCollection all )
+            static void CheckLongTermCookie( bool rememberMe, System.Net.CookieCollection all, string cookieName )
             {
-                var cookie = all.Single( c => c.Name == WebFrontAuthService.UnsafeCookieName ).Value;
+                var cookie = all.Single( c => c.Name == cookieName ).Value;
                 cookie = HttpUtility.UrlDecode( cookie );
                 var longTerm = JObject.Parse( cookie );
                 ((string)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeEmpty( "There is always a non empty 'device' member." );
@@ -190,13 +192,13 @@ namespace CK.AspNet.Auth.Tests
                          break;
             }
 
-            string? authCookie = all?.SingleOrDefault( c => c.Name == WebFrontAuthService.AuthCookieName )?.Value;
+            string? authCookie = all?.SingleOrDefault( c => c.Name == Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName )?.Value;
             JObject ltCookie = null;
             string? ltDeviceId = null;
             string? ltUserId = null;
             string? ltUserName = null;
 
-            var ltCookieStr = all?.SingleOrDefault( c => c.Name == WebFrontAuthService.UnsafeCookieName )?.Value;
+            var ltCookieStr = all?.SingleOrDefault( c => c.Name == Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName + "LT" )?.Value;
             if( ltCookieStr != null )
             {
                 ltCookieStr = HttpUtility.UrlDecode( ltCookieStr );
