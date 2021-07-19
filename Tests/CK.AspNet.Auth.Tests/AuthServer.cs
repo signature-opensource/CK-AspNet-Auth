@@ -127,7 +127,7 @@ namespace CK.AspNet.Auth.Tests
             HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
 
-            var cookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName;
+            var LTCookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName + "LT";
             switch( Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode )
             {
                 case AuthenticationCookieMode.WebFrontPath:
@@ -135,14 +135,14 @@ namespace CK.AspNet.Auth.Tests
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
                         var all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all, cookieName );
+                        CheckLongTermCookie( rememberMe, all, LTCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
                         var all = Client.Cookies.GetCookies( Server.BaseAddress );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all, cookieName );
+                        CheckLongTermCookie( rememberMe, all, LTCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.None:
