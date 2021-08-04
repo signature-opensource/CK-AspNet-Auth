@@ -29,6 +29,6 @@ namespace CK.AspNet.Auth
         /// <param name="current">Authenticated user information.</param>
         /// <param name="scopes">The scopes that have been accepted.</param>
         /// <returns>The awaitable.</returns>
-        Task SetReveivedScopesAsync( IActivityMonitor m, HttpContext c, IAuthenticationInfo current, IReadOnlyList<string> scopes );
+        Task SetReceivedScopesAsync( IActivityMonitor m, HttpContext c, IAuthenticationInfo current, IReadOnlyList<string> scopes );
     }
 }
