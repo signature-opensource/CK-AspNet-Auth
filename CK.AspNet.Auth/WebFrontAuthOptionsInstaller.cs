@@ -10,6 +10,10 @@ using System.Text;
 
 namespace CK.DB.AspNet.Auth
 {
+    /// <summary>
+    /// This <see cref="IRealObject"/> automatically registers the configuration section named "CK-WebFrontAuth"
+    /// to be mapped to the <see cref="WebFrontAuthOptions"/>.
+    /// </summary>
     public class WebFrontAuthOptionsInstaller : IRealObject
     {
         void ConfigureServices( StObjContextRoot.ServiceRegister reg )
