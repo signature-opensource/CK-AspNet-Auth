@@ -462,6 +462,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Creates the authentication info, the standard JSON response and sets the cookies.
+        /// Note that the <see cref="FrontAuthenticationInfo"/> is updated in the <see cref="HttpContext.Items"/>.
         /// </summary>
         /// <param name="c">The current Http context.</param>
         /// <param name="u">The user info to login.</param>
@@ -503,6 +504,7 @@ namespace CK.AspNet.Auth
                 authInfo = _typeSystem.AuthenticationInfo.Create( null, deviceId : deviceId );
             }
             var fAuth = new FrontAuthenticationInfo( authInfo, rememberMe );
+            c.Items[typeof( FrontAuthenticationInfo )] = fAuth;
             JObject response = CreateAuthResponse( c, fAuth, refreshable: authInfo.Level >= AuthLevel.Normal && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, onLogin: u );
             SetCookies( c, fAuth );
             return new LoginResult( response, authInfo );
@@ -803,7 +805,7 @@ namespace CK.AspNet.Auth
                     Debug.Assert( u != null && u.UserInfo != null, "Login succeeds." );
                     if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
-                        monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} relogged as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
+                        monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} logged again as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
                     }
                     ctx.SetSuccessfulLogin( u );
                     monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'.", WebFrontAuthMonitorTag );
