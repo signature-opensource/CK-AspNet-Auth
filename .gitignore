@@ -320,9 +320,6 @@ jspm_packages/
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarn-integrity
-
 # dotenv environment variables file
 .env
 
@@ -336,5 +333,14 @@ jspm_packages/
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
-/Clients/webfrontauth/.yarn/cache/
-/Clients/webfrontauth-ngx/.yarn/cache/
+
+.yarn/
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Using genversion in the package.json build script to generate this file.
+AuthService.version.ts

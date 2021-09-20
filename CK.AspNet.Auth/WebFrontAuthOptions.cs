@@ -154,5 +154,12 @@ namespace CK.AspNet.Auth
         /// It is null by default: no schemes elevate a critical authentication level.
         /// </summary>
         public IDictionary<string, TimeSpan>? SchemesCriticalTimeSpan { get; set; }
+
+        /// <summary>
+        /// Gets or sets the initial AuthCookieName. Defaults to ".webFront".
+        /// The long term cookie name equals to AuthCookieName suffixed by "LT".
+        /// This cannot be changed dynamically.
+        /// </summary>
+        public string AuthCookieName { get; set; } = ".webFront";
     }
 }

@@ -55,6 +55,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * @param availableSchemes
      * The optional list of available schemes that are used to update the users' scheme's state (Unused/Active/Deprecated).
      * When specified (not null nor undefined), this parameter takes precedence over the schemes persisted in the local storage (if any).
+     * @returns A valid (AuthLevel.Unsafe) authentication info or null and the schemes. 
      */
     public loadFromLocalStorage( storage: Storage,
                                  endPoint: string,
@@ -85,7 +86,8 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
                 id: auth.unsafeUser.userId, 
                 schemes: auth.unsafeUser.schemes.map( function( s ) { return { name: s.name, lastUsed: s.lastUsed }; } ) },
             exp: auth.expires,
-            cexp: auth.criticalExpires
+            cexp: auth.criticalExpires,
+            deviceId: auth.deviceId
         };
         if( auth.isImpersonated ) {
             o.actualUser = {

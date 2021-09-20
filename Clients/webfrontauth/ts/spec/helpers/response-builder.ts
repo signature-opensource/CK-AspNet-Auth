@@ -27,7 +27,7 @@ export default class ResponseBuilder {
 
     public withUser(user: IResponseUserInfo): ResponseBuilder {
         if( !this._info ) {
-            this._info = { user };
+            this._info = { user, deviceId: "" };
         } else {
             this._info.user = user;
         }
