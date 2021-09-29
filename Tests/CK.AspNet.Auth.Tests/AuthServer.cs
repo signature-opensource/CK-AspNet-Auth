@@ -65,7 +65,7 @@ namespace CK.AspNet.Auth.Tests
                                 }
                                 if( ctx.Request.Query.ContainsKey( "userName" ) )
                                 {
-                                    var authInfo = Microsoft.AspNetCore.Http.CKAspNetAuthHttpContextExtensions.WebFrontAuthenticate( ctx );
+                                    var authInfo = Microsoft.AspNetCore.Http.CKAspNetAuthHttpContextExtensions.GetAuthenticationInfo( ctx );
                                     echo += $" (UserName: '{authInfo.User.UserName}')";
                                 }
                                 await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
