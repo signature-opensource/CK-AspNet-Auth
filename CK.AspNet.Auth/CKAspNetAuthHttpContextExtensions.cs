@@ -36,8 +36,7 @@ namespace Microsoft.AspNetCore.Http
             }
             else
             {
-                WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetRequiredService<WebFrontAuthService>();
-                if( s == null ) throw new InvalidOperationException( "Missing WebFrontAuthService registration in Services." );
+                var s = @this.RequestServices.GetRequiredService<WebFrontAuthService>();
                 authInfo = s.ReadAndCacheAuthenticationHeader( @this ).Info;
             }
             return authInfo;

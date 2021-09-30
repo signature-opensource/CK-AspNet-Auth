@@ -67,7 +67,7 @@ namespace CK.AspNet.Auth
                 {
                     if( cBased.Value == "/refresh" )
                     {
-                        return HandleRefresh( GetRequestMonitor( Context ) );
+                        return HandleRefreshAsync( GetRequestMonitor( Context ) );
                     }
                     else if( cBased.Value == "/basicLogin" )
                     {
@@ -108,7 +108,7 @@ namespace CK.AspNet.Auth
             return Task.FromResult( false );
         }
 
-        async Task<bool> HandleRefresh( IActivityMonitor monitor )
+        async Task<bool> HandleRefreshAsync( IActivityMonitor monitor )
         {
             FrontAuthenticationInfo fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
             Debug.Assert( fAuth != null );
