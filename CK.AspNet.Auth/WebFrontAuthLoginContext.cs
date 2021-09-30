@@ -31,6 +31,9 @@ namespace CK.AspNet.Auth
         UserLoginResult? _failedLogin;
         string? _errorId;
         string? _errorText;
+        // This contains the initial authentication but with the
+        // requested "RememberMe" flag.
+        FrontAuthenticationInfo _initialAuth;
         // Used for Direct login (post return code).
         int _httpErrorCode;
 
@@ -41,10 +44,9 @@ namespace CK.AspNet.Auth
             WebFrontAuthLoginMode loginMode,
             string callingScheme,
             object payload,
-            bool rememberMe,
             AuthenticationProperties? authProps,
             string? initialScheme, 
-            IAuthenticationInfo initialAuth, 
+            FrontAuthenticationInfo initialAuth, 
             string? returnUrl,
             string? callerOrigin,
             List<KeyValuePair<string, StringValues>> userData )
@@ -57,14 +59,15 @@ namespace CK.AspNet.Auth
             CallingScheme = callingScheme;
             Payload = payload;
 
-            // Use the CookieMode != None to set RememberMe to false, not CurrentOptions.UseLongTermCookie
-            // since a non-session authentication cookie provide a "short term resiliency", a "remember me for
-            // the next xxx minutes even if I close my browser" functionality.
-            RememberMe = rememberMe && authService.CookieMode != AuthenticationCookieMode.None;
+            _initialAuth = initialAuth;
+            // CookieMode == None prevents any RememberMe.
+            // And note that when CurrentOptions.UseLongTermCookie is false, we nevertheless allow the "RememberMe" functionality:
+            // The cookie will be a non-session one (a regular cookie that will expire according to CurrentOptions.ExpireTimeSpan)
+            // and as such, provides a "short term resiliency", a "remember me for the next {ExpireTimeSpan} even if I close my browser" functionality.
+            RememberMe = initialAuth.RememberMe && authService.CookieMode != AuthenticationCookieMode.None;
 
             AuthenticationProperties = authProps;
             InitialScheme = initialScheme;
-            InitialAuthentication = initialAuth;
             ReturnUrl = returnUrl;
             CallerOrigin = callerOrigin;
             UserData = userData;
@@ -135,7 +138,7 @@ namespace CK.AspNet.Auth
         /// or the current authentication when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
         /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>.
         /// </summary>
-        public IAuthenticationInfo InitialAuthentication { get; }
+        public IAuthenticationInfo InitialAuthentication => _initialAuth.Info;
 
         /// <summary>
         /// Gets the query (for GET) or form (when POST was used) data of the 
@@ -242,7 +245,7 @@ namespace CK.AspNet.Auth
             _successfulLogin = successResult;
         }
 
-        internal Task SendResponse()
+        internal Task SendResponseAsync()
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorId != null )
@@ -275,7 +278,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( _errorId != null );
             int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
-            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, InitialAuthentication.DeviceId, _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
+            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, _initialAuth.SetUnsafeLevel(), _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
             return HttpContext.Response.WriteAsync( errObj, code );
         }
 
@@ -302,9 +305,9 @@ namespace CK.AspNet.Auth
         Task SendRemoteAuthenticationError()
         {
             Debug.Assert( _errorId != null && _errorText != null );
-            return _authenticationService.SendRemoteAuthenticationError(
+            return _authenticationService.SendRemoteAuthenticationErrorAsync(
                         HttpContext,
-                        InitialAuthentication.DeviceId,
+                        _initialAuth.SetUnsafeLevel(),
                         ReturnUrl,
                         CallerOrigin,
                         _errorId,

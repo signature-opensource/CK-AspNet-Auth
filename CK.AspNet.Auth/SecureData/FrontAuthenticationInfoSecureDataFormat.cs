@@ -13,7 +13,7 @@ namespace CK.AspNet.Auth
     /// Secure <see cref="IAuthenticationInfo"/> data, using a binary serialization 
     /// thanks to <see cref="IAuthenticationTypeSystem"/>.
     /// </summary>
-    class AuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
+    class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
     {
         class Serializer : IDataSerializer<FrontAuthenticationInfo>
         {
@@ -50,7 +50,7 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="t">Type system to use.</param>
         /// <param name="p">Data protector to use.</param>
-        public AuthenticationInfoSecureDataFormat( IAuthenticationTypeSystem t, IDataProtector p )
+        public FrontAuthenticationInfoSecureDataFormat( IAuthenticationTypeSystem t, IDataProtector p )
             : base( new Serializer( t ), p )
 
         {

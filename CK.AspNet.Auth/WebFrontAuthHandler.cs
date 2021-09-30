@@ -135,7 +135,7 @@ namespace CK.AspNet.Auth
                     fAuth = fAuth.SetInfo( authInfo.SetExpires( newExp ) );
                 }
             }
-            JObject response = _authService.CreateAuthResponse( Context, fAuth, refreshable );
+            JObject response = _authService.CreateAuthResponse( Context, refreshable, fAuth );
             if( addSchemes )
             {
                 IEnumerable<string>? list = Options.AvailableSchemes;
@@ -192,76 +192,40 @@ namespace CK.AspNet.Auth
 
             // If "rememberMe" is not found, we keep the previous one (that is false if no current authentication exists).
             // RememberMe defaults to false.
-            bool fRememberMe = fAuthCurrent.RememberMe;
-            if( rememberMe != null ) fRememberMe = rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase );
+            if( rememberMe != null )
+            {
+                fAuthCurrent.SetRememberMe( rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase ) );
+            }
 
-            var current = fAuthCurrent.Info;
-            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, current, userData, returnUrl, callerOrigin );
+            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, userData, returnUrl, callerOrigin );
             // We test impersonation here: login is forbidden whenever the user is impersonated.
             // This check will also be done by WebFrontAuthService.UnifiedLogin.
-            if( current.IsImpersonated )
+            if( fAuthCurrent.Info.IsImpersonated )
             {
                 startContext.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( $"Login is not allowed while impersonation is active: {current.ActualUser.UserId} impersonated into {current.User.UserId}.", WebFrontAuthService.WebFrontAuthMonitorTag );
+                monitor.Error( $"Login is not allowed while impersonation is active: {fAuthCurrent.Info.ActualUser.UserId} impersonated into {fAuthCurrent.Info.User.UserId}.", WebFrontAuthService.WebFrontAuthMonitorTag );
             }
             else
             {
-                await _authService.OnHandlerStartLogin( monitor, startContext );
+                await _authService.OnHandlerStartLoginAsync( monitor, startContext );
             }
             if( startContext.HasError )
             {
-                await startContext.SendError( current.DeviceId );
+                await startContext.SendError();
             }
             else
             {
                 AuthenticationProperties p = new AuthenticationProperties();
-                // This is ugly... but who cares? This is and must remain an implementation detail
-                // between this entry point and the ExtractClearWFAData helper method below.
-                p.Items.Add( fRememberMe ? "WFA-S" : "WFA-N", current.DeviceId + '|' + startContext.Scheme );
-                if( !String.IsNullOrWhiteSpace( startContext.CallerOrigin ) ) p.Items.Add( "WFA-O", startContext.CallerOrigin );
-                if( startContext.ReturnUrl != null ) p.Items.Add( "WFA-R", startContext.ReturnUrl );
-
-                if( current.Level != AuthLevel.None ) p.Items.Add( "WFA-C", _authService.ProtectAuthenticationInfo( Context, fAuthCurrent ) );
-                else if( startContext.UserData.Count != 0 ) p.Items.Add( "WFA-D", _authService.ProtectExtraData( Context, startContext.UserData ) );
+                _authService.SetWFAData( p, fAuthCurrent, startContext.Scheme, startContext.CallerOrigin, startContext.ReturnUrl, startContext.UserData );
                 if( startContext.DynamicScopes != null )
                 {
+                    // This is how wanted OAuth scope are transfered to the target.
                     p.Parameters.Add( "scope", startContext.DynamicScopes );
                 }
                 await Context.ChallengeAsync( scheme, p );
             }
             return true;
         }
-
-        internal static void ExtractClearWFAData( AuthenticationProperties props,
-                                                  out bool rememberMe,
-                                                  out string deviceId,
-                                                  out string? initialScheme,
-                                                  out string? returnUrl,
-                                                  out string? callerOrigin )
-        {
-            rememberMe = false;
-            string? sOrD;
-            if( props.Items.TryGetValue( "WFA-S", out sOrD ) )
-            {
-                rememberMe = true;
-            }
-            else props.Items.TryGetValue( "WFA-N", out sOrD );
-
-            if( sOrD != null )
-            {
-                int idx = sOrD.IndexOf( '|' );
-                deviceId = sOrD.Substring( 0, idx );
-                initialScheme = sOrD.Substring( idx + 1 );
-            }
-            else
-            {
-                deviceId = String.Empty;
-                initialScheme = null;
-            }
-            props.Items.TryGetValue( "WFA-R", out returnUrl );
-            props.Items.TryGetValue( "WFA-O", out callerOrigin );
-        }
-
 
         #region Unsafe Direct Login
         class ProviderLoginRequest
@@ -294,16 +258,15 @@ namespace CK.AspNet.Auth
                                         WebFrontAuthLoginMode.UnsafeDirectLogin,
                                         callingScheme: req.Scheme,
                                         req.Payload,
-                                        req.RememberMe, 
                                         authProps: null,
                                         req.Scheme,
-                                        (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).Info,
+                                        (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).SetRememberMe( req.RememberMe ),
                                         returnUrl: null,
                                         callerOrigin: null,
                                         req.UserData.ToList()
                                         );
 
-                    await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
+                    await _authService.UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
                     {
                         return _loginService.LoginAsync( Context, monitor, req.Scheme, req.Payload, actualLogin );
                     } );
@@ -386,16 +349,15 @@ namespace CK.AspNet.Auth
                     WebFrontAuthLoginMode.BasicLogin,
                     "Basic",
                     Tuple.Create( req.UserName, req.Password ),
-                    req.RememberMe,
                     authProps: null,
                     initialScheme: "Basic",
-                    (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).Info,
+                    (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).SetRememberMe( req.RememberMe ),
                     returnUrl: null,
                     callerOrigin: null,
                     req.UserData.ToList()
                     ); ; ;
 
-                await _authService.UnifiedLogin( monitor, wfaSC, actualLogin =>
+                await _authService.UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
                 {
                     return _loginService.BasicLoginAsync( Context, monitor, req.UserName, req.Password, actualLogin );
                 } );

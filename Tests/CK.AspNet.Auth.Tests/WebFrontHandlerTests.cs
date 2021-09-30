@@ -129,12 +129,14 @@ namespace CK.AspNet.Auth.Tests
             using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
             {
                 var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
+
                 string badToken = firstLogin.Token + 'B';
                 s.Client.Token = badToken;
                 RefreshResponse c = await s.CallRefreshEndPointAsync();
                 c.Info.Level.Should().Be( AuthLevel.None );
                 c.Info.DeviceId.Should().Be( String.Empty );
                 HttpResponseMessage tokenRead = await s.Client.Get( tokenExplainUri );
+
                 tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":{\"user\":{\"id\":0,\"name\":\"\",\"schemes\":[]}},\"rememberMe\":false}" );
             }
         }

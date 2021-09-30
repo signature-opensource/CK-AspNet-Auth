@@ -1,5 +1,6 @@
 using CK.AspNet.Auth;
 using CK.Auth;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -35,7 +36,7 @@ namespace Microsoft.AspNetCore.Http
             }
             else
             {
-                WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetService( typeof( WebFrontAuthService ) );
+                WebFrontAuthService s = (WebFrontAuthService)@this.RequestServices.GetRequiredService<WebFrontAuthService>();
                 if( s == null ) throw new InvalidOperationException( "Missing WebFrontAuthService registration in Services." );
                 authInfo = s.ReadAndCacheAuthenticationHeader( @this ).Info;
             }

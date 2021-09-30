@@ -20,9 +20,8 @@ namespace CK.AspNet.Auth
     public interface IWebFrontAuthValidateAuthenticationInfoService : ISingletonAutoService
     {
         /// <summary>
-        /// Validates or changes the current authentication (returning null revokes it).
-        /// Note that the returned information is valid only for this request (this doesn't update the
-        /// cookies).
+        /// Validates or changes the current authentication (returning null sets the <see cref="IAuthenticationInfo.Level"/> to <see cref="AuthLevel.None"/>).
+        /// Note that the returned information is valid only for this request (this doesn't update the cookies).
         /// <para>
         /// Any exception raised by this method is not intercepted and will cancel the request.
         /// </para>
