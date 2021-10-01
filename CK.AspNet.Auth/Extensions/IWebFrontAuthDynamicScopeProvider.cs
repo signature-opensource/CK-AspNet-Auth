@@ -12,7 +12,8 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Optional service that can handle dynamic scopes.
     /// This service provides the scopes that must be submitted to an authentication provider.
-    /// Updating the scopes are specific processes that must be implemented for each provider.
+    /// Updating the actual scopes that have been accepted or rejected is a specific process
+    /// that must be implemented for each provider.
     /// <para>
     /// For instance: Facebook requires to use its GraphQL API to know which scopes have been
     /// accepted or rejected by the user.

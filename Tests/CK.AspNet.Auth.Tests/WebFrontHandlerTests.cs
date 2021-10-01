@@ -124,7 +124,7 @@ namespace CK.AspNet.Auth.Tests
 
         [TestCase( AuthenticationCookieMode.WebFrontPath )]
         [TestCase( AuthenticationCookieMode.RootPath )]
-        public async Task bad_tokens_are_ignored( AuthenticationCookieMode mode )
+        public async Task bad_tokens_are_ignored_as_long_as_cookies_can_be_used( AuthenticationCookieMode mode )
         {
             using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
             {
@@ -133,11 +133,9 @@ namespace CK.AspNet.Auth.Tests
                 string badToken = firstLogin.Token + 'B';
                 s.Client.Token = badToken;
                 RefreshResponse c = await s.CallRefreshEndPointAsync();
-                c.Info.Level.Should().Be( AuthLevel.None );
-                c.Info.DeviceId.Should().Be( String.Empty );
-                HttpResponseMessage tokenRead = await s.Client.Get( tokenExplainUri );
+                c.Info.Should().BeEquivalentTo( firstLogin.Info, "Authentication has been restored from cookies." );
 
-                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":{\"user\":{\"id\":0,\"name\":\"\",\"schemes\":[]}},\"rememberMe\":false}" );
+                c.Token.Should().NotBeNullOrWhiteSpace( "Regenerated token differs." );
             }
         }
 

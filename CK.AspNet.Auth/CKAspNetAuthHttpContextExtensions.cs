@@ -1,5 +1,6 @@
 using CK.AspNet.Auth;
 using CK.Auth;
+using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -36,8 +37,9 @@ namespace Microsoft.AspNetCore.Http
             }
             else
             {
+                IActivityMonitor? monitor = null;
                 var s = @this.RequestServices.GetRequiredService<WebFrontAuthService>();
-                authInfo = s.ReadAndCacheAuthenticationHeader( @this ).Info;
+                authInfo = s.ReadAndCacheAuthenticationHeader( @this, ref monitor ).Info;
             }
             return authInfo;
         }

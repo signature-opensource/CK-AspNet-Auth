@@ -67,7 +67,7 @@ namespace CK.AspNet.Auth
                 {
                     if( cBased.Value == "/refresh" )
                     {
-                        return HandleRefreshAsync( GetRequestMonitor( Context ) );
+                        return HandleRefreshAsync();
                     }
                     else if( cBased.Value == "/basicLogin" )
                     {
@@ -101,26 +101,36 @@ namespace CK.AspNet.Auth
                 }
                 else
                 {
-                    if( remainder.Value == "/token" ) return HandleToken( GetRequestMonitor( Context ) );
+                    if( remainder.Value == "/token" ) return HandleToken();
                 }
                 return Task.FromResult( true );
             }
             return Task.FromResult( false );
         }
 
-        async Task<bool> HandleRefreshAsync( IActivityMonitor monitor )
+        async Task<bool> HandleRefreshAsync()
         {
-            FrontAuthenticationInfo fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
+            IActivityMonitor? monitor = null;
+            FrontAuthenticationInfo fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             Debug.Assert( fAuth != null );
-            if( Request.Query.Keys.Contains( "callBackend" ) )
+            if( _authService.CurrentOptions.AlwaysCallBackendOnRefresh || Request.Query.Keys.Contains( "callBackend" ) )
             {
                 var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
-                fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, GetRequestMonitor( Context ), fAuth.Info, newExpires ) );
+                monitor ??= GetRequestMonitor( Context );
+                fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, monitor, fAuth.Info, newExpires ) );
             }
             JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
             return await WriteResponseAsync( response );
         }
 
+        /// <summary>
+        /// Applies the <see cref="WebFrontAuthOptions.SlidingExpirationTime"/> (if not 0), handles the <paramref name="addSchemes"/>
+        /// and <paramref name="addVersion"/> and sets the cookies.
+        /// </summary>
+        /// <param name="fAuth">The authentication.</param>
+        /// <param name="addSchemes">Whether authentications schemes must be returned.</param>
+        /// <param name="addVersion">Whether this assembly's version should be returned.</param>
+        /// <returns>The JSON object.</returns>
         async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
         {
             var authInfo = fAuth.Info;
@@ -188,7 +198,7 @@ namespace CK.AspNet.Auth
                                             && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "rememberMe", StringComparison.OrdinalIgnoreCase ) );
 
-            var fAuthCurrent = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
+            var fAuthCurrent = _authService.EnsureAuthenticationInfo( Context, ref monitor );
 
             // If "rememberMe" is not found, we keep the previous one (that is false if no current authentication exists).
             // RememberMe defaults to false.
@@ -249,7 +259,8 @@ namespace CK.AspNet.Auth
             {
                 string? body = await Request.TryReadSmallBodyAsString( 4096 );
                 ProviderLoginRequest? req = body != null ? ReadDirectLoginRequest( monitor, body ) : null;
-                if( req != null && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
+                if( req != null
+                    && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
                 {
                     var wfaSC = new WebFrontAuthLoginContext(
                                         Context,
@@ -260,7 +271,7 @@ namespace CK.AspNet.Auth
                                         req.Payload,
                                         authProps: null,
                                         req.Scheme,
-                                        (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).SetRememberMe( req.RememberMe ),
+                                        _authService.EnsureAuthenticationInfo( Context, ref monitor ).SetRememberMe( req.RememberMe ),
                                         returnUrl: null,
                                         callerOrigin: null,
                                         req.UserData.ToList()
@@ -351,7 +362,7 @@ namespace CK.AspNet.Auth
                     Tuple.Create( req.UserName, req.Password ),
                     authProps: null,
                     initialScheme: "Basic",
-                    (await _authService.EnsureAuthenticationInfoAsync( Context, monitor )).SetRememberMe( req.RememberMe ),
+                    _authService.EnsureAuthenticationInfo( Context, ref monitor ).SetRememberMe( req.RememberMe ),
                     returnUrl: null,
                     callerOrigin: null,
                     req.UserData.ToList()
@@ -388,7 +399,7 @@ namespace CK.AspNet.Auth
         {
             Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
             Response.StatusCode = StatusCodes.Status403Forbidden;
-            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
+            var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             if( fAuth.Info.ActualUser.UserId != 0 )
             {
                 string? body = await Request.TryReadSmallBodyAsString( 1024 );
@@ -461,29 +472,30 @@ namespace CK.AspNet.Auth
 
         #region Authentication handling (handles standard Authenticate API).
 
-        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            var monitor = GetRequestMonitor( Context );
-            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
+            IActivityMonitor? monitor = null;
+            var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             if( fAuth.Info == null )
             {
-                return AuthenticateResult.Fail( "No current Authentication." );
+                return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
             }           
             var principal = new ClaimsPrincipal();
             principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( fAuth.Info, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );
-            return AuthenticateResult.Success( ticket );
+            return Task.FromResult( AuthenticateResult.Success( ticket ) );
         }
 
         #endregion
 
-        async Task<bool> HandleToken( IActivityMonitor monitor )
+        Task<bool> HandleToken()
         {
-            var fAuth = await _authService.EnsureAuthenticationInfoAsync( Context, monitor );
+            IActivityMonitor? monitor = null;
+            var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             var o = new JObject(
                         new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
                         new JProperty( "rememberMe", fAuth.RememberMe ) );
-            return await WriteResponseAsync( o );
+            return WriteResponseAsync( o );
         }
 
         /// <summary>

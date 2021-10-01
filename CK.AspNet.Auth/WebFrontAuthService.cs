@@ -16,6 +16,7 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
@@ -58,7 +59,6 @@ namespace CK.AspNet.Auth
         readonly IWebFrontAuthAutoCreateAccountService? _autoCreateAccountService;
         readonly IWebFrontAuthAutoBindingAccountService? _autoBindingAccountService;
         readonly IWebFrontAuthDynamicScopeProvider? _dynamicScopeProvider;
-        readonly IWebFrontAuthValidateAuthenticationInfoService? _validateAuthenticationInfoService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -80,8 +80,7 @@ namespace CK.AspNet.Auth
             IWebFrontAuthValidateLoginService? validateLoginService = null,
             IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
             IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
-            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null,
-            IWebFrontAuthValidateAuthenticationInfoService? validateAuthenticationInfoService = null )
+            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
@@ -90,7 +89,6 @@ namespace CK.AspNet.Auth
             _autoCreateAccountService = autoCreateAccountService;
             _autoBindingAccountService = autoBindingAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
-            _validateAuthenticationInfoService = validateAuthenticationInfoService;
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
             var cookieFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
@@ -259,14 +257,15 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Handles cached authentication header or calls <see cref="ReadAndCacheAuthenticationHeader"/>.
+        /// Handles cached authentication header or calls ReadAndCacheAuthenticationHeader.
         /// Never null, can be <see cref="IAuthenticationInfoType.None"/>.
         /// </summary>
         /// <param name="c">The context.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>
         /// The cached or resolved authentication info. 
         /// </returns>
-        internal async ValueTask<FrontAuthenticationInfo> EnsureAuthenticationInfoAsync( HttpContext c, IActivityMonitor monitor )
+        internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c, [NotNullIfNotNull("monitor")]ref IActivityMonitor? monitor )
         {
             FrontAuthenticationInfo? authInfo;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
@@ -275,31 +274,7 @@ namespace CK.AspNet.Auth
             }
             else
             {
-                authInfo = ReadAndCacheAuthenticationHeader( c );
-                // If a IWebFrontAuthValidateAuthenticationInfoService is available, calls it.
-                // Exceptions are logged but not intercepted here: the request MUST fail!
-                if( _validateAuthenticationInfoService != null )
-                {
-                    try
-                    {
-                        var vInfo = await _validateAuthenticationInfoService.ValidateAuthenticationInfoAsync( c, monitor, authInfo.Info );
-                        if( vInfo == null )
-                        {
-                            authInfo = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None.SetDeviceId( authInfo.Info.DeviceId ), false );
-                            monitor.Trace( $"The FrontAuthenticationInfo has been reset by '{_validateAuthenticationInfoService.GetType()}' service." );
-                        }
-                        else if( vInfo != authInfo.Info )
-                        {
-                            monitor.Trace( $"The FrontAuthenticationInfo has been modified by '{_validateAuthenticationInfoService.GetType()}' service." );
-                            authInfo = authInfo.SetInfo( vInfo );
-                        }
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Fatal( $"While calling '{_validateAuthenticationInfoService.GetType()}' service. Exception is rethrown.", ex );
-                        throw;
-                    }
-                }
+                authInfo = ReadAndCacheAuthenticationHeader( c, ref monitor );
             }
             return authInfo;
         }
@@ -309,63 +284,89 @@ namespace CK.AspNet.Auth
         /// long term cookie) and caches authentication in request items.
         /// </summary>
         /// <param name="c">The context.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>
-        /// The cached or resolved authentication info. 
+        /// The front authentication info. 
         /// </returns>
-        internal FrontAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c )
+        internal FrontAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c, ref IActivityMonitor? monitor )
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( FrontAuthenticationInfo ) ) );
-            var monitor = GetRequestMonitor( c );
             bool shouldSetCookies = false;
-            FrontAuthenticationInfo fAuth;
-            try
-            {
-                // First try from the bearer: this is always the preferred way.
-                string authorization = c.Request.Headers[_bearerHeaderName];
-                bool fromBearer = !string.IsNullOrEmpty( authorization )
+            FrontAuthenticationInfo? fAuth = null;
+            // First try from the bearer: this is always the preferred way.
+            string authorization = c.Request.Headers[_bearerHeaderName];
+            bool fromBearer = !string.IsNullOrEmpty( authorization )
                               && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase );
-                if( fromBearer )
+            if( fromBearer )
+            {
+                try
                 {
                     Debug.Assert( "Bearer ".Length == 7 );
                     string token = authorization.Substring( 7 ).Trim();
                     fAuth = UnprotectAuthenticationInfo( token );
                 }
-                else
+                catch( Exception ex )
                 {
-                    // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                    if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
+                    monitor ??= GetRequestMonitor( c );
+                    monitor.Error( "While reading bearer.", ex );
+                }
+            }
+            if( fAuth == null )
+            {
+                // Best case is when we have the authentication cookie, otherwise use the long term cookie.
+                if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
+                {
+                    try
                     {
                         fAuth = _cookieFormat.Unprotect( cookie );
                     }
-                    else if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
+                    catch( Exception ex )
                     {
-                        var o = JObject.Parse( cookie );
-                        // The long term cookie contains a deviceId field.
-                        string? deviceId = (string?)o[StdAuthenticationTypeSystem.DeviceIdKeyType];
-                        // We may have a "deviceId only" cookie.
-                        IUserInfo? info = null;
-                        if( o.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ) )
-                        {
-                            info = _typeSystem.UserInfo.FromJObject( o );
-                        }
-                        var auth = _typeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
-                        // If there is a long term cookie with the user information, then we are "remembering"!
-                        // (Checking UserId != 0 here is just to be safe since the anonymous must not "remember").
-                        fAuth = new FrontAuthenticationInfo( auth, rememberMe: info != null && info.UserId != 0 );
+                        monitor ??= GetRequestMonitor( c );
+                        monitor.Error( "While reading Cookie.", ex );
                     }
-                    else
+                }
+                if( fAuth == null )
+                {
+                    if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
                     {
-                        // We have nothing:
+                        try
+                        {
+                            var o = JObject.Parse( cookie );
+                            // The long term cookie contains a deviceId field.
+                            string? deviceId = (string?)o[StdAuthenticationTypeSystem.DeviceIdKeyType];
+                            // We may have a "deviceId only" cookie.
+                            IUserInfo? info = null;
+                            if( o.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ) )
+                            {
+                                info = _typeSystem.UserInfo.FromJObject( o );
+                            }
+                            var auth = _typeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
+                            Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
+                            // If there is a long term cookie with the user information, then we are "remembering"!
+                            // (Checking UserId != 0 here is just to be safe since the anonymous must not "remember").
+                            fAuth = new FrontAuthenticationInfo( auth, rememberMe: info != null && info.UserId != 0 );
+                        }
+                        catch( Exception ex )
+                        {
+                            monitor ??= GetRequestMonitor( c );
+                            monitor.Error( "While reading Long Term Cookie.", ex );
+                        }
+                    }
+                    if( fAuth == null )
+                    {
+                        // We have nothing or only errors:
                         // - If we could have something (either because CookieMode is AuthenticationCookieMode.RootPath or the request
                         // is inside the /.webfront/c), then we create a new unauthenticated info with a new device identifier.
                         // - If we are outside of the cookie context, we do nothing (otherwise we'll reset the current authentication).
                         if( CookieMode == AuthenticationCookieMode.RootPath
                             || (CookieMode == AuthenticationCookieMode.WebFrontPath
-                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase ) ) )
+                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase )) )
                         {
                             var deviceId = CreateNewDeviceId();
-                            var info = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
-                            fAuth = new FrontAuthenticationInfo( info, rememberMe: false );
+                            var auth = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
+                            fAuth = new FrontAuthenticationInfo( auth, rememberMe: false );
+                            Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
                             // We set the long lived cookie if possible. The device identifier will be de facto persisted.
                             shouldSetCookies = true;
                         }
@@ -375,31 +376,26 @@ namespace CK.AspNet.Auth
                         }
                     }
                 }
-                // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
+            }
+            // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+            if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
+            {
+                var info = fAuth.Info;
+                TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+                TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
+                if( info.Level >= AuthLevel.Normal
+                    && CookieMode == AuthenticationCookieMode.RootPath
+                    && halfSlidingExpirationTime > TimeSpan.Zero )
                 {
-                    var info = fAuth.Info;
-                    TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
-                    TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                    if( info.Level >= AuthLevel.Normal
-                        && CookieMode == AuthenticationCookieMode.RootPath
-                        && halfSlidingExpirationTime > TimeSpan.Zero )
+                    Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
+                    if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
                     {
-                        Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
-                        if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
-                        {
-                            fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
-                            shouldSetCookies = true;
-                        }
+                        fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
+                        shouldSetCookies = true;
                     }
                 }
-                if( shouldSetCookies ) SetCookies( c, fAuth );
             }
-            catch( Exception ex )
-            {
-                monitor.Error( "While reading authentication info (=> BadRequest).", ex );
-                fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
-            }
+            if( shouldSetCookies ) SetCookies( c, fAuth );
             c.Items.Add( typeof( FrontAuthenticationInfo ), fAuth );
             return fAuth;
         }

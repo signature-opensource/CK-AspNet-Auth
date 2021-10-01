@@ -127,7 +127,12 @@ namespace CK.AspNet.Auth.Tests
             HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
 
-            var LTCookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName + "LT";
+            var c = RefreshResponse.Parse( TypeSystem, response.Content.ReadAsStringAsync().Result );
+            c.Info.Level.Should().Be( AuthLevel.Normal );
+            c.Info.User.UserName.Should().Be( "Albert" );
+
+            var cookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName;
+            var ltCookieName = cookieName + "LT";
             switch( Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode )
             {
                 case AuthenticationCookieMode.WebFrontPath:
@@ -135,14 +140,16 @@ namespace CK.AspNet.Auth.Tests
                         Client.Cookies.GetCookies( Server.BaseAddress ).Should().BeEmpty();
                         var all = Client.Cookies.GetCookies( new Uri( Server.BaseAddress, "/.webfront/c/" ) );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all, LTCookieName );
+                        CookieIsNotTheSameAsToken( all, cookieName, c );
+                        CheckLongTermCookie( rememberMe, all, ltCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.RootPath:
                     {
                         var all = Client.Cookies.GetCookies( Server.BaseAddress );
                         all.Should().HaveCount( 2 );
-                        CheckLongTermCookie( rememberMe, all, LTCookieName );
+                        CookieIsNotTheSameAsToken( all, cookieName, c );
+                        CheckLongTermCookie( rememberMe, all, ltCookieName );
                         break;
                     }
                 case AuthenticationCookieMode.None:
@@ -154,9 +161,7 @@ namespace CK.AspNet.Auth.Tests
                         break;
                     }
             }
-            var c = RefreshResponse.Parse( TypeSystem, response.Content.ReadAsStringAsync().Result );
-            c.Info.Level.Should().Be( AuthLevel.Normal );
-            c.Info.User.UserName.Should().Be( "Albert" );
+
             c.RememberMe.Should().Be( rememberMe );
             return c;
 
@@ -167,6 +172,13 @@ namespace CK.AspNet.Auth.Tests
                 var longTerm = JObject.Parse( cookie );
                 ((string)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeEmpty( "There is always a non empty 'device' member." );
                 longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).Should().Be( rememberMe, "The user is here only when remember is true." );
+            }
+
+            static void CookieIsNotTheSameAsToken( System.Net.CookieCollection all, string cookieName, RefreshResponse r )
+            {
+                var cookie = all.Single( c => c.Name == cookieName ).Value;
+                cookie = HttpUtility.UrlDecode( cookie );
+                cookie.Should().NotBe( r.Token );
             }
         }
 
