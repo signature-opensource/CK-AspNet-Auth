@@ -2,7 +2,7 @@ import { IUserInfo, AuthLevel } from '../authService.model.public';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
 
 /**
- * Standard immutable implementation forIAuthenticationInfo.
+ * Standard immutable implementation for IAuthenticationInfo.
  */
 export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo> {
 
@@ -52,7 +52,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         
     /** 
      * Gets the device identifier. 
-     * Thhe empty string is the default (unset, unknown) device identifier.
+     * The empty string is the default (unset, unknown) device identifier.
      */
     public get deviceId(): string { return this._deviceId; }
 
@@ -238,5 +238,9 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         if( !firstDate ) return !secondDate;
         if( !secondDate ) return false;
         return firstDate.getTime() === secondDate.getTime();
+    }
+
+    public toJSON() : Object {
+        return { user: this.user, unsafeUser: this.unsafeUser, level: this.level, expires: this.expires, criticalExpires: this.criticalExpires, deviceId: this.deviceId, isImpersonated: this.isImpersonated, actualUser: this.actualUser };
     }
 }
