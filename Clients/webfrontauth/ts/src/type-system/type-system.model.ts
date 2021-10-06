@@ -53,11 +53,6 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
      * @param utcNow The date to consider to challenge expirations.
      */
     clearImpersonation(utcNow?: Date): IAuthenticationInfoImpl<T>;
-
-    /**
-     * Generates a JSON compatible object for this Authentication info.
-     */
-    toJSON() : Object 
 }
 
 /** Defines a type system that exposes a type manager for IUserInfo and for IAuthenticationInfo. */

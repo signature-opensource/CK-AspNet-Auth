@@ -78,7 +78,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * Generates a JSON compatible object for the Authentication info.
      * @param auth The authentication information to serialize.
      */
-    public toJSON( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
+    private toServerResponse( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
         const o : IResponseInfo = 
         { 
             user: { 
@@ -119,7 +119,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         else
         {
             auth = auth.clearImpersonation().setExpires();
-            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( auth ) );
+            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( this.toServerResponse( auth ) ) );
         }
     }
 

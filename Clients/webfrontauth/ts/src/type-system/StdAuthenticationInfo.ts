@@ -219,14 +219,6 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
             : this.checkExpiration(utcNow);
     }
 
-    /**
-     * Generates a JSON compatible object for the Authentication info.
-     * @param auth The authentication information to serialize.
-     */
-    public toJSON() : Object {
-        return this._typeSystem.authenticationInfo.toJSON( this );
-    }
-
    /**
      * Creates a new StdAuthenticationInfo bound to the same IAuthenticationInfoTypeSystem<T>. 
      * Note that expiration dates are checked against the utcNow parameter so that level is
