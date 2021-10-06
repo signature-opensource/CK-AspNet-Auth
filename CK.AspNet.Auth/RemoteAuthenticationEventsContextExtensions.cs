@@ -88,7 +88,10 @@ namespace CK.AspNet.Auth
             h.HandleResponse();
             var authService = h.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
             authService.GetWFAData( h.HttpContext, properties, out var fAuth, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
-            if( setUnsafeLevel ) fAuth = fAuth.SetUnsafeLevel();
+            if( setUnsafeLevel )
+            {
+                fAuth = fAuth.SetUnsafeLevel();
+            }
             return authService.SendRemoteAuthenticationErrorAsync( h.HttpContext, fAuth, returnUrl, callerOrigin, errorId, errorText, initialScheme, h.Scheme.Name, userData );
         }
 

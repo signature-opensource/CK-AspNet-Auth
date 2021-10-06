@@ -606,6 +606,22 @@ namespace CK.AspNet.Auth
                 {
                     parameters = parameters.Add( "errorText", errorText );
                 }
+                // UnsafeActualUser must be removed.
+                // A ActualLevel must be added.
+                //  => SetLevel(): if !impersonated => both changed.
+                //                 if impersonated => Level is set at most to the ActualLevel.
+                //  => SetActualLevel(): if !impersonated => both changed.
+                //                       if impersonated => Sets the actual level.
+                //                       Level is clamped to be at most the ActualLevel.
+                //
+                // 
+                // if( fAuth.Info.ActualLevel <= AuthLevel.Unsafe ) ??
+                // {
+                //    // Need a /c/downgradeLevel entry point ? (but we have it: Logout is downgrade to None + forget deviceId...)
+                //    // "forget deviceId" on None should be in the WebFrontAuthOption...
+                //
+                //    parameters = parameters.Add( "wfaAuthLevel", fAuth.Info.ActualLevel );
+                // }
                 int loginFailureCode = failedLogin?.LoginFailureCode ?? 0;
                 if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
                 if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );

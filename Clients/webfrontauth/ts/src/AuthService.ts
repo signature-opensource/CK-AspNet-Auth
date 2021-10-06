@@ -493,8 +493,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 this._configuration.localStorage,
                 this._configuration.webFrontAuthEndPoint,
                 null,
-                []
-                    )
+                [] )
         }
         await this.refresh();
     }
