@@ -15,4 +15,8 @@ export class StdUserSchemeInfo implements IUserSchemeInfo {
         this._lastUsed = lastUsed  instanceof Date ? lastUsed : new Date( Date.parse( lastUsed ) );
         this._status = status;
     }
+
+    public toJSON() {
+        return { name: this.name, lastUsed: this.lastUsed, status: this.status };
+    }
 }

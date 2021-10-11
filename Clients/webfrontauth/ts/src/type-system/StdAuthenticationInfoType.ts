@@ -33,11 +33,11 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * @param o Any object that must be shaped like an authentication info.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    public fromJson(o: {[index:string]: any}, availableSchemes?: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo>|null {
+    public fromServerResponse(o: {[index:string]: any}, availableSchemes?: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo>|null {
         if (!o) return null; 
-        const user = this._typeSystem.userInfo.fromJson(o[StdKeyType.user], availableSchemes);
+        const user = this._typeSystem.userInfo.fromServerResponse(o[StdKeyType.user], availableSchemes);
         // ActualUser may be null here.
-        const actualUser = this._typeSystem.userInfo.fromJson(o[StdKeyType.actualUser], availableSchemes);
+        const actualUser = this._typeSystem.userInfo.fromServerResponse(o[StdKeyType.actualUser], availableSchemes);
         const expires = this.parseOptionalDate(o[StdKeyType.expiration]);
         const criticalExpires = this.parseOptionalDate(o[StdKeyType.criticalExpiration]);
         const deviceId = o[StdKeyType.deviceId] as string;
@@ -67,7 +67,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         
         const authInfoS = storage.getItem( '$AuthInfo$'+endPoint );
         if( authInfoS ) {
-            let auth = this.fromJson( JSON.parse(authInfoS), schemes );
+            let auth = this.fromServerResponse( JSON.parse(authInfoS), schemes );
             if( auth ) auth = auth.clearImpersonation().setExpires();
             return [auth,schemes];
         }
@@ -76,9 +76,9 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
 
     /**
      * Generates a JSON compatible object for the Authentication info.
-     * @param auth The authentication information to serialize.
+     * @param auth The authentication information to serialize as a response server.
      */
-    public toJSON( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
+    public toServerResponse( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
         const o : IResponseInfo = 
         { 
             user: { 
@@ -119,7 +119,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         else
         {
             auth = auth.clearImpersonation().setExpires();
-            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( auth ) );
+            storage.setItem( '$AuthInfo$'+endPoint, JSON.stringify( this.toServerResponse( auth ) ) );
         }
     }
 

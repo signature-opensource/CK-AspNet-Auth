@@ -78,11 +78,11 @@ describe('AuthService', function () {
 
     describe('when using localStorage', function() {
         
-        it('JSON.stringify( StdAuthenticationInfo ) is safe (calls TypeSystem.toJSON) and is actually like a Server Response.', async function() {
+        it('JSON.stringify( StdAuthenticationInfo ) is safe (toJSON is implemented on all Std objects).', async function() {
 
             const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
             const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
-            expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( authService.typeSystem.authenticationInfo.toJSON( nicoleAuth ) ) );
+            expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( nicoleAuth ) );
 
             const user = { id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] };
             serverResponse = new ResponseBuilder()
@@ -93,10 +93,15 @@ describe('AuthService', function () {
 
             await authService.basicLogin('', '');
             
-            const expected = '{"user":{"name":"Alice","id":2,"schemes":[{"name":"Basic","lastUsed":"'
-                                + schemeLastUsed.toISOString() +'"}]},"exp":"'
-                                + exp.toISOString() +'","deviceId":""}';
-            expect( JSON.stringify( authService.authenticationInfo ) ).toBe( expected );
+
+            const expectedUser = '{"userId":2,"userName":"Alice","schemes":[{"name":"Basic","lastUsed":"'+ schemeLastUsed.toISOString() +'","status":1}]}';
+            // Note that criticalExpires being undefined, it is not exported as JSON!
+            // This '","criticalExpires":"'+ cexp.toISOString() doesn't appear in result.
+            const expected = '{"user":'+expectedUser+',"unsafeUser":'+expectedUser
+                             +',"level":2,"expires":"'+ exp.toISOString() +'","deviceId":"","isImpersonated":false'
+                             +',"actualUser":'+expectedUser+'}';
+            const result = JSON.stringify( authService.authenticationInfo ); 
+            expect( result ).toBe( expected );
         });
         
         it('it is possible to store a null AuthenticationInfo (and schemes are saved nevertheless).', function() {

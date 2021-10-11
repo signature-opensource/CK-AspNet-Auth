@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>17.0.1</CKDatabaseVersion>
-    <CKDBVersion>12.0.1</CKDBVersion>
+    <CKDatabaseVersion>17.0.2</CKDatabaseVersion>
+    <CKDBVersion>12.0.2</CKDBVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
     <CKAuthAbstractionsVersion>1.1.0</CKAuthAbstractionsVersion>
-    <CKAspNetVersion>7.2.0</CKAspNetVersion>
-    <CKStObjVersion>17.0.1</CKStObjVersion>
+    <CKAspNetVersion>7.2.1</CKAspNetVersion>
+    <CKStObjVersion>17.0.2</CKStObjVersion>
     <CKAspNetTesterVersion>3.1.2</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>12.0.1</CKDBUserUserPasswordVersion>
+    <CKDBUserUserPasswordVersion>12.0.2</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
@@ -17,6 +17,7 @@
   <!--</SourceLink>-->
   <!--<BasicDefinitions>: provides simple and useful definitions.-->
   <PropertyGroup>
+    <Features>strict</Features>
     <!-- Simple IsTestProject and IsInTestsFolder variables. -->
     <IsTestProject Condition=" '$(IsTestProject)' == '' And $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
     <IsInTestsFolder Condition="$(MSBuildProjectDirectory.Contains('\Tests\')) Or $(MSBuildProjectDirectory.Contains('/Tests/'))">true</IsInTestsFolder>
@@ -49,13 +50,14 @@
     <Authors>Signature Code</Authors>
     <Copyright>Copyright Signature-Code 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
     <RepositoryType>git</RepositoryType>
-    <PackageIcon>PackageIcon.png</PackageIcon>
     <!--Removes annoying Pack warning: The package version ... uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients...-->
     <NoWarn>NU5105</NoWarn>
+    <!--Considering .net6 'global using' to be an opt-in (simply reproduce this with 'false' in the csproj if needed).-->
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <PackageIcon>PackageIcon.png</PackageIcon>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)SharedKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
-    <PackageIcon>PackageIcon.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)PackageIcon.png" Pack="true" PackagePath="\" Visible="false" />
@@ -82,4 +84,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <!--</SourceLinkDebuggingWorkaround>-->
+  <!--<Analyzers>-->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.9.60" PrivateAssets="All" IncludeAssets="runtime;build;native;contentfiles;analyzers" />
+  </ItemGroup>
+  <!--</Analyzers>-->
 </Project>

@@ -31,4 +31,8 @@ export class StdUserInfo implements IUserInfo {
                             ? [ ...schemes ].sort( (a, b) => b.lastUsed.getUTCMilliseconds() - a.lastUsed.getUTCMilliseconds() )
                             : StdUserInfo.emptySchemes;
     }
+
+    public toJSON() : Object {
+        return { userId: this.userId, userName: this.userName, schemes: this.schemes };
+    }
 }

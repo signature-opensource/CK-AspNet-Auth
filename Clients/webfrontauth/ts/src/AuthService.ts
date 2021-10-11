@@ -386,7 +386,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = r.refreshable ? r.refreshable : false;
         this._rememberMe = r.rememberMe ? r.rememberMe : false;
 
-        const info = this._typeSystem.authenticationInfo.fromJson(r.info, this._availableSchemes) ;
+        const info = this._typeSystem.authenticationInfo.fromServerResponse(r.info, this._availableSchemes) ;
         this._authenticationInfo = info !== null ? info : this._typeSystem.authenticationInfo.none.setDeviceId(this._authenticationInfo.deviceId);
 
         this.onNewAuthenticationInfo();
@@ -493,8 +493,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 this._configuration.localStorage,
                 this._configuration.webFrontAuthEndPoint,
                 null,
-                []
-                    )
+                [] )
         }
         await this.refresh();
     }

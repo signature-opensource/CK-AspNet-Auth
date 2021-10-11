@@ -16,19 +16,17 @@ namespace CK.AspNet.Auth
     public sealed class WebFrontAuthStartLoginContext
     {
         readonly WebFrontAuthService _webFrontAuthService;
-
+        readonly FrontAuthenticationInfo _currentAuth;
         string? _errorId;
         string? _errorText;
 
-        internal WebFrontAuthStartLoginContext(
-            HttpContext ctx,
-            WebFrontAuthService authService,
-            string scheme,
-            IAuthenticationInfo current,
-            IEnumerable<KeyValuePair<string, StringValues>> userData,
-            string returnUrl,
-            string callerOrigin
-            )
+        internal WebFrontAuthStartLoginContext( HttpContext ctx,
+                                                WebFrontAuthService authService,
+                                                string scheme,
+                                                FrontAuthenticationInfo current,
+                                                IEnumerable<KeyValuePair<string, StringValues>> userData,
+                                                string? returnUrl,
+                                                string? callerOrigin )
         {
             Debug.Assert( ctx != null && authService != null );
             Debug.Assert( scheme != null );
@@ -36,8 +34,8 @@ namespace CK.AspNet.Auth
             Debug.Assert( userData != null );
             HttpContext = ctx;
             _webFrontAuthService = authService;
+            _currentAuth = current;
             Scheme = scheme;
-            Current = current;
             UserData = new Dictionary<string, StringValues>();
             foreach( var d in userData ) UserData.Add( d.Key, d.Value );
             ReturnUrl = returnUrl;
@@ -52,7 +50,13 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets the current authentication.
         /// </summary>
-        public IAuthenticationInfo Current { get; }
+        public IAuthenticationInfo Current => _currentAuth.Info;
+
+        /// <summary>
+        /// Gets whether the authentication should be memorized (or be as transient as possible).
+        /// Note that this is always false when <see cref="AuthenticationCookieMode.None"/> is used.
+        /// </summary>
+        public bool RememberMe => _currentAuth.RememberMe;
 
         /// <summary>
         /// Gets or sets the scheme to challenge.
@@ -63,12 +67,12 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets or sets the return url.
         /// </summary>
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
         /// <summary>
         /// Gets or sets the optional caller origin.
         /// </summary>
-        public string CallerOrigin { get; set; }
+        public string? CallerOrigin { get; set; }
 
         /// <summary>
         /// Gets the mutable user data.
@@ -99,18 +103,18 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Captures dynamic scopes from optional IWebFrontAuthDynamicScopeProvider.GetScopesAsync call.
         /// This is internal since it is the optional <see cref="IWebFrontAuthDynamicScopeProvider"/> that is used
-        /// to set it from <see cref="WebFrontAuthService.OnHandlerStartLogin(Core.IActivityMonitor, WebFrontAuthStartLoginContext)"/>.
+        /// to set it from <see cref="WebFrontAuthService.OnHandlerStartLoginAsync(Core.IActivityMonitor, WebFrontAuthStartLoginContext)"/>.
         /// </summary>
         internal string[]? DynamicScopes;
 
-        internal Task SendError( string deviceId )
+        internal Task SendError()
         {
             Debug.Assert( HasError );
             Debug.Assert( _errorId != null && _errorText != null );
 
-            return _webFrontAuthService.SendRemoteAuthenticationError(
+            return _webFrontAuthService.SendRemoteAuthenticationErrorAsync(
                         HttpContext,
-                        deviceId,
+                        _currentAuth,
                         ReturnUrl,
                         CallerOrigin,
                         _errorId,

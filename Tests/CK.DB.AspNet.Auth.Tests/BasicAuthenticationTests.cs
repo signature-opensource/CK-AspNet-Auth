@@ -43,6 +43,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 int idUser = user.CreateUser( ctx, 1, userName );
                 basic.CreateOrUpdateUser( ctx, 1, idUser, "pass" );
 
+                string? deviceId = null;
                 {
                     var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "pass" ) );
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
@@ -55,6 +56,7 @@ namespace CK.DB.AspNet.Auth.Tests
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
                         c.Token.Should().NotBeNullOrWhiteSpace();
+                        deviceId = c.Info.DeviceId;
                     }
                     else
                     {
@@ -68,8 +70,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     HttpResponseMessage authFailed = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
                     var c = AuthResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
-                    c.Info.Should().BeNull();
-                    c.Token.Should().BeNull();
+                    ShouldBeUnsafeUser( c, idUser, deviceId );
                 }
             }
         }
@@ -87,12 +88,15 @@ namespace CK.DB.AspNet.Auth.Tests
                 if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
+                string deviceId;
                 {
                     var payload = new JObject(
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", password ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    deviceId = c.Info.DeviceId;
+                    deviceId.Should().NotBeNullOrWhiteSpace();
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -105,10 +109,19 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "password", "failed" + password ) );
                     HttpResponseMessage authFailed = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
-                    c.Info.Should().BeNull();
-                    c.Token.Should().BeNull();
+                    ShouldBeUnsafeUser( c, idUser, deviceId );
                 }
             }
+        }
+
+        static void ShouldBeUnsafeUser( AuthResponse c, int idUser, string deviceId )
+        {
+            c.Info.Level.Should().Be( AuthLevel.Unsafe );
+            c.Info.User.UserId.Should().Be( 0 );
+            c.Info.ActualUser.UserId.Should().Be( 0 );
+            c.Info.UnsafeUser.UserId.Should().Be( idUser );
+            c.Token.Should().NotBeNullOrWhiteSpace();
+            c.Info.DeviceId.Should().Be( deviceId );
         }
 
         [Test]
@@ -167,6 +180,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
+                string deviceId;
                 {
                     var param = new JObject(
                                         new JProperty( "provider", "Basic" ),
@@ -177,6 +191,8 @@ namespace CK.DB.AspNet.Auth.Tests
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    deviceId = c.Info.DeviceId;
+                    deviceId.Should().NotBeNullOrWhiteSpace();
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -206,8 +222,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     }
                     else
                     {
-                        c.Info.Should().BeNull();
-                        c.Token.Should().BeNull();
+                        ShouldBeUnsafeUser( c, idUser, deviceId );
                         c.ErrorId.Should().Be( "Validation" );
                         c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
                         c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );
@@ -230,6 +245,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
                 await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
+                string deviceId;
                 {
                     // Zone is "good".
                     var payload = new JObject(
@@ -239,6 +255,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    deviceId = c.Info.DeviceId;
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
                     c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -267,8 +284,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     }
                     else  // When userName is "Paula".
                     {
-                        c.Info.Should().BeNull();
-                        c.Token.Should().BeNull();
+                        ShouldBeUnsafeUser( c, idUser, deviceId );
                         c.ErrorId.Should().Be( "Validation" );
                         c.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
                         c.UserData.Should().Contain( new[] { new KeyValuePair<string, string>( "zone", "<&>vil" ) } );

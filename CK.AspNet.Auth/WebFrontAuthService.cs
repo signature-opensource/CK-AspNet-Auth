@@ -16,6 +16,7 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
@@ -43,12 +44,12 @@ namespace CK.AspNet.Auth
         /// </summary>
         public string UnsafeCookieName => AuthCookieName + "LT";
 
-        readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly IAuthenticationTypeSystem _typeSystem;
         readonly IWebFrontAuthLoginService _loginService;
 
         readonly IDataProtector _genericProtector;
-        readonly AuthenticationInfoSecureDataFormat _tokenFormat;
-        readonly AuthenticationInfoSecureDataFormat _cookieFormat;
+        readonly FrontAuthenticationInfoSecureDataFormat _tokenFormat;
+        readonly FrontAuthenticationInfoSecureDataFormat _cookieFormat;
         readonly ExtraDataSecureDataFormat _extraDataFormat;
         readonly string _cookiePath;
         readonly string _bearerHeaderName;
@@ -58,7 +59,6 @@ namespace CK.AspNet.Auth
         readonly IWebFrontAuthAutoCreateAccountService? _autoCreateAccountService;
         readonly IWebFrontAuthAutoBindingAccountService? _autoBindingAccountService;
         readonly IWebFrontAuthDynamicScopeProvider? _dynamicScopeProvider;
-        readonly IWebFrontAuthValidateAuthenticationInfoService? _validateAuthenticationInfoService;
 
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
@@ -80,8 +80,7 @@ namespace CK.AspNet.Auth
             IWebFrontAuthValidateLoginService? validateLoginService = null,
             IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
             IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
-            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null,
-            IWebFrontAuthValidateAuthenticationInfoService? validateAuthenticationInfoService = null )
+            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
         {
             _typeSystem = typeSystem;
             _loginService = loginService;
@@ -90,11 +89,10 @@ namespace CK.AspNet.Auth
             _autoCreateAccountService = autoCreateAccountService;
             _autoBindingAccountService = autoBindingAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
-            _validateAuthenticationInfoService = validateAuthenticationInfoService;
             WebFrontAuthOptions initialOptions = CurrentOptions;
             IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
-            var cookieFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
-            var tokenFormat = new AuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
+            var cookieFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
+            var tokenFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
             var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
             _genericProtector = dataProtector;
             _cookieFormat = cookieFormat;
@@ -119,8 +117,6 @@ namespace CK.AspNet.Auth
         /// <see cref="IAuthenticationInfo.CheckExpiration(DateTime)"/> is called with <see cref="DateTime.UtcNow"/>.
         /// This is to be used with caution: the authentication token should never be sent to any client and should be
         /// used only for secure server to server temporary authentication.
-        /// The authentication token is signed with the token binding protocol (when on https): it is valid only for the
-        /// provided HttpContext.
         /// </summary>
         /// <param name="c">The HttpContext.</param>
         /// <param name="info">The authentication info for which an authentication token must be obtained.</param>
@@ -130,7 +126,7 @@ namespace CK.AspNet.Auth
             if( c == null ) throw new ArgumentNullException( nameof( c ) );
             if( info == null ) throw new ArgumentNullException( nameof( info ) );
             info = info.CheckExpiration();
-            return ProtectAuthenticationInfo( c, new FrontAuthenticationInfo( info, false ) );
+            return ProtectAuthenticationInfo( new FrontAuthenticationInfo( info, false ) );
         }
 
         /// <summary>
@@ -169,39 +165,107 @@ namespace CK.AspNet.Auth
             return c.RequestServices.GetService<IActivityMonitor>() ?? new ActivityMonitor( "WebFrontAuthService-Request" );
         }
 
-        internal string ProtectAuthenticationInfo( HttpContext c, FrontAuthenticationInfo info )
+        internal string ProtectAuthenticationInfo( FrontAuthenticationInfo info )
         {
             Debug.Assert( info.Info != null );
-            return _tokenFormat.Protect( info, GetTlsTokenBindingAndServerKey( c ) );
+            return _tokenFormat.Protect( info );
         }
 
-        internal FrontAuthenticationInfo UnprotectAuthenticationInfo( HttpContext c, string data )
+        internal FrontAuthenticationInfo UnprotectAuthenticationInfo( string data )
         {
             Debug.Assert( data != null );
-            return _tokenFormat.Unprotect( data, GetTlsTokenBindingAndServerKey( c ) );
+            return _tokenFormat.Unprotect( data );
         }
 
-        internal string ProtectExtraData( HttpContext c, IEnumerable<KeyValuePair<string, StringValues>> info )
+        internal string ProtectExtraData( IEnumerable<KeyValuePair<string, StringValues>> info )
         {
             Debug.Assert( info != null );
-            return _extraDataFormat.Protect( info, GetTlsTokenBindingAndServerKey( c ) );
+            return _extraDataFormat.Protect( info );
         }
 
-        internal IEnumerable<KeyValuePair<string, StringValues>> UnprotectExtraData( HttpContext c, string data )
+        internal List<KeyValuePair<string, StringValues>> UnprotectExtraData( string data )
         {
             Debug.Assert( data != null );
-            return _extraDataFormat.Unprotect( data, GetTlsTokenBindingAndServerKey( c ) );
+            return (List<KeyValuePair<string, StringValues>>)_extraDataFormat.Unprotect( data );
+        }
+
+        internal void SetWFAData( AuthenticationProperties p,
+                                  FrontAuthenticationInfo fAuth,
+                                  string? initialScheme,
+                                  string? callerOrigin,
+                                  string? returnUrl,
+                                  IDictionary<string, StringValues> userData )
+        {
+            p.Items.Add( "WFA2C", ProtectAuthenticationInfo( fAuth ) );
+            if( !String.IsNullOrWhiteSpace( initialScheme ) )
+            {
+                p.Items.Add( "WFA2S", initialScheme );
+            }
+            if( !String.IsNullOrWhiteSpace( callerOrigin ) )
+            {
+                p.Items.Add( "WFA2O", callerOrigin );
+            }
+            if( returnUrl != null )
+            {
+                p.Items.Add( "WFA2R", returnUrl );
+            }
+            if( userData.Count != 0 )
+            {
+                p.Items.Add( "WFA2D", ProtectExtraData( userData ) );
+            }
+        }
+
+        internal void GetWFAData( HttpContext h,
+                                  AuthenticationProperties properties,
+                                  out FrontAuthenticationInfo fAuth,
+                                  out string? initialScheme,
+                                  out string? callerOrigin,
+                                  out string? returnUrl,
+                                  out List<KeyValuePair<string, StringValues>> userData )
+        {
+            fAuth = GetFrontAuthenticationInfo( h, properties );
+            properties.Items.TryGetValue( "WFA2S", out initialScheme );
+            properties.Items.TryGetValue( "WFA2O", out callerOrigin );
+            properties.Items.TryGetValue( "WFA2R", out returnUrl );
+            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) )
+            {
+                userData = UnprotectExtraData( sUData );
+            }
+            else
+            {
+                userData = new List<KeyValuePair<string, StringValues>>();
+            }
+        }
+
+        internal FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext h, AuthenticationProperties properties )
+        {
+            if( !h.Items.TryGetValue( typeof( RemoteAuthenticationEventsContextExtensions ), out var fAuth ) )
+            {
+                if( properties.Items.TryGetValue( "WFA2C", out var currentAuth ) )
+                {
+                    fAuth = UnprotectAuthenticationInfo( currentAuth );
+                }
+                else
+                {
+                    // There should always be the WFA2C key in Authentication properties.
+                    // However if it's not here, we return the AuthenticationType.None that has an empty DeviceId.
+                    fAuth = _typeSystem.AuthenticationInfo.None;
+                }
+                h.Items.Add( typeof( RemoteAuthenticationEventsContextExtensions ), fAuth );
+            }
+            return (FrontAuthenticationInfo)fAuth;
         }
 
         /// <summary>
-        /// Handles cached authentication header or calls <see cref="ReadAndCacheAuthenticationHeader"/>.
+        /// Handles cached authentication header or calls ReadAndCacheAuthenticationHeader.
         /// Never null, can be <see cref="IAuthenticationInfoType.None"/>.
         /// </summary>
         /// <param name="c">The context.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>
         /// The cached or resolved authentication info. 
         /// </returns>
-        internal async ValueTask<FrontAuthenticationInfo> EnsureAuthenticationInfoAsync( HttpContext c, IActivityMonitor monitor )
+        internal FrontAuthenticationInfo EnsureAuthenticationInfo( HttpContext c, [NotNullIfNotNull("monitor")]ref IActivityMonitor? monitor )
         {
             FrontAuthenticationInfo? authInfo;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
@@ -210,31 +274,7 @@ namespace CK.AspNet.Auth
             }
             else
             {
-                authInfo = ReadAndCacheAuthenticationHeader( c );
-                // If a IWebFrontAuthValidateAuthenticationInfoService is available, calls it.
-                // Exceptions are logged but not intercepted here: the request MUST fail!
-                if( _validateAuthenticationInfoService != null )
-                {
-                    try
-                    {
-                        var vInfo = await _validateAuthenticationInfoService.ValidateAuthenticationInfoAsync( c, monitor, authInfo.Info );
-                        if( vInfo == null )
-                        {
-                            authInfo = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
-                            monitor.Trace( $"The FrontAuthenticationInfo has been set to None by '{_validateAuthenticationInfoService.GetType()}' service." );
-                        }
-                        else if( vInfo != authInfo.Info )
-                        {
-                            monitor.Trace( $"The FrontAuthenticationInfo has been modified by '{_validateAuthenticationInfoService.GetType()}' service." );
-                            authInfo = new FrontAuthenticationInfo( vInfo, authInfo.RememberMe );
-                        }
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Fatal( $"While calling '{_validateAuthenticationInfoService.GetType()}' service. Exception is rethrown.", ex );
-                        throw;
-                    }
-                }
+                authInfo = ReadAndCacheAuthenticationHeader( c, ref monitor );
             }
             return authInfo;
         }
@@ -244,64 +284,89 @@ namespace CK.AspNet.Auth
         /// long term cookie) and caches authentication in request items.
         /// </summary>
         /// <param name="c">The context.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>
-        /// The cached or resolved authentication info. 
-        /// Never null, can be bound to <see cref="IAuthenticationInfoType.None"/>.
+        /// The front authentication info. 
         /// </returns>
-        internal FrontAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c )
+        internal FrontAuthenticationInfo ReadAndCacheAuthenticationHeader( HttpContext c, ref IActivityMonitor? monitor )
         {
             Debug.Assert( !c.Items.ContainsKey( typeof( FrontAuthenticationInfo ) ) );
-            var monitor = GetRequestMonitor( c );
             bool shouldSetCookies = false;
-            FrontAuthenticationInfo fAuth;
-            try
-            {
-                // First try from the bearer: this is always the preferred way.
-                string authorization = c.Request.Headers[_bearerHeaderName];
-                bool fromBearer = !string.IsNullOrEmpty( authorization )
+            FrontAuthenticationInfo? fAuth = null;
+            // First try from the bearer: this is always the preferred way.
+            string authorization = c.Request.Headers[_bearerHeaderName];
+            bool fromBearer = !string.IsNullOrEmpty( authorization )
                               && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase );
-                if( fromBearer )
+            if( fromBearer )
+            {
+                try
                 {
                     Debug.Assert( "Bearer ".Length == 7 );
                     string token = authorization.Substring( 7 ).Trim();
-                    fAuth = UnprotectAuthenticationInfo( c, token );
+                    fAuth = UnprotectAuthenticationInfo( token );
                 }
-                else
+                catch( Exception ex )
                 {
-                    // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                    if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
+                    monitor ??= GetRequestMonitor( c );
+                    monitor.Error( "While reading bearer.", ex );
+                }
+            }
+            if( fAuth == null )
+            {
+                // Best case is when we have the authentication cookie, otherwise use the long term cookie.
+                if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
+                {
+                    try
                     {
-                        fAuth = _cookieFormat.Unprotect( cookie, GetTlsTokenBindingAndServerKey( c ) );
+                        fAuth = _cookieFormat.Unprotect( cookie );
                     }
-                    else if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
+                    catch( Exception ex )
                     {
-                        var o = JObject.Parse( cookie );
-                        // The long term cookie contains a deviceId field.
-                        string? deviceId = (string?)o[StdAuthenticationTypeSystem.DeviceIdKeyType];
-                        // We may have a "deviceId only" cookie.
-                        IUserInfo? info = null;
-                        if( o.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ) )
+                        monitor ??= GetRequestMonitor( c );
+                        monitor.Error( "While reading Cookie.", ex );
+                    }
+                }
+                if( fAuth == null )
+                {
+                    if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
+                    {
+                        try
                         {
-                            info = _typeSystem.UserInfo.FromJObject( o );
+                            var o = JObject.Parse( cookie );
+                            // The long term cookie contains a deviceId field.
+                            string? deviceId = (string?)o[StdAuthenticationTypeSystem.DeviceIdKeyType];
+                            // We may have a "deviceId only" cookie.
+                            IUserInfo? info = null;
+                            if( o.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ) )
+                            {
+                                info = _typeSystem.UserInfo.FromJObject( o );
+                            }
+                            var auth = _typeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
+                            Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
+                            // If there is a long term cookie with the user information, then we are "remembering"!
+                            // (Checking UserId != 0 here is just to be safe since the anonymous must not "remember").
+                            fAuth = new FrontAuthenticationInfo( auth, rememberMe: info != null && info.UserId != 0 );
                         }
-                        var auth = _typeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
-                        // If there is a long term cookie with the user information, then we are "remembering"!
-                        // (Checking UserId != 0 here is just to be safe since the anonymous must not "remember").
-                        fAuth = new FrontAuthenticationInfo( auth, rememberMe: info != null && info.UserId != 0 );
+                        catch( Exception ex )
+                        {
+                            monitor ??= GetRequestMonitor( c );
+                            monitor.Error( "While reading Long Term Cookie.", ex );
+                        }
                     }
-                    else
+                    if( fAuth == null )
                     {
-                        // We have nothing:
+                        // We have nothing or only errors:
                         // - If we could have something (either because CookieMode is AuthenticationCookieMode.RootPath or the request
                         // is inside the /.webfront/c), then we create a new unauthenticated info with a new device identifier.
                         // - If we are outside of the cookie context, we do nothing (otherwise we'll reset the current authentication).
                         if( CookieMode == AuthenticationCookieMode.RootPath
                             || (CookieMode == AuthenticationCookieMode.WebFrontPath
-                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase ) ) )
+                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase )) )
                         {
                             var deviceId = CreateNewDeviceId();
-                            var info = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
-                            fAuth = new FrontAuthenticationInfo( info, rememberMe: false );
+                            var auth = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
+                            fAuth = new FrontAuthenticationInfo( auth, rememberMe: false );
+                            Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
                             // We set the long lived cookie if possible. The device identifier will be de facto persisted.
                             shouldSetCookies = true;
                         }
@@ -311,39 +376,26 @@ namespace CK.AspNet.Auth
                         }
                     }
                 }
-                if( fAuth == null )
-                {
-                    monitor.Error( $"Unable to extract a valid authentication information from {(fromBearer ? "Bearer" : "Cookies")}. Resolving to None authentication." );
-                    fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
-                }
-                else
-                {
-                    // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
-                    if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
-                    {
-                        var info = fAuth.Info;
-                        TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
-                        TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
-                        if( info.Level >= AuthLevel.Normal
-                            && CookieMode == AuthenticationCookieMode.RootPath
-                            && halfSlidingExpirationTime > TimeSpan.Zero )
-                        {
-                            Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
-                            if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
-                            {
-                                fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
-                                shouldSetCookies = true;
-                            }
-                        }
-                    }
-                    if( shouldSetCookies ) SetCookies( c, fAuth );
-                }
             }
-            catch( Exception ex )
+            // Upon each (non anonymous) authentication, when rooted Cookies are used and the SlidingExpiration is on, handles it.
+            if( fAuth.Info.Level >= AuthLevel.Normal && CookieMode == AuthenticationCookieMode.RootPath )
             {
-                monitor.Error( ex );
-                fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, false );
+                var info = fAuth.Info;
+                TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+                TimeSpan halfSlidingExpirationTime = new TimeSpan( slidingExpirationTime.Ticks / 2 );
+                if( info.Level >= AuthLevel.Normal
+                    && CookieMode == AuthenticationCookieMode.RootPath
+                    && halfSlidingExpirationTime > TimeSpan.Zero )
+                {
+                    Debug.Assert( info.Expires.HasValue, "Since info.Level >= AuthLevel.Normal." );
+                    if( info.Expires.Value <= DateTime.UtcNow + halfSlidingExpirationTime )
+                    {
+                        fAuth = fAuth.SetInfo( info.SetExpires( DateTime.UtcNow + slidingExpirationTime ) );
+                        shouldSetCookies = true;
+                    }
+                }
             }
+            if( shouldSetCookies ) SetCookies( c, fAuth );
             c.Items.Add( typeof( FrontAuthenticationInfo ), fAuth );
             return fAuth;
         }
@@ -369,7 +421,7 @@ namespace CK.AspNet.Auth
             if( CookieMode != AuthenticationCookieMode.None && fAuth.Info.Level >= AuthLevel.Normal )
             {
                 Debug.Assert( fAuth.Info.Expires.HasValue );
-                string value = _cookieFormat.Protect( fAuth, GetTlsTokenBindingAndServerKey( ctx ) );
+                string value = _cookieFormat.Protect( fAuth );
                 // If we don't remember, we create a session cookie (no expiration).
                 ctx.Response.Cookies.Append( AuthCookieName, value, CreateAuthCookieOptions( ctx, fAuth.RememberMe ? fAuth.Info.Expires : null ) );
             }
@@ -505,7 +557,9 @@ namespace CK.AspNet.Auth
             }
             var fAuth = new FrontAuthenticationInfo( authInfo, rememberMe );
             c.Items[typeof( FrontAuthenticationInfo )] = fAuth;
-            JObject response = CreateAuthResponse( c, fAuth, refreshable: authInfo.Level >= AuthLevel.Normal && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero, onLogin: u );
+            JObject response = CreateAuthResponse( c, refreshable: authInfo.Level >= AuthLevel.Normal && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero,
+                                                      fAuth,
+                                                      onLogin: u );
             SetCookies( c, fAuth );
             return new LoginResult( response, authInfo );
         }
@@ -526,17 +580,16 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Centralized way to return an error: a redirect or a close of the window is emitted.
         /// </summary>
-        internal Task SendRemoteAuthenticationError(
-            HttpContext c,
-            string deviceId,
-            string? returnUrl,
-            string? callerOrigin,
-            string errorId,
-            string errorText,
-            string? initialScheme = null,
-            string? callingScheme = null,
-            IEnumerable<KeyValuePair<string, StringValues>>? userData = null,
-            UserLoginResult? failedLogin = null )
+        internal Task SendRemoteAuthenticationErrorAsync( HttpContext c,
+                                                          FrontAuthenticationInfo fAuth,
+                                                          string? returnUrl,
+                                                          string? callerOrigin,
+                                                          string errorId,
+                                                          string errorText,
+                                                          string? initialScheme = null,
+                                                          string? callingScheme = null,
+                                                          IEnumerable<KeyValuePair<string, StringValues>>? userData = null,
+                                                          UserLoginResult? failedLogin = null )
         {
             if( returnUrl != null )
             {
@@ -553,6 +606,22 @@ namespace CK.AspNet.Auth
                 {
                     parameters = parameters.Add( "errorText", errorText );
                 }
+                // UnsafeActualUser must be removed.
+                // A ActualLevel must be added.
+                //  => SetLevel(): if !impersonated => both changed.
+                //                 if impersonated => Level is set at most to the ActualLevel.
+                //  => SetActualLevel(): if !impersonated => both changed.
+                //                       if impersonated => Sets the actual level.
+                //                       Level is clamped to be at most the ActualLevel.
+                //
+                // 
+                // if( fAuth.Info.ActualLevel <= AuthLevel.Unsafe ) ??
+                // {
+                //    // Need a /c/downgradeLevel entry point ? (but we have it: Logout is downgrade to None + forget deviceId...)
+                //    // "forget deviceId" on None should be in the WebFrontAuthOption...
+                //
+                //    parameters = parameters.Add( "wfaAuthLevel", fAuth.Info.ActualLevel );
+                // }
                 int loginFailureCode = failedLogin?.LoginFailureCode ?? 0;
                 if( loginFailureCode != 0 ) parameters = parameters.Add( "loginFailureCode", loginFailureCode.ToString( CultureInfo.InvariantCulture ) );
                 if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );
@@ -563,7 +632,7 @@ namespace CK.AspNet.Auth
                 c.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
-            JObject errObj = CreateErrorAuthResponse( c, deviceId, errorId, errorText, initialScheme, callingScheme, userData, failedLogin );
+            JObject errObj = CreateErrorAuthResponse( c, fAuth, errorId, errorText, initialScheme, callingScheme, userData, failedLogin );
             return c.Response.WriteWindowPostMessageAsync( errObj, callerOrigin );
         }
 
@@ -571,6 +640,10 @@ namespace CK.AspNet.Auth
         /// Creates a JSON response error object.
         /// </summary>
         /// <param name="c">The context.</param>
+        /// <param name="fAuth">
+        /// The current authentication info or a TypeSystem.AuthenticationInfo.None
+        /// info (with a device identifier if possible).
+        /// </param>
         /// <param name="errorId">The error identifier.</param>
         /// <param name="errorText">The error text. This can be null (<paramref name="errorId"/> is the key).</param>
         /// <param name="initialScheme">The initial scheme.</param>
@@ -578,17 +651,16 @@ namespace CK.AspNet.Auth
         /// <param name="userData">Optional user data (can be null).</param>
         /// <param name="failedLogin">Optional failed login (can be null).</param>
         /// <returns>A {info,token,refreshable} object with error fields inside.</returns>
-        internal JObject CreateErrorAuthResponse(
-                        HttpContext c,
-                        string deviceId,
-                        string errorId,
-                        string? errorText,
-                        string? initialScheme,
-                        string? callingScheme,
-                        IEnumerable<KeyValuePair<string, StringValues>>? userData,
-                        UserLoginResult? failedLogin )
+        internal JObject CreateErrorAuthResponse( HttpContext c,
+                                                  FrontAuthenticationInfo fAuth,
+                                                  string errorId,
+                                                  string? errorText,
+                                                  string? initialScheme,
+                                                  string? callingScheme,
+                                                  IEnumerable<KeyValuePair<string, StringValues>>? userData,
+                                                  UserLoginResult? failedLogin )
         {
-            var response = CreateAuthResponse( c, null, false, failedLogin );
+            var response = CreateAuthResponse( c, false, fAuth, failedLogin );
             response.Add( new JProperty( "errorId", errorId ) );
             if( !String.IsNullOrWhiteSpace( errorText ) && errorText != errorId )
             {
@@ -604,17 +676,21 @@ namespace CK.AspNet.Auth
         /// Creates a JSON response object.
         /// </summary>
         /// <param name="c">The context.</param>
-        /// <param name="fAuth">The authentication info. Null on error!</param>
         /// <param name="refreshable">Whether the info is refreshable or not.</param>
+        /// <param name="fAuth">
+        /// The authentication info.
+        /// It is never null, even on error: it must be the current authentication info or a TypeSystem.AuthenticationInfo.None
+        /// info (with a device identifier if possible).
+        /// </param>
         /// <param name="onLogin">Not null when this response is the result of an actual login (and not a refresh).</param>
         /// <returns>A {info,token,refreshable} object.</returns>
-        internal JObject CreateAuthResponse( HttpContext c, FrontAuthenticationInfo? fAuth, bool refreshable, UserLoginResult? onLogin = null )
+        internal JObject CreateAuthResponse( HttpContext c, bool refreshable, FrontAuthenticationInfo fAuth, UserLoginResult? onLogin = null )
         {
             var j = new JObject(
-                        new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth?.Info ) ),
-                        new JProperty( "token", fAuth != null ? ProtectAuthenticationInfo( c, fAuth ) : null ),
+                        new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
+                        new JProperty( "token", ProtectAuthenticationInfo( fAuth ) ),
                         new JProperty( "refreshable", refreshable ),
-                        new JProperty( "rememberMe", fAuth?.RememberMe ?? false ) );
+                        new JProperty( "rememberMe", fAuth.RememberMe ) );
             if( onLogin != null && !onLogin.IsSuccess )
             {
                 j.Add( new JProperty( "loginFailureCode", onLogin.LoginFailureCode ) );
@@ -623,13 +699,7 @@ namespace CK.AspNet.Auth
             return j;
         }
 
-        string? GetTlsTokenBindingAndServerKey( HttpContext c )
-        {
-            var binding = c.Features.Get<ITlsTokenBindingFeature>()?.GetProvidedTokenBindingId();
-            return binding == null ? null : Convert.ToBase64String( binding );
-        }
-
-        internal async Task OnHandlerStartLogin( IActivityMonitor m, WebFrontAuthStartLoginContext startContext )
+        internal async Task OnHandlerStartLoginAsync( IActivityMonitor m, WebFrontAuthStartLoginContext startContext )
         {
             try
             {
@@ -654,63 +724,49 @@ namespace CK.AspNet.Auth
         /// from the <see cref="TicketReceivedContext"/> principal claims.
         /// </param>
         /// <returns>The awaitable.</returns>
-        public Task HandleRemoteAuthentication<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
+        public Task HandleRemoteAuthenticationAsync<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
         {
             if( context == null ) throw new ArgumentNullException( nameof( context ) );
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
             var monitor = GetRequestMonitor( context.HttpContext );
 
-            WebFrontAuthHandler.ExtractClearWFAData( context.Properties,
-                                                     out var fRememberMe,
-                                                     out var deviceId,
-                                                     out var initialScheme,
-                                                     out var returnUrl,
-                                                     out var callerOrigin );
+            GetWFAData( context.HttpContext, context.Properties, out var fAuth, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
 
-            // We don't have a "WFA-S" (or "WFA-N" if RememberMe flag is false) for the initialScheme when Authentication Challenge has
-            // been called directly: LoginMode is WebFrontAuthLoginMode.None
-            // and we steal the context.RedirectUri as being the final redirect url.
-            if( initialScheme == null )
-            {
-                returnUrl = context.ReturnUri;
-            }
-            context.Properties.Items.TryGetValue( "WFA-C", out var currentAuth );
-            context.Properties.Items.TryGetValue( "WFA-D", out var extraData );
-
-            FrontAuthenticationInfo initialAuth = currentAuth == null
-                                        ? new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId ), false )
-                                        : UnprotectAuthenticationInfo( context.HttpContext, currentAuth );
-            List<KeyValuePair<string, StringValues>> userData = extraData == null
-                                                                ? new List<KeyValuePair<string, StringValues>>()
-                                                                : (List<KeyValuePair<string, StringValues>>)UnprotectExtraData( context.HttpContext, extraData );
             string callingScheme = context.Scheme.Name;
             object payload = _loginService.CreatePayload( context.HttpContext, monitor, callingScheme );
             payloadConfigurator( (T)payload );
 
+            // When Authentication Challenge has been called directly (LoginMode is WebFrontAuthLoginMode.None), we don't have
+            // any scheme: we steal the context.RedirectUri as being the final redirect url.
+            if( initialScheme == null )
+            {
+                returnUrl = context.ReturnUri;
+            }
             var wfaSC = new WebFrontAuthLoginContext(
                                 context.HttpContext,
                                 this,
                                 _typeSystem,
-                                initialScheme != null ? WebFrontAuthLoginMode.StartLogin : WebFrontAuthLoginMode.None,
+                                initialScheme != null
+                                    ? WebFrontAuthLoginMode.StartLogin
+                                    : WebFrontAuthLoginMode.None,
                                 callingScheme,
                                 payload,
-                                fRememberMe,
                                 context.Properties,
                                 initialScheme,
-                                initialAuth.Info,
+                                fAuth,
                                 returnUrl,
                                 callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}",
                                 userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
 
-            return UnifiedLogin( monitor, wfaSC, actualLogin =>
+            return UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
             {
                 return _loginService.LoginAsync( context.HttpContext, monitor, callingScheme, payload, actualLogin );
             } );
         }
 
-        internal async Task UnifiedLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
+        internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
         {
             if( ctx.InitialAuthentication.IsImpersonated )
             {
@@ -721,7 +777,7 @@ namespace CK.AspNet.Auth
             if( !ctx.HasError )
             {
                 // The logger function must kindly return an unlogged UserLoginResult if it cannot log the user in.
-                u = await SafeCallLogin( monitor, ctx, logger, actualLogin: _validateLoginService == null );
+                u = await SafeCallLoginAsync( monitor, ctx, logger, actualLogin: _validateLoginService == null );
             }
             if( !ctx.HasError )
             {
@@ -795,11 +851,11 @@ namespace CK.AspNet.Auth
                         await _validateLoginService.ValidateLoginAsync( monitor, u.UserInfo, ctx );
                         if( !ctx.HasError )
                         {
-                            u = await SafeCallLogin( monitor, ctx, logger, actualLogin: true );
+                            u = await SafeCallLoginAsync( monitor, ctx, logger, actualLogin: true );
                         }
                     }
                 }
-                // Eventuallly...
+                // Eventually...
                 if( !ctx.HasError )
                 {
                     Debug.Assert( u != null && u.UserInfo != null, "Login succeeds." );
@@ -811,19 +867,19 @@ namespace CK.AspNet.Auth
                     monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'.", WebFrontAuthMonitorTag );
                 }
             }
-            await ctx.SendResponse();
+            await ctx.SendResponseAsync();
         }
 
         /// <summary>
         /// Calls the actual logger function (that must kindly return an unlogged UserLoginResult if it cannot log the user in)
-        /// in a try/catch and sets an error on the context only if it it throws.
+        /// in a try/catch and sets an error on the context only if it throws.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="ctx">The login context.</param>
         /// <param name="logger">The actual login function.</param>
         /// <param name="actualLogin">True for an actual login, false otherwise.</param>
-        /// <returns>A login result (that mey be unsuccessful).</returns>
-        static async Task<UserLoginResult?> SafeCallLogin( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
+        /// <returns>A login result (that may be unsuccessful).</returns>
+        static async Task<UserLoginResult?> SafeCallLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger,  bool actualLogin )
         {
             UserLoginResult? u = null;
             try
