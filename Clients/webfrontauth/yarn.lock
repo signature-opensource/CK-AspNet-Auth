@@ -637,7 +637,7 @@ __metadata:
     rimraf: ^3.0.2
     tough-cookie: 2.3.4
     ts-jest: ^25.4.6
-    typescript: 3.5.3
+    typescript: 4.3.2
   languageName: unknown
   linkType: soft
 
@@ -2212,14 +2212,14 @@ fsevents@^2.1.2:
   linkType: hard
 
 "genversion@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "genversion@npm:3.0.1"
+  version: 3.0.2
+  resolution: "genversion@npm:3.0.2"
   dependencies:
     commander: ^7.2.0
     find-package: ^1.0.0
   bin:
     genversion: bin/genversion.js
-  checksum: 7281137917d13b0f7eb6bda6bc4fe92220f561fcb232e99193c6216d02b03bdfb9117ae85db1ca39e7b050cc1782190df0c2dfed4515993fccb5203b6a8abbd2
+  checksum: 83a0c44e6a0c4f75a5a4447f6c61a040d2f311d49817672aadebdec167ae2b1169f85fcb92341f3274840cdfe99d629f1c96567c5c07a2f0c171e1cf12d51865
   languageName: node
   linkType: hard
 
@@ -5310,23 +5310,23 @@ resolve@1.1.7:
   languageName: node
   linkType: hard
 
-typescript@3.5.3:
-  version: 3.5.3
-  resolution: "typescript@npm:3.5.3"
+typescript@4.3.2:
+  version: 4.3.2
+  resolution: "typescript@npm:4.3.2"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 4971be7355f07f517a03fc0dc5f78851d2824e48c79130ee3b12d6aada332d5c66097f1da41d97b91f57e84c952b56e00178bf9c2297cfa3471500e6008cfcd2
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 21e1285402e32fd240f6ad3f97b6fea81b90d2591f412677d01b570a8bd93151d1e08460d58f43689fc758671a5baaebb16fa93d3c8260181612c8e619bd24f7
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@3.5.3#builtin<compat/typescript>":
-  version: 3.5.3
-  resolution: "typescript@patch:typescript@npm%3A3.5.3#builtin<compat/typescript>::version=3.5.3&hash=ddfc1b"
+"typescript@patch:typescript@4.3.2#builtin<compat/typescript>":
+  version: 4.3.2
+  resolution: "typescript@patch:typescript@npm%3A4.3.2#builtin<compat/typescript>::version=4.3.2&hash=ddfc1b"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 20a9025d6f85047a1c14325a3a697616749fd4bfad48fc62ce97f3e164f92df25ce47261db7becfb53bbf919ded2169b2ad7a225a3d7b63d4515387f44fa6260
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 68d48dc86dacfeab59a22414ff061c976c46b679a9717a3a710051ea7bab779fd23f4edb856434da8155e8e8646c90b3912e342cc0010dfd15ed321a42cb0578
   languageName: node
   linkType: hard
 

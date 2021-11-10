@@ -344,3 +344,5 @@ $StObjGen/
 
 # Using genversion in the package.json build script to generate this file.
 AuthService.version.ts
+
+*.angular
