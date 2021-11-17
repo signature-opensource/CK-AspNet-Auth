@@ -6,7 +6,7 @@ import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';
 import { PopupDescriptor } from './PopupDescriptor';
-import { version } from "./AuthService.version";
+import { version } from './AuthService.version';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -125,7 +125,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             console.error(
                 'Error while initalizing new AuthService.',
                 authService.currentError.errorId,
-                authService.currentError.errorReason
+                authService.currentError.errorText
             );
 
             if (throwOnError) {
@@ -283,7 +283,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             // Sets the current error (weird success status).
             this._currentError = new WebFrontAuthError({
                 errorId: `HTTP.Status.${status}`,
-                errorReason: 'Unhandled success status'
+                errorText: 'Unhandled success status'
             });
         } catch (error) {
 
@@ -295,7 +295,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 // Connection issue (no axios response): 408 is Request Timeout.
                 this._currentError = new WebFrontAuthError({
                     errorId: 'HTTP.Status.408',
-                    errorReason: 'No connection could be made'
+                    errorText: 'No connection could be made'
                 });
                 // If we are refreshing and there is no connection to the server, and the current level is None,
                 /// we challenge the local storage and try to restore the available schemes and (unsafe) authentication.
@@ -316,11 +316,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 }
             }
             else {
-            // Sets the current error.
-            const errorResponse = axiosError.response;
+                // Sets the current error.
+                const errorResponse = axiosError.response;
+                const data = errorResponse.data as IWebFrontAuthResponse || {};
+
                 this._currentError = new WebFrontAuthError({
-                    errorId: `HTTP.Status.${errorResponse.status}`,
-                    errorReason: 'Server response error'
+                    errorId: data.errorId || `HTTP.Status.${errorResponse.status}`,
+                    errorText: data.errorText || 'Server response error'
                 });
             }
         }
@@ -350,7 +352,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 const msg = `Client/Server version mismatch! this client version is '${AuthService.clientVersion}' but endpoint's version is '${this._endPointVersion}'.`;
                 this._currentError = new WebFrontAuthError({
                     errorId: 'ClientEndPointVersionMismatch',
-                    errorReason: msg
+                    errorText: msg
                 });
                 throw new Error(msg);
             }
@@ -367,7 +369,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if (r.errorId && r.errorText) {
             this._currentError = new WebFrontAuthError({
                 errorId: r.errorId,
-                errorReason: r.errorText
+                errorText: r.errorText
             });
         }
 

@@ -140,13 +140,13 @@ export interface IEndPoint {
 export interface IWebFrontAuthError {
     readonly type: string;
     readonly errorId: string;
-    readonly errorReason: string;
+    readonly errorText: string;
     readonly error: IResponseError | ILoginError
 }
 
 export interface IResponseError {
     readonly errorId: string;
-    readonly errorReason: string;
+    readonly errorText: string;
 }
 
 export interface ILoginError {

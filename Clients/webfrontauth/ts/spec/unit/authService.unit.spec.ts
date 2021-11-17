@@ -378,7 +378,7 @@ describe('AuthService', function () {
             expect(authService.refreshable).toBe(false);
             expect(authService.currentError).toEqual(new WebFrontAuthError({
                 errorId: 'System.ArgumentException',
-                errorReason: 'Invalid payload.'
+                errorText: 'Invalid payload.'
             }));
         });
 
