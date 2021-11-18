@@ -5,7 +5,8 @@
     "types": [
       "jasmine",
       "node"
-    ]
+    ],
+    "preserveSymlinks": true
   },
   "files": [
     "src/test.ts"

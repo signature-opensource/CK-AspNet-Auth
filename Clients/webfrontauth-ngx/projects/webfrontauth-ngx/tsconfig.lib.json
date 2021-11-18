@@ -10,7 +10,8 @@
     "lib": [
       "dom",
       "es2018"
-    ]
+    ],
+    "preserveSymlinks": true
   },
   "angularCompilerOptions": {
     "skipTemplateCodegen": true,
