@@ -637,7 +637,7 @@ __metadata:
     rimraf: ^3.0.2
     tough-cookie: 2.3.4
     ts-jest: ^25.4.6
-    typescript: 3.5.3
+    typescript: 3.8.3
   languageName: unknown
   linkType: soft
 
@@ -5310,23 +5310,23 @@ resolve@1.1.7:
   languageName: node
   linkType: hard
 
-typescript@3.5.3:
-  version: 3.5.3
-  resolution: "typescript@npm:3.5.3"
+typescript@3.8.3:
+  version: 3.8.3
+  resolution: "typescript@npm:3.8.3"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 4971be7355f07f517a03fc0dc5f78851d2824e48c79130ee3b12d6aada332d5c66097f1da41d97b91f57e84c952b56e00178bf9c2297cfa3471500e6008cfcd2
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 519b11576247fe3570d89a2aa757d8f666aafc0cb9465a6cdd4df09c1dc6bf7285f0c6008d2ac7a55ea26457e767aaab819f58439d80af2cce1d9805b2be1034
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@3.5.3#builtin<compat/typescript>":
-  version: 3.5.3
-  resolution: "typescript@patch:typescript@npm%3A3.5.3#builtin<compat/typescript>::version=3.5.3&hash=ddfc1b"
+"typescript@patch:typescript@3.8.3#builtin<compat/typescript>":
+  version: 3.8.3
+  resolution: "typescript@patch:typescript@npm%3A3.8.3#builtin<compat/typescript>::version=3.8.3&hash=ddfc1b"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 20a9025d6f85047a1c14325a3a697616749fd4bfad48fc62ce97f3e164f92df25ce47261db7becfb53bbf919ded2169b2ad7a225a3d7b63d4515387f44fa6260
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 75e93bef979c1213c377fc8188ce1b098a9761de5baad5a1ce5908e2ca55c919804beb9e921059ff584642afc25a0eb85e31c640ee55b1f22f75b1e305ac924b
   languageName: node
   linkType: hard
 
