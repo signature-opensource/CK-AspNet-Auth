@@ -1939,7 +1939,7 @@ __metadata:
     "@types/node": ^12.11.1
     axios: 0.21.1
     codelyzer: ^6.0.0
-    jasmine-core: ~3.6.0
+    jasmine-core: 3.10.1
     jasmine-spec-reporter: ~5.0.0
     karma: ~6.3.9
     karma-chrome-launcher: ~3.1.0
@@ -1959,10 +1959,10 @@ __metadata:
 
 "@signature/webfrontauth@file:../webfrontauth::locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A.":
   version: 0.0.0-0
-  resolution: "@signature/webfrontauth@file:../webfrontauth#../webfrontauth::hash=42d8ae&locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
+  resolution: "@signature/webfrontauth@file:../webfrontauth#../webfrontauth::hash=fec46b&locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
   dependencies:
     axios: 0.21.1
-  checksum: d28d296ba7f99ff680ddbdc40a76fe7033ab5b6df34cbcbc4aca9f0f4a35f797ac716399034cce9d3cd3af9d488c4743597bb407b4e7e8f7dccf3ec526942ff0
+  checksum: 38d6c98b3db8474ab4a1667e61fc57d9d26f8c659e066703c7d006068a7f316cbf95c3d2602cc4d81388a0a69b67be50772316aef77dc1ddd52a4302c87e7cb4
   languageName: node
   linkType: hard
 
@@ -6573,7 +6573,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"jasmine-core@npm:^3.6.0":
+"jasmine-core@npm:3.10.1, jasmine-core@npm:^3.6.0":
   version: 3.10.1
   resolution: "jasmine-core@npm:3.10.1"
   checksum: ed8d20a122b78aab1d66a55d4524be9c5b93516d5b5b18147080db1e6c32063c35eae583c7a23499aff5fb797c92ff37ba04f6ffad905b0ccc90f1af94013a69
@@ -6584,13 +6584,6 @@ fsevents@~2.3.2:
   version: 2.8.0
   resolution: "jasmine-core@npm:2.8.0"
   checksum: eb8160899e2e046b4ca1d384d89d8073a44852c401293777fde998c35fe26193a3c9dfab5705a33ed18e4721250599d9f225afd9b294e1e8a739dce430770b9e
-  languageName: node
-  linkType: hard
-
-"jasmine-core@npm:~3.6.0":
-  version: 3.6.0
-  resolution: "jasmine-core@npm:3.6.0"
-  checksum: e5d53111b01d489497e509b9724aa76b8212793e1728c9e6f3a3cd777502fd315199c3c22aa6b8afbf3f493864d9a177e177939046676167d2c25bcc14bfd788
   languageName: node
   linkType: hard
 
