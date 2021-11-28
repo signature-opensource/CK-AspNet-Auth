@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth/src/type-system';
+import { IAuthenticationInfoTypeSystem } from '@signature/webfrontauth';
 import { IUserInfo } from '@signature/webfrontauth';
 import { AxiosInstance } from 'axios';
 

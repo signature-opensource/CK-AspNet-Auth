@@ -13,8 +13,8 @@
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
+CodeCakeBuilder/[Rr]elease/
+CodeCakeBuilder/[Rr]eleases/
 x64/
 x86/
 bld/
@@ -320,9 +320,6 @@ jspm_packages/
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarn-integrity
-
 # dotenv environment variables file
 .env
 
@@ -336,3 +333,14 @@ jspm_packages/
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
+
+.yarn/
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Using genversion in the package.json build script to generate this file.
+AuthService.version.ts

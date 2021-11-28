@@ -26,30 +26,6 @@ namespace CK.AspNet.Auth.Tests
         const string tokenExplainUri = "/.webfront/token";
 
         [Test]
-        public async Task calling_c_refresh_from_scrath_returns_null_info_and_token()
-        {
-            using( var s = new AuthServer() )
-            {
-                HttpResponseMessage response = await s.Client.Get( refreshUri );
-                response.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() );
-            }
-        }
-
-        [Test]
-        public async Task calling_c_refresh_from_scrath_with_providers_query_parameter_returns_null_info_and_null_token_but_the_array_of_providers_name()
-        {
-            using( var s = new AuthServer() )
-            {
-                HttpResponseMessage response = await s.Client.Get( refreshUri + "?schemes" );
-                response.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, response.Content.ReadAsStringAsync().Result );
-                c.Should().BeEquivalentTo( new RefreshResponse() { Schemes = new[] { "Basic" } } );
-            }
-        }
-
-        [Test]
         public async Task a_successful_basic_login_returns_valid_info_and_token()
         {
             using( var s = new AuthServer() )
@@ -105,7 +81,7 @@ namespace CK.AspNet.Auth.Tests
                                            } ) )
             {
                 // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = await s.LoginAlbertViaBasicProvider( useGenericWrapper );
+                var login = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper );
                 Debug.Assert( login.Info != null );
                 DateTime basicLoginTime = login.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string? originalToken = login.Token;
@@ -148,17 +124,18 @@ namespace CK.AspNet.Auth.Tests
 
         [TestCase( AuthenticationCookieMode.WebFrontPath )]
         [TestCase( AuthenticationCookieMode.RootPath )]
-        public async Task bad_tokens_are_ignored( AuthenticationCookieMode mode )
+        public async Task bad_tokens_are_ignored_as_long_as_cookies_can_be_used( AuthenticationCookieMode mode )
         {
             using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
             {
-                var firstLogin = await s.LoginAlbertViaBasicProvider();
+                var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
+
                 string badToken = firstLogin.Token + 'B';
                 s.Client.Token = badToken;
-                RefreshResponse c = await s.CallRefreshEndPoint();
-                c.Info.Should().BeNull();
-                HttpResponseMessage tokenRead = await s.Client.Get( tokenExplainUri );
-                tokenRead.Content.ReadAsStringAsync().Result.Should().Be( "{\"info\":null,\"rememberMe\":false}" );
+                RefreshResponse c = await s.CallRefreshEndPointAsync();
+                c.Info.Should().BeEquivalentTo( firstLogin.Info, "Authentication has been restored from cookies." );
+
+                c.Token.Should().NotBeNullOrWhiteSpace( "Regenerated token differs." );
             }
         }
 
@@ -166,51 +143,24 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( AuthenticationCookieMode.RootPath, true )]
         [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
         [TestCase( AuthenticationCookieMode.RootPath, false )]
-        public async Task logout_without_full_query_parameter_removes_the_authentication_cookie_but_keeps_the_unsafe_one( AuthenticationCookieMode mode, bool logoutWithToken )
+        public async Task logout_removes_both_cookies( AuthenticationCookieMode mode, bool logoutWithToken )
         {
             using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
             {
                 // Login: the 2 cookies are set.
-                var firstLogin = await s.LoginAlbertViaBasicProvider();
+                var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string originalToken = firstLogin.Token;
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.Get( logoutUri );
                 logout.EnsureSuccessStatusCode();
-                // Refresh: we have the Unsafe Albert.
-                s.Client.Token = null;
-                RefreshResponse c = await s.CallRefreshEndPoint();
-                c.Info.Level.Should().Be( AuthLevel.Unsafe );
-                c.Info.User.UserName.Should().Be( "" );
-                c.Info.UnsafeUser.UserName.Should().Be( "Albert" );
-                c.Info.UnsafeUser.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
-            }
-        }
-
-        [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
-        [TestCase( AuthenticationCookieMode.RootPath, true )]
-        [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
-        [TestCase( AuthenticationCookieMode.RootPath, false )]
-        public async Task logout_with_full_query_parameter_removes_both_cookies( AuthenticationCookieMode mode, bool logoutWithToken )
-        {
-            using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
-            {
-                // Login: the 2 cookies are set.
-                var firstLogin = await s.LoginAlbertViaBasicProvider();
-                DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-                string originalToken = firstLogin.Token;
-                // Logout 
-                if( logoutWithToken ) s.Client.Token = originalToken;
-                HttpResponseMessage logout = await s.Client.Get( logoutUri + "?full" );
-                logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
                 s.Client.Token = null;
                 HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
-                c.Info.Should().BeNull();
-                c.Token.Should().BeNull();
+                c.Info.Level.Should().Be( AuthLevel.None );
             }
         }
 
@@ -283,12 +233,12 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 // This test is far from perfect but does the job without clock injection.
-                RefreshResponse auth = await s.LoginAlbertViaBasicProvider( useGenericWrapper, rememberMe );
+                RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
 
                 s.Client.Token = auth.Token;
-                RefreshResponse refresh = await s.CallRefreshEndPoint();
+                RefreshResponse refresh = await s.CallRefreshEndPointAsync();
                 refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Refresh increased the expiration time." );
 
                 refresh.RememberMe.Should().BeFalse( "In CookieMode None, RememberMe is always false, no matter what." );
@@ -306,7 +256,7 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 // This test is far from perfect but does the job without clock injection.
-                RefreshResponse auth = await s.LoginAlbertViaBasicProvider();
+                RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync();
                 DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
                 expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: 1000 );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );

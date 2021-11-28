@@ -30,6 +30,14 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
     setCriticalExpires(criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<T>;
 
     /**
+     * Sets the device identifier (and checks expiration based on utcNow parameter).
+     * Returns this StdAuthenticationInfo or an updated one if changed.
+     * @param deviceId The new device identifier.
+     * @param utcNow The date to consider to challenge expirations.
+     */
+    setDeviceId(deviceId: string, utcNow?: Date): IAuthenticationInfoImpl<T>
+
+    /**
      * Returns a new StdAuthenticationInfo where the user may no more be the actualUser.
      * Note that the expiration dates are checked based on the utcNow parameter.
      * @param user Creates a new StdAuthenticationInfo where the user is changed.
@@ -45,11 +53,6 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
      * @param utcNow The date to consider to challenge expirations.
      */
     clearImpersonation(utcNow?: Date): IAuthenticationInfoImpl<T>;
-
-    /**
-     * Generates a JSON compatible object for this Authentication info.
-     */
-    toJSON() : Object 
 }
 
 /** Defines a type system that exposes a type manager for IUserInfo and for IAuthenticationInfo. */
@@ -78,13 +81,13 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
      * @param o Any object that must be shaped like an authentication info.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    fromJson( o: Object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
+    fromServerResponse( o: Object, availableSchemes?: ReadonlyArray<string> ): IAuthenticationInfoImpl<T>|null;
 
     /**
      * Generates a JSON compatible object for the Authentication info.
-     * @param auth The authentication information to serialize.
+     * @param auth The authentication information to serialize as a server response.
      */
-    toJSON( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object;
+    toServerResponse( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object;
     
     /**
      * Saves the authentication info and currently available schemes into the local storage.
@@ -117,7 +120,7 @@ export interface IUserInfoType<T extends IUserInfo> {
      * @param o Any object that must be shaped like a T.
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
-    fromJson(o: object, availableSchemes?: ReadonlyArray<string> ): T|null;
+    fromServerResponse(o: object, availableSchemes?: ReadonlyArray<string> ): T|null;
 }
 
 export class StdKeyType {
@@ -128,4 +131,5 @@ export class StdKeyType {
   public static readonly criticalExpiration: string = 'cexp';
   public static readonly user: string = 'user';
   public static readonly actualUser: string = 'actualUser';
+  public static readonly deviceId: string = 'device';
 }

@@ -37,7 +37,7 @@ namespace CK.AspNet.Auth
         /// <param name="this">This request.</param>
         /// <param name="maxLen">The maximal number of characters to read.</param>
         /// <returns>The string or null on error.</returns>
-        static public async Task<string> TryReadSmallBodyAsString( this HttpRequest @this, int maxLen )
+        static public async Task<string?> TryReadSmallBodyAsString( this HttpRequest @this, int maxLen )
         {
             using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
             {
@@ -52,14 +52,14 @@ namespace CK.AspNet.Auth
             }
         }
 
-        static public Task WriteAsync( this HttpResponse @this, JObject o, int code = StatusCodes.Status200OK )
+        static public Task WriteAsync( this HttpResponse @this, JObject? o, int code = StatusCodes.Status200OK )
         {
             @this.StatusCode = code;
             @this.ContentType = "application/json";
             return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
         }
 
-        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string callerOrigin )
+        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string? callerOrigin )
         {
             @this.StatusCode = StatusCodes.Status200OK;
             @this.ContentType = "text/html";

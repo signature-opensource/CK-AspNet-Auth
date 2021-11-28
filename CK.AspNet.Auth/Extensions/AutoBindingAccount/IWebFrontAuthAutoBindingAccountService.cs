@@ -9,13 +9,10 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Optional service that, when registered, enables automatic account binding.
-    /// Implementation may consider that when current authentication is <see cref="AuthLevel.Critical"/>, it is safe
+    /// Implementation may consider that when current authentication is <see cref="AuthLevel.Critical"/> it is safe
     /// to bind the account.
     /// </summary>
-    /// <remarks>
-    /// This reuses the interface marker from CK.Auth since we do not depend on CK.StObj.Model here.
-    /// </remarks>
-    public interface IWebFrontAuthAutoBindingAccountService : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthAutoBindingAccountService : ISingletonAutoService
     {
         /// <summary>
         /// Called for each failed login when the user is currently logged in.

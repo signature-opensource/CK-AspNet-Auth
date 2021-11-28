@@ -25,7 +25,7 @@ namespace CK.AspNet.Auth
         /// corrected by registering the user for the provider.
         /// This can be true only on failure otherwise an argument exception is thrown.
         /// </param>
-        public UserLoginResult( IUserInfo info, int failureCode, string failureReason, bool unregisteredUser )
+        public UserLoginResult( IUserInfo? info, int failureCode, string? failureReason, bool unregisteredUser )
         {
             if( info == null || info.UserId == 0 )
             {
@@ -63,7 +63,7 @@ namespace CK.AspNet.Auth
         /// Gets the user information.
         /// Null if for any reason, login failed.
         /// </summary>
-        public IUserInfo UserInfo { get; }
+        public IUserInfo? UserInfo { get; }
 
         /// <summary>
         /// Gets whether the login succeeded.
@@ -87,6 +87,6 @@ namespace CK.AspNet.Auth
         /// Gets a string describing the reason of a login failure.
         /// Null on success.
         /// </summary>
-        public string LoginFailureReason { get; }
+        public string? LoginFailureReason { get; }
     }
 }

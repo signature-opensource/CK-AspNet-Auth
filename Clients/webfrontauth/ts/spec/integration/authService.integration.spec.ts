@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as tough from 'tough-cookie';
+import {CookieJar } from 'tough-cookie';
 import axiosCookieJarSupport from 'axios-cookiejar-support';
 
 import {
@@ -36,6 +36,7 @@ describe('AuthService', function() {
         unsafeActualUser: anonymous,
         expires: undefined,
         criticalExpires: undefined,
+        deviceId:"",
         isImpersonated: false,
         level: AuthLevel.None
     };
@@ -43,7 +44,7 @@ describe('AuthService', function() {
     beforeAll(async function() {
         const axiosInstance = axios.create();
         axiosCookieJarSupport(axiosInstance);
-        const cookieJar = new tough.CookieJar();
+        const cookieJar = new CookieJar();
         axiosInstance.defaults.jar = cookieJar;
 
         const identityEndPoint = {
@@ -56,7 +57,7 @@ describe('AuthService', function() {
     });
 
     beforeEach(async function() {
-        await authService.logout(true);
+        await authService.logout();
     });
 
     it('should basicLogin and logout.', async function() {
@@ -82,7 +83,7 @@ describe('AuthService', function() {
         expect(authService.token).not.toBe('');
         expect(authService.refreshable).toBe(false);
 
-        await authService.logout(true);
+        await authService.logout();
         expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
         expect(authService.token).toBe('');
         expect(authService.refreshable).toBe(false);
@@ -125,7 +126,7 @@ describe('AuthService', function() {
         expect(authService.token).not.toBe('');
         expect(authService.refreshable).toBe(false);
 
-        await authService.logout(true);
+        await authService.logout();
         expect(areAuthenticationInfoEquals(authService.authenticationInfo, logoutModel)).toBe(true);
         expect(authService.token).toBe('');
         expect(authService.refreshable).toBe(false);
@@ -143,18 +144,5 @@ describe('AuthService', function() {
         authService.removeOnChange(onChangeFunction);
         await authService.basicLogin('admin','admin');
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
-    });
-
-    it('should call OnChange() for every subscribed functions.', async function() {
-        const booleanArray: boolean[] = [false, false, false];
-        const functionArray: (() => void)[] = [];
-
-        for(let i=0; i<booleanArray.length; ++i) functionArray.push(function() { booleanArray[i] = true; });
-        functionArray.forEach(func => authService.addOnChange(() => func()));
-
-        await authService.logout();
-        booleanArray.forEach(bool => expect(bool).toBe(true));
-
-        functionArray.forEach(func => authService.removeOnChange(() => func()));
     });
 });

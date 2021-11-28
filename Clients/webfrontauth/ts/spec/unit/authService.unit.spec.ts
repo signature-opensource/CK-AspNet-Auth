@@ -9,7 +9,7 @@ import {
 } from '../../src';
 import { IWebFrontAuthResponse } from '../../src/index.private';
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
-import { WebFrontAuthError } from '../../src/index.extension';
+import { WebFrontAuthError } from '../../src/index';
 import ResponseBuilder from '../helpers/response-builder';
 
 describe('AuthService', function () {
@@ -17,19 +17,15 @@ describe('AuthService', function () {
     let requestInterceptorId: number;
     let responseInterceptorId: number;
 
-    const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-    const emptyResponse: IWebFrontAuthResponse = {
-        info: undefined,
-        token: undefined,
-        refreshable: false
-    }
-    let serverResponse: IWebFrontAuthResponse = emptyResponse;
-
+    let authService!: AuthService;
     const schemeLastUsed = new Date();
     const exp = new Date();
     exp.setHours(exp.getHours() + 6);
     const cexp = new Date();
     cexp.setHours(cexp.getHours() + 3);
+
+    const emptyResponse: IWebFrontAuthResponse = {};
+    let serverResponse: IWebFrontAuthResponse = emptyResponse;
 
     const anonymous: IUserInfo = {
         userId: 0,
@@ -37,7 +33,19 @@ describe('AuthService', function () {
         schemes: []
     };
 
+    async function doLogin(name:string) {
+        serverResponse = new ResponseBuilder()
+        .withUser({ id: 2, name: 'Alice', schemes: [{ name: name, lastUsed: schemeLastUsed }] })
+        .withExpires(exp)
+        .withToken('CfDJ8CS62…pLB10X')
+        .withRefreshable(true)
+        .build();
+        await authService.basicLogin('', '');
+    }
+
     beforeAll(function () {
+        authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+        
         requestInterceptorId = axiosInstance.interceptors.request.use((config: AxiosRequestConfig) => {
             return config;
         });
@@ -57,27 +65,24 @@ describe('AuthService', function () {
 
     beforeEach(async function () {
         serverResponse = emptyResponse;
-        await authService.logout(true);
+        await authService.logout();
         serverResponse = new ResponseBuilder().withSchemes( ['Basic'] ).build();
         await authService.refresh( false, true );
-        localStorage.clear();
     });
 
     afterAll(function () {
         axiosInstance.interceptors.request.eject(requestInterceptorId);
         axiosInstance.interceptors.response.eject(responseInterceptorId);
+        authService.close();
     });
 
     describe('when using localStorage', function() {
         
-        // Nicole used the 'Provider' scheme.
-        const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
-        const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
-        const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
-        const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
+        it('JSON.stringify( StdAuthenticationInfo ) is safe (toJSON is implemented on all Std objects).', async function() {
 
-        it('JSON.stringify( StdAuthenticationInfo ) is safe (calls TypeSystem.toJSON) and is actually like a Server Response.', async function() {
-            expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( authService.typeSystem.authenticationInfo.toJSON( nicoleAuth ) ) );
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+            expect( JSON.stringify( nicoleAuth ) ).toBe( JSON.stringify( nicoleAuth ) );
 
             const user = { id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] };
             serverResponse = new ResponseBuilder()
@@ -88,10 +93,15 @@ describe('AuthService', function () {
 
             await authService.basicLogin('', '');
             
-            const expected = '{"user":{"name":"Alice","id":2,"schemes":[{"name":"Basic","lastUsed":"'
-                                + schemeLastUsed.toISOString() +'"}]},"exp":"'
-                                + exp.toISOString() +'"}';
-            expect( JSON.stringify( authService.authenticationInfo ) ).toBe( expected );
+
+            const expectedUser = '{"userId":2,"userName":"Alice","schemes":[{"name":"Basic","lastUsed":"'+ schemeLastUsed.toISOString() +'","status":1}]}';
+            // Note that criticalExpires being undefined, it is not exported as JSON!
+            // This '","criticalExpires":"'+ cexp.toISOString() doesn't appear in result.
+            const expected = '{"user":'+expectedUser+',"unsafeUser":'+expectedUser
+                             +',"level":2,"expires":"'+ exp.toISOString() +'","deviceId":"","isImpersonated":false'
+                             +',"actualUser":'+expectedUser+'}';
+            const result = JSON.stringify( authService.authenticationInfo ); 
+            expect( result ).toBe( expected );
         });
         
         it('it is possible to store a null AuthenticationInfo (and schemes are saved nevertheless).', function() {
@@ -109,7 +119,9 @@ describe('AuthService', function () {
         });
 
         it('AuthenticationInfo is restored as unsafe user.', function() {
-            
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+           
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'theEndPoint', nicoleAuth );
 
@@ -124,7 +136,12 @@ describe('AuthService', function () {
         });
 
         it('AuthenticationInfo and Schemes are stored by end point.', function() {
-            
+
+            const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
+            const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
+            const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
+               
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth ); 
             expect( momoAuth.level ).toBe( AuthLevel.Normal );
@@ -156,6 +173,8 @@ describe('AuthService', function () {
             serverResponse = new ResponseBuilder()
                 .withLoginFailure({ loginFailureCode: 4, loginFailureReason: 'Invalid credentials.' })
                 .build();
+
+
             await authService.basicLogin('', '');
 
             expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).toBe(true);
@@ -223,7 +242,7 @@ describe('AuthService', function () {
                 .withExpires(exp)
                 .withToken('CfDJ8CS62…pLB10X')
                 .withRefreshable(false)
-                .withVersion('v0.0.0-alpha')
+                .withVersion(AuthService.clientVersion)
                 .build();
             await authService.refresh();
 
@@ -235,7 +254,7 @@ describe('AuthService', function () {
             expect(authService.token).toBe('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).toBe(false);
             expect(authService.currentError).toBeUndefined();
-            expect(authService.endPointVersion).toBe('v0.0.0-alpha');
+            expect(authService.endPointVersion).toBe( AuthService.clientVersion );
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
@@ -308,7 +327,7 @@ describe('AuthService', function () {
             expect(authService.currentError).toBeUndefined();
 
             serverResponse = emptyResponse;
-            await authService.logout(true);
+            await authService.logout();
 
             expect(areUserInfoEquals(authService.authenticationInfo.user, anonymous)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, anonymous)).toBe(true);
@@ -359,7 +378,7 @@ describe('AuthService', function () {
             expect(authService.refreshable).toBe(false);
             expect(authService.currentError).toEqual(new WebFrontAuthError({
                 errorId: 'System.ArgumentException',
-                errorReason: 'Invalid payload.'
+                errorText: 'Invalid payload.'
             }));
         });
 
@@ -447,53 +466,38 @@ describe('AuthService', function () {
             authService.addOnChange(updateAuthenticationInfo);
             authService.addOnChange(updateToken);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(false);
             expect(token).not.toEqual('');
 
             serverResponse = emptyResponse;
-            await authService.logout(true);
+            await authService.logout();
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
             expect(token).toBe('');
 
             authService.removeOnChange(updateAuthenticationInfo);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
 
             expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
             expect(token).not.toEqual('');
         });
 
         it('should contains the source as an Event parameter.', async function () {
-            const assertEventSource = (source: AuthService) => expect(source).toEqual(authService);
+            let eventSource = null;
+            const assertEventSource = (source: AuthService) => eventSource = source;
             authService.addOnChange(assertEventSource);
 
-            serverResponse = new ResponseBuilder()
-                .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })
-                .withExpires(exp)
-                .withToken('CfDJ8CS62…pLB10X')
-                .withRefreshable(true)
-                .build();
-            await authService.basicLogin('', '');
+            await doLogin( 'Alice' );
+
+            expect(eventSource).toEqual(authService);
         });
 
         /**
          * NOTE
-         * Do not use async here. Otherwise an "method is overspecified" error will be throw.
+         * Do not use async here. Otherwise a "method is overspecified" error will be throw.
          * This error is thrown whenever a function returns a promise and uses the done callback.
          * Since this test relies on events' callback, we call done() after the last expectation.
          */
@@ -527,6 +531,29 @@ describe('AuthService', function () {
                 authService.addOnChange(assertCriticalExpiresDemoted);
             });
         });
+
+        it('should call OnChange() for every subscribed functions.', async function() {
+            const booleanArray: boolean[] = [false, false, false];
+            const functionArray: (() => void)[] = [];
+
+            for(let i=0; i<booleanArray.length; ++i) functionArray.push(function() { booleanArray[i] = true; });
+            functionArray.forEach(func => authService.addOnChange(func));
+
+            await doLogin( 'Alice' );
+            booleanArray.forEach(b => expect(b).toBe(true));
+            // Clears the array.
+            for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
+
+            await authService.logout();
+            booleanArray.forEach(b => expect(b).toBe(true));
+            // Clears the array.
+            for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
+    
+            functionArray.forEach(func => authService.removeOnChange(func));
+            await doLogin( 'Alice' );
+            booleanArray.forEach(b => expect(b).toBe(false));
+        });
+    
     });
 
 });

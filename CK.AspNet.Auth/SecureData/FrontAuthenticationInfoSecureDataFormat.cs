@@ -13,13 +13,13 @@ namespace CK.AspNet.Auth
     /// Secure <see cref="IAuthenticationInfo"/> data, using a binary serialization 
     /// thanks to <see cref="IAuthenticationTypeSystem"/>.
     /// </summary>
-    class AuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
+    class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
     {
         class Serializer : IDataSerializer<FrontAuthenticationInfo>
         {
             readonly IAuthenticationInfoType _t;
 
-            public Serializer(IAuthenticationTypeSystem t)
+            public Serializer( IAuthenticationTypeSystem t )
             {
                 _t = t.AuthenticationInfo;
             }
@@ -29,16 +29,16 @@ namespace CK.AspNet.Auth
                 using( var s = new MemoryStream( data ) )
                 using( var r = new BinaryReader( s ) )
                 {
-                    return new FrontAuthenticationInfo( _t.Read( r ), r.ReadBoolean() );
+                    return new FrontAuthenticationInfo( _t.Read( r )!, r.ReadBoolean() );
                 }
             }
 
-            public byte[] Serialize(FrontAuthenticationInfo model)
+            public byte[] Serialize( FrontAuthenticationInfo model )
             {
-                using (var s = new MemoryStream())
-                using (var w = new BinaryWriter(s))
+                using( var s = new MemoryStream() )
+                using( var w = new BinaryWriter( s ) )
                 {
-                    _t.Write(w, model.Info);
+                    _t.Write( w, model.Info );
                     w.Write( model.RememberMe );
                     return s.ToArray();
                 }
@@ -50,8 +50,8 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="t">Type system to use.</param>
         /// <param name="p">Data protector to use.</param>
-        public AuthenticationInfoSecureDataFormat(IAuthenticationTypeSystem t, IDataProtector p)
-            : base(new Serializer(t), p)
+        public FrontAuthenticationInfoSecureDataFormat( IAuthenticationTypeSystem t, IDataProtector p )
+            : base( new Serializer( t ), p )
 
         {
         }

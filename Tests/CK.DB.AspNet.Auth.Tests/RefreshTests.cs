@@ -26,21 +26,12 @@ namespace CK.DB.AspNet.Auth.Tests
         const string impersonateUri = "/.webfront/c/impersonate";
 
         [Test]
-        public async Task refreshing_full_correctly_handles_impersonation_changes()
+        public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes()
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
             using( var ctx = new SqlStandardCallContext() )
-            using( var server = new AuthServer( configureServices: services =>
-                    {
-                        // In Net461, the StObjMap is done on this /bin: ImpersonationForEverybodyService is automatically
-                        // registered in the DI container.
-                        // In NetCoreApp, the StObjMap comes from the DBWithPasswordAndGoogle: ImpersonationForEverybodyService
-                        // is not automatically registered.
-#if !NET461
-                        services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
-#endif
-                    } ) )
+            using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthImpersonationService,ImpersonationForEverybodyService>() ) )
             {
                 int idAlbert = await SetupUser( ctx, "Albert", "pass", user, basic );
                 int idPaula = await SetupUser( ctx, "Paula", "pass", user, basic );
@@ -103,9 +94,9 @@ namespace CK.DB.AspNet.Auth.Tests
             return r;
         }
 
-        static async Task<RefreshResponse> RefreshSuccess( AuthServer server, bool full, AuthLevel expectedLevel )
+        static async Task<RefreshResponse> RefreshSuccess( AuthServer server, bool callBackend, AuthLevel expectedLevel )
         {
-            HttpResponseMessage m = await server.Client.Get( full ? refreshUri + "?full" : refreshUri );
+            HttpResponseMessage m = await server.Client.Get( callBackend ? refreshUri + "?callBackend" : refreshUri );
             var r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
             r.Info.Level.Should().Be( expectedLevel );
             return r;

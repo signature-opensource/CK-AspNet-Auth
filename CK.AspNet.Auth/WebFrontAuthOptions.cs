@@ -13,6 +13,8 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Options for <see cref="WebFrontAuthService"/>.
+    /// Note that WebFrountAuth uses the Data protection API (https://docs.microsoft.com/en-us/aspnet/core/security/data-protection/introduction)
+    /// to manage secrets: an important part of the security configuration is delegated to this API.
     /// </summary>
     public class WebFrontAuthOptions : AuthenticationSchemeOptions
     {
@@ -51,9 +53,11 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets whether <see cref="UnsafeExpireTimeSpan"/> is not null, greater than <see cref="ExpireTimeSpan"/>,
         /// and <see cref="CookieMode"/> is not <see cref="AuthenticationCookieMode.None"/>.
+        /// <para>
         /// When true a long-lived cookie is used to store the unsafe, but long term, authentication information.
         /// Its <see cref="CookieOptions.Path"/> depends on <see cref="CookieMode"/>.
         /// Since the expiration is a dynamic configuration, this is also a dynamic configuration.
+        /// </para>
         /// </summary>
         public bool UseLongTermCookie => UnsafeExpireTimeSpan.HasValue
                                             && UnsafeExpireTimeSpan > ExpireTimeSpan
@@ -63,9 +67,9 @@ namespace CK.AspNet.Auth
         /// Gets or sets whether a complex claim must be set as the <see cref="HttpContext.User"/>
         /// when <see cref="AuthenticationHttpContextExtensions.AuthenticateAsync(HttpContext)"/> (and the
         /// "WebFrontAuth" is the default scheme) or <see cref="AuthenticationHttpContextExtensions.AuthenticateAsync(HttpContext, string)"/>
-        /// with the "WebFrontAuth" scheme.
+        /// with the "WebFrontAuth" scheme is called.
         /// <para>
-        /// When set to false (the default), the ClaimsPrincipal contains only the safe user claims and ignores
+        /// Defaults to false: the ClaimsPrincipal contains only the safe user claims and ignores
         /// any impersonation.
         /// </para>
         /// <para>
@@ -74,7 +78,7 @@ namespace CK.AspNet.Auth
         /// <see cref="System.Security.Claims.ClaimsIdentity.Actor"/>.
         /// </para>
         /// <para>
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </para>
         /// </summary>
         public bool UseFullClaimsPrincipalOnAuthenticate { get; set; }
@@ -84,7 +88,7 @@ namespace CK.AspNet.Auth
         /// Note that the long term cookie uses <see cref="CookieOptions.Secure"/> sets to false since it 
         /// does not require any protection.
         /// Defaults to <see cref="CookieSecurePolicy.SameAsRequest"/>.
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </summary>
         public CookieSecurePolicy CookieSecurePolicy { get; set; }
 
@@ -94,16 +98,16 @@ namespace CK.AspNet.Auth
         /// Defaults to <see cref="AuthenticationCookieMode.WebFrontPath"/>.
         /// </para>
         /// <para>
-        /// Setting it to <see cref="AuthenticationCookieMode.RootPath"/> should NOT BE used for 
-        /// professional development: this mode, that is the same as the standard Cookie ASP.Net authentication,
-        /// works only for standard and classical Web application. 
+        /// Setting it to <see cref="AuthenticationCookieMode.RootPath"/> should NOT BE used in 
+        /// most cases: this mode, that is the same as the standard Cookie ASP.Net authentication,
+        /// is for standard and classical Web application. 
         /// </para>
         /// <para>
         /// Setting it to <see cref="AuthenticationCookieMode.None"/> disables all cookies: client apps
         /// are no more "F5 resilient", this can be used for pure API implementations.
         /// </para>
         /// <para>
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </para>
         /// </summary>
         public AuthenticationCookieMode CookieMode { get; set; }
@@ -128,13 +132,13 @@ namespace CK.AspNet.Auth
         /// new schemes into account.
         /// </para>
         /// </summary>
-        public List<string> AvailableSchemes { get; set; }
+        public List<string>? AvailableSchemes { get; set; }
 
         /// <summary>
         /// Gets or sets the refresh validation time. 
         /// When set to other than <see cref="TimeSpan.Zero"/> the middleware will re-issue a new token 
         /// (and new authentication cookie if <see cref="CookieMode"/> allows it) with a new expiration time any time it 
-        /// processes a "<see cref="EntryPath"/>/c/refresh" request.
+        /// processes a ".webfront/c/refresh" request.
         /// This applies to <see cref="IAuthenticationInfo.Expires"/> but not to <see cref="IAuthenticationInfo.CriticalExpires"/>. 
         /// This configuration can be changed dynamically: modifying the configuration will take the
         /// new value into account.
@@ -143,7 +147,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets or sets the http header name. Defaults to "Authorization".
-        /// This can not be changed dynamically.
+        /// This cannot be changed dynamically.
         /// </summary>
         public string BearerHeaderName { get; set; } = "Authorization";
 
@@ -151,6 +155,22 @@ namespace CK.AspNet.Auth
         /// Defines the initial critical time span when logged in through each schemes.
         /// It is null by default: no schemes elevate a critical authentication level.
         /// </summary>
-        public IDictionary<string, TimeSpan> SchemesCriticalTimeSpan { get; set; }
+        public IDictionary<string, TimeSpan>? SchemesCriticalTimeSpan { get; set; }
+
+        /// <summary>
+        /// Gets or sets the initial AuthCookieName. Defaults to ".webFront".
+        /// The long term cookie name equals to AuthCookieName suffixed by "LT".
+        /// This cannot be changed dynamically.
+        /// </summary>
+        public string AuthCookieName { get; set; } = ".webFront";
+
+        /// <summary>
+        /// Gets or sets whether <see cref="IWebFrontAuthLoginService.RefreshAuthenticationInfoAsync(HttpContext, Core.IActivityMonitor, IAuthenticationInfo, DateTime)"/>
+        /// must be called each time "/.webfront/c/refresh" is called.
+        /// <para>
+        /// Default to false: the login service method is called only if a <c>callBackend</c> parameter appear in the query string: "/.webfront/c/refresh?callBackend".
+        /// </para>
+        /// </summary>
+        public bool AlwaysCallBackendOnRefresh { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-import { IAuthServiceConfiguration, IEndPoint, ILocalStoragePersistence } from '@signature/webfrontauth';
+import { IAuthServiceConfiguration, IEndPoint } from '@signature/webfrontauth';
 
 /**
  * WebFrontAuth configuration class.
@@ -10,11 +10,12 @@ export class AuthServiceClientConfiguration implements IAuthServiceConfiguration
    * Creates an instance of AuthServiceClientConfiguration using the provided login route and endpoint.
    * @param identityEndPoint The identity endpoint to use in WebFrontAuth
    * @param [loginPath='/login'] The route path WebFrontAuth should redirect to when authentication is required.
+   * @param
    */
   constructor(
     public readonly identityEndPoint: IEndPoint,
     public readonly loginPath: string = '/login',
-    public readonly localStoragePersistence?: ILocalStoragePersistence,
+    public readonly useLocalStorage?: boolean,
   ) {
   }
 }
@@ -28,7 +29,7 @@ export class AuthServiceClientConfiguration implements IAuthServiceConfiguration
  */
 export function createAuthConfigUsingCurrentHost(
   loginPath: string = '/login',
-  localStoragePersistence?: ILocalStoragePersistence
+  useLocalStorage?: boolean
 ): AuthServiceClientConfiguration {
   const isHttps = window.location.protocol.toLowerCase() === 'https:';
   const identityEndPoint: IEndPoint = {
@@ -38,5 +39,5 @@ export function createAuthConfigUsingCurrentHost(
       : undefined,
     disableSsl: !isHttps
   };
-  return new AuthServiceClientConfiguration(identityEndPoint, loginPath, localStoragePersistence);
+  return new AuthServiceClientConfiguration(identityEndPoint, loginPath, useLocalStorage);
 }

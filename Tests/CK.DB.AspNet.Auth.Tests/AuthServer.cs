@@ -31,6 +31,28 @@ namespace CK.DB.AspNet.Auth.Tests
                     app.UseGuardRequestMonitor();
                     _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
+                    app.Use( prev =>
+                    {
+                        return async ctx =>
+                        {
+                            if( ctx.Request.Path.StartsWithSegments( "echo", out var remaining ) )
+                            {
+                                var echo = remaining.ToString();
+                                if( ctx.Request.QueryString.HasValue ) echo += " => " + ctx.Request.QueryString;
+
+                                if( remaining.StartsWithSegments( "error", out var errorCode ) && Int32.TryParse( errorCode, out var error ) )
+                                {
+                                    ctx.Response.StatusCode = error;
+                                    echo += $" (StatusCode set to {error}.)";
+                                }
+                                await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
+                            }
+                            else
+                            {
+                                await prev( ctx );
+                            }
+                        };
+                    } );
                     configureApplication?.Invoke( app );
                 },
                 builder => builder.UseScopedHttpContext() )

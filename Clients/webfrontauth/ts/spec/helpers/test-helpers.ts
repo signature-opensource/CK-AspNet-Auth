@@ -22,7 +22,7 @@ export function areUserInfoEquals( userInfo1: IUserInfo, userInfo2: IUserInfo ):
     return areSchemesEquals( userInfo1.schemes, userInfo2.schemes );
 }
 
-export function areAuthenticationInfoEquals( info1: IAuthenticationInfo, info2: IAuthenticationInfo ): boolean {
+export function areAuthenticationInfoEquals( info1: IAuthenticationInfo, info2: IAuthenticationInfo, ignoreDeviceId?: boolean ): boolean {
     if( info1 === info2 ) { return true; }
     if( !info1 || !info2 ) { return false; }
     if( !areUserInfoEquals(info1.user, info2.user) ) { return false; }
@@ -33,5 +33,9 @@ export function areAuthenticationInfoEquals( info1: IAuthenticationInfo, info2: 
     if( info1.criticalExpires !== info2.criticalExpires ) { return false; }
     if( info1.isImpersonated !== info2.isImpersonated ) { return false; }
     if( info1.level !== info2.level ) { return false; }
+    if( !ignoreDeviceId ) 
+    {
+        if( info1.deviceId !== info2.deviceId ) { return false; }
+    }
     return true;
 }

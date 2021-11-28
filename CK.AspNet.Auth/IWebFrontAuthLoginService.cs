@@ -9,9 +9,11 @@ using System.Threading.Tasks;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Interface to the backend login service.
+    /// Interface to the back-end login service.
+    /// This is the most important (and required) service that abstracts any persistence layer or gateway that
+    /// is able to handle login and authentication.
     /// </summary>
-    public interface IWebFrontAuthLoginService : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthLoginService : ISingletonAutoService
     {
         /// <summary>
         /// Gets whether <see cref="BasicLoginAsync"/> is supported.

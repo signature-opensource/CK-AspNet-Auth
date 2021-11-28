@@ -23,7 +23,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
      * When unspecified (null or undefined), all user schemes' status are Active.
      * When empty, we consider that no schemes are actually available: all user schemes' status are Deprecated.
      */
-    public fromJson( o: {[index: string]: any}, availableSchemes?: ReadonlyArray<string> ): IUserInfo|null {
+    public fromServerResponse( o: {[index: string]: any}, availableSchemes?: ReadonlyArray<string> ): IUserInfo|null {
         if( !o ) { return null; }
 
         function create( r: {[index: string]: any}, schemeNames: Set<string>|null ) : StdUserSchemeInfo {

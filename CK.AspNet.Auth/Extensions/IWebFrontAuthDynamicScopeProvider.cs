@@ -1,5 +1,6 @@
 using CK.Auth;
 using CK.Core;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -10,8 +11,16 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Optional service that can handle dynamic scopes.
+    /// This service provides the scopes that must be submitted to an authentication provider.
+    /// Updating the actual scopes that have been accepted or rejected is a specific process
+    /// that must be implemented for each provider.
+    /// <para>
+    /// For instance: Facebook requires to use its GraphQL API to know which scopes have been
+    /// accepted or rejected by the user.
+    /// Others simply returns these informations in the <see cref="TicketReceivedContext"/>.
+    /// </para>
     /// </summary>
-    public interface IWebFrontAuthDynamicScopeProvider : CK.Auth.StObjSupport.ISingletonAutoService
+    public interface IWebFrontAuthDynamicScopeProvider : ISingletonAutoService
     {
         /// <summary>
         /// Called at the start of the external login flow.
@@ -20,15 +29,5 @@ namespace CK.AspNet.Auth
         /// <param name="context">The context.</param>
         /// <returns>Scopes that should be submitted.</returns>
         Task<string[]> GetScopesAsync( IActivityMonitor m, WebFrontAuthStartLoginContext context );
-
-        /// <summary>
-        /// Called once the authentication ticket has been received and scopes accepted or rejected by the user.
-        /// </summary>
-        /// <param name="m">The monitor to use.</param>
-        /// <param name="c">Current http context.</param>
-        /// <param name="current">Authenticated user information.</param>
-        /// <param name="scopes">The scopes that have been accepted.</param>
-        /// <returns>The awaitable.</returns>
-        Task SetReveivedScopesAsync( IActivityMonitor m, HttpContext c, IAuthenticationInfo current, IReadOnlyList<string> scopes );
     }
 }

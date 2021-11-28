@@ -2,7 +2,7 @@ import { IUserInfo, AuthLevel } from '../authService.model.public';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
 
 /**
- * Standard immutable implementation forIAuthenticationInfo.
+ * Standard immutable implementation for IAuthenticationInfo.
  */
 export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo> {
 
@@ -12,6 +12,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     private readonly _expires?: Date;
     private readonly _criticalExpires?: Date;
     private readonly _level: AuthLevel;
+    private readonly _deviceId: string;
 
     /** 
      * Gets the user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical. 
@@ -48,6 +49,13 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      */
     public get criticalExpires(): Date|undefined { return this._criticalExpires; }
 
+        
+    /** 
+     * Gets the device identifier. 
+     * The empty string is the default (unset, unknown) device identifier.
+     */
+    public get deviceId(): string { return this._deviceId; }
+
     /** 
      * Gets whether an impersonation is active here: @see unsafeUser is not the same as the @see unsafeActualUser.
      * Note that @see user and @see actualUser may be both the Anonymous user if @see level is @see AuthLevel.None 
@@ -67,6 +75,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param user User information. May be null: resolves to the user parameter or the Anonymous user.
      * @param expires Optional expires date.
      * @param criticalExpires Optional critical expiration date.
+     * @param deviceId Optional device identifier.
      * @param utcNow The date to consider to challenge expires and criticalExpires parameters.
      */
     constructor(
@@ -75,10 +84,11 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         user: IUserInfo|null,
         expires?: Date,
         criticalExpires?: Date,
+        deviceId?: string,
         utcNow: Date = new Date(Date.now())
     ) {
         if (!typeSystem) { throw new Error('typeSystem must be defined'); }
-
+        this._deviceId = deviceId || "";
         if (!user) {
             if (actualUser) user = actualUser;
             else user = actualUser = typeSystem.userInfo.anonymous;
@@ -131,10 +141,10 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         // level is necessarily greater or equal to Normal. 
         if (this._expires!.getTime() > utcNow.getTime()) {
             if (level === AuthLevel.Normal) { return this; }
-            return this.create(this._actualUser, this._user, this._expires, undefined, utcNow);
+            return this.create(this._actualUser, this._user, this._expires, undefined, this._deviceId, utcNow);
         }
 
-        return this.create(this._actualUser, this._user, undefined, undefined, utcNow);
+        return this.create(this._actualUser, this._user, undefined, undefined, this._deviceId, utcNow);
     }
 
      /**
@@ -148,7 +158,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     public setExpires(expires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         return this.areDateEquals(expires, this._expires)
             ? this.checkExpiration(utcNow)
-            : this.create(this._actualUser, this._user, expires, this._criticalExpires, utcNow);
+            : this.create(this._actualUser, this._user, expires, this._criticalExpires, this._deviceId, utcNow);
     }
 
      /**
@@ -167,7 +177,19 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
             newExpires = criticalExpires;
         }
 
-        return this.create(this._actualUser, this._user, newExpires, criticalExpires, utcNow);
+        return this.create(this._actualUser, this._user, newExpires, criticalExpires, this._deviceId, utcNow);
+    }
+
+    /**
+     * Sets the device identifier (and checks expiration based on utcNow parameter).
+     * Returns this StdAuthenticationInfo or an updated one if changed.
+     * @param deviceId The new device identifier.
+     * @param utcNow The date to consider to challenge expirations.
+     */
+    public setDeviceId(deviceId: string, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
+        return this._deviceId ==  this._deviceId
+            ? this.checkExpiration(utcNow)
+            : this.create(this._actualUser, this._user, this._expires, this._criticalExpires, deviceId, utcNow);
     }
 
     /**
@@ -180,7 +202,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
         user = user || this._typeSystem.userInfo.anonymous;
         if (this._actualUser.userId === 0) throw new Error('Invalid Operation');
         return this._user != user
-            ? this.create(this._actualUser, user, this._expires, this._criticalExpires, utcNow)
+            ? this.create(this._actualUser, user, this._expires, this._criticalExpires, this._deviceId, utcNow)
             : this.checkExpiration(utcNow);
     }
 
@@ -193,16 +215,8 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      */
     public clearImpersonation(utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         return this.isImpersonated
-            ? this.create(this._actualUser, this._user, this._expires, this._criticalExpires, utcNow)
+            ? this.create(this._actualUser, this._user, this._expires, this._criticalExpires, this._deviceId, utcNow)
             : this.checkExpiration(utcNow);
-    }
-
-    /**
-     * Generates a JSON compatible object for the Authentication info.
-     * @param auth The authentication information to serialize.
-     */
-    public toJSON() : Object {
-        return this._typeSystem.authenticationInfo.toJSON( this );
     }
 
    /**
@@ -213,15 +227,20 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      * @param user User information. May be null: resolves to the user parameter or the Anonymous user.
      * @param expires Optional expires date.
      * @param criticalExpires Optional critical expiration date.
+     * @param deviceId Optional device identifier.
      * @param utcNow The date to consider to challenge expires and criticalExpires parameters.
      */
-    protected create(actualUser: IUserInfo|null, user: IUserInfo|null, expires?: Date, criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
-        return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires, utcNow);
+    protected create(actualUser: IUserInfo|null, user: IUserInfo|null, expires?: Date, criticalExpires?: Date, deviceId?: string, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
+        return new StdAuthenticationInfo(this._typeSystem, actualUser, user, expires, criticalExpires, deviceId, utcNow);
     }
 
     private areDateEquals(firstDate?: Date, secondDate?: Date): boolean {
         if( !firstDate ) return !secondDate;
         if( !secondDate ) return false;
         return firstDate.getTime() === secondDate.getTime();
+    }
+
+    public toJSON() : Object {
+        return { user: this.user, unsafeUser: this.unsafeUser, level: this.level, expires: this.expires, criticalExpires: this.criticalExpires, deviceId: this.deviceId, isImpersonated: this.isImpersonated, actualUser: this.actualUser };
     }
 }
