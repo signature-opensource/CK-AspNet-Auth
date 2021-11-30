@@ -1,14 +1,11 @@
 using CK.AspNet.Auth;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using CK.Auth;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using CK.DB.Auth;
 using System.Linq;
-using CK.AspNet;
-using CK.Text;
 using CK.Core;
 using System.Diagnostics;
 using CK.SqlServer;

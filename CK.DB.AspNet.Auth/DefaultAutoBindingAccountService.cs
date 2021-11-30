@@ -8,7 +8,6 @@ using CK.Core;
 using CK.DB.Auth;
 using System.Linq;
 using CK.SqlServer;
-using CK.Text;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.DB.AspNet.Auth

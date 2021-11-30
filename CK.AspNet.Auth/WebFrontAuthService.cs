@@ -771,7 +771,7 @@ namespace CK.AspNet.Auth
             if( ctx.InitialAuthentication.IsImpersonated )
             {
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}." );
             }
             UserLoginResult? u = null;
             if( !ctx.HasError )
@@ -803,7 +803,7 @@ namespace CK.AspNet.Auth
                                         if( u != uBound )
                                         {
                                             u = uBound;
-                                            monitor.Info( $"[Account.AutoBinding] {currentlyLoggedIn} now bound to '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                                            monitor.Info( WebFrontAuthMonitorTag, $"[Account.AutoBinding] {currentlyLoggedIn} now bound to '{ctx.CallingScheme}' scheme." );
                                         }
                                     }
                                 }
@@ -811,7 +811,7 @@ namespace CK.AspNet.Auth
                             if( raiseError )
                             {
                                 ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                                monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                                monitor.Error( WebFrontAuthMonitorTag, $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme." );
                             }
                         }
                         else
@@ -830,14 +830,14 @@ namespace CK.AspNet.Auth
                             if( raiseError )
                             {
                                 ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
-                                monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
+                                monitor.Error( WebFrontAuthMonitorTag, $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme})." );
                             }
                         }
                     }
                     else
                     {
                         ctx.SetError( u );
-                        monitor.Trace( $"[User.LoginError] ({u.LoginFailureCode}) {u.LoginFailureReason}", WebFrontAuthMonitorTag );
+                        monitor.Trace( WebFrontAuthMonitorTag, $"[User.LoginError] ({u.LoginFailureCode}) {u.LoginFailureReason}" );
                     }
                 }
                 else
@@ -861,10 +861,10 @@ namespace CK.AspNet.Auth
                     Debug.Assert( u != null && u.UserInfo != null, "Login succeeds." );
                     if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
                     {
-                        monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} logged again as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
+                        monitor.Warn( WebFrontAuthMonitorTag, $"[Account.Relogin] User {currentlyLoggedIn} logged again as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout." );
                     }
                     ctx.SetSuccessfulLogin( u );
-                    monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'.", WebFrontAuthMonitorTag );
+                    monitor.Info( WebFrontAuthMonitorTag, $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'." );
                 }
             }
             await ctx.SendResponseAsync();
@@ -887,13 +887,13 @@ namespace CK.AspNet.Auth
                 u = await logger( actualLogin );
                 if( u == null )
                 {
-                    monitor.Fatal( "Login service returned a null UserLoginResult.", WebFrontAuthMonitorTag );
+                    monitor.Fatal( WebFrontAuthMonitorTag, "Login service returned a null UserLoginResult." );
                     ctx.SetError( "InternalError", "Login service returned a null UserLoginResult." );
                 }
             }
             catch( Exception ex )
             {
-                monitor.Error( "While calling login service.", ex, WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthMonitorTag, "While calling login service.", ex );
                 ctx.SetError( ex );
             }
             return u;

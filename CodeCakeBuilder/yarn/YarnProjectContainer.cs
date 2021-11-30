@@ -13,7 +13,7 @@ namespace CodeCake
         readonly List<YarnProjectContainer> _containers;
 
         /// <summary>
-        /// Object reprensenting a sets of YarnProjects, that may contain one or multiple projects containers..
+        /// Object representing a sets of YarnProjects, that may contain one or multiple projects containers..
         /// </summary>
         public YarnProjectContainer()
         {
