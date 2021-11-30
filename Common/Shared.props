@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>0.0.0--03lx5p7-develop</CKDatabaseVersion>
-    <CKDBVersion>0.0.0--03lx5p7-develop</CKDBVersion>
+    <CKDatabaseVersion>0.0.0--03lx6cj-develop</CKDatabaseVersion>
+    <CKDBVersion>0.0.0--03lx6ck-develop</CKDBVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
-    <CKAuthAbstractionsVersion>0.0.0--03lx5ck-develop</CKAuthAbstractionsVersion>
-    <CKAspNetVersion>0.0.0--03lx5p5-develop</CKAspNetVersion>
-    <CKStObjVersion>0.0.0--03lx5p7-develop</CKStObjVersion>
-    <CKAspNetTesterVersion>0.0.0--03lx5ci-develop</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>0.0.0--03lx5p9-develop</CKDBUserUserPasswordVersion>
+    <CKAuthAbstractionsVersion>0.0.0--03lx6aj-develop</CKAuthAbstractionsVersion>
+    <CKAspNetVersion>0.0.0--03lx6ci-develop</CKAspNetVersion>
+    <CKStObjVersion>0.0.0--03lx6cj-develop</CKStObjVersion>
+    <CKAspNetTesterVersion>0.0.0--03lx6aj-develop</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>0.0.0--03lx6cl-develop</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
