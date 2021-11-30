@@ -12,13 +12,14 @@ using CK.Core;
 using System.Linq;
 using Microsoft.Extensions.Primitives;
 using System.Security.Claims;
-using CK.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using System.Xml;
 using System.Reflection;
+using ISystemClock = Microsoft.AspNetCore.Authentication.ISystemClock;
+using System.Text.Json;
 
 namespace CK.AspNet.Auth
 {
@@ -213,7 +214,7 @@ namespace CK.AspNet.Auth
             if( fAuthCurrent.Info.IsImpersonated )
             {
                 startContext.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( $"Login is not allowed while impersonation is active: {fAuthCurrent.Info.ActualUser.UserId} impersonated into {fAuthCurrent.Info.User.UserId}.", WebFrontAuthService.WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active: {fAuthCurrent.Info.ActualUser.UserId} impersonated into {fAuthCurrent.Info.User.UserId}." );
             }
             else
             {
@@ -291,6 +292,23 @@ namespace CK.AspNet.Auth
             ProviderLoginRequest? req = null;
             try
             {
+                //var root = JsonDocument.Parse( body ).RootElement;
+                //var provider = root.GetString( "provider" );
+                //if( provider != null )
+                //{
+                //    var payload = root.GetProperty( "payload" );
+                //    req = new ProviderLoginRequest( provider, payload );
+                //    req.RememberMe = root.GetProperty( "rememberMe" ).ValueKind == JsonValueKind.True;
+                //    var userData = root.GetProperty( "userData" );
+                //    if( userData.ValueKind == JsonValueKind.Object )
+                //    {
+                //        foreach( var prop in userData.EnumerateObject() )
+                //        {
+                //            prop.Value.
+                //        }
+                //    }
+
+                //}
                 // By using our poor StringMatcher here, we parse the JSON
                 // to basic List<KeyValuePair<string, object>> because 
                 // JObject are IEnumerable<KeyValuePair<string, JToken>> and
@@ -298,6 +316,8 @@ namespace CK.AspNet.Auth
                 // convertible (to basic types) without using the JToken type.
                 // A dependency on NewtonSoft.Json may not be suitable for some 
                 // providers.
+
+
                 var m = new StringMatcher( body );
                 if( m.MatchJSONObject( out object val )
                     && val is List<KeyValuePair<string, object>> o )
@@ -327,7 +347,7 @@ namespace CK.AspNet.Auth
             }
             catch( Exception ex )
             {
-                monitor.Error( "Invalid payload.", ex, WebFrontAuthService.WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, "Invalid payload.", ex );
             }
             if( req == null ) Response.StatusCode = StatusCodes.Status400BadRequest;
             return req;

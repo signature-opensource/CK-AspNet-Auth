@@ -38,7 +38,7 @@ namespace CK.AspNet.Auth.Tests
                 c.Info.User.UserName.Should().Be( "Albert" );
                 c.Info.User.Schemes.Should().HaveCount( 1 );
                 c.Info.User.Schemes[0].Name.Should().Be( "Basic" );
-                c.Info.User.Schemes[0].LastUsed.Should().BeCloseTo( DateTime.UtcNow, 1500 );
+                c.Info.User.Schemes[0].LastUsed.Should().BeCloseTo( DateTime.UtcNow, TimeSpan.FromMilliseconds( 1500 ) );
                 c.Info.ActualUser.Should().BeSameAs( c.Info.User );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.IsImpersonated.Should().BeFalse();
@@ -258,7 +258,7 @@ namespace CK.AspNet.Auth.Tests
                 // This test is far from perfect but does the job without clock injection.
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync();
                 DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
-                expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: 1000 );
+                expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
 
@@ -272,7 +272,7 @@ namespace CK.AspNet.Auth.Tests
                 refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
 
                 DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
-                expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: 1000 );
+                expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
             }
         }
 

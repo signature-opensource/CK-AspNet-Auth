@@ -19,7 +19,7 @@ namespace CK.AspNet.Auth.Tests
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), 60_000 );
+                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
             }
         }
@@ -41,7 +41,7 @@ namespace CK.AspNet.Auth.Tests
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), 60_000 );
+                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
             }
         }
@@ -62,8 +62,8 @@ namespace CK.AspNet.Auth.Tests
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), 60_000 );
-                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), 60_000 );
+                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
+                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
             }
         }
 
@@ -82,9 +82,9 @@ namespace CK.AspNet.Auth.Tests
             {
                 var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), 60_000 );
+                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
             }
         }
@@ -104,10 +104,10 @@ namespace CK.AspNet.Auth.Tests
             {
                 var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), 60_000 );
-                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), 60_000 );
+                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
+                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
             }
         }
     }
