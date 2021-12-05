@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Centralized dependencies versions. -->
-    <CKDatabaseVersion>0.0.0--03lwn66-local</CKDatabaseVersion>
-    <CKDBVersion>0.0.0--03lwu77-local</CKDBVersion>
+    <CKDatabaseVersion>0.0.0--03m7x0a-local+v19.0.0-a</CKDatabaseVersion>
+    <CKDBVersion>0.0.0--03m7x0l-local+v14.0.0-a</CKDBVersion>
     <CKMonitoringVersion>11.2.0</CKMonitoringVersion>
-    <CKAuthAbstractionsVersion>0.0.0--03lt15m-local</CKAuthAbstractionsVersion>
-    <CKAspNetVersion>0.0.0--03lvnn5-local</CKAspNetVersion>
-    <CKStObjVersion>0.0.0--03lvwyw-local</CKStObjVersion>
-    <CKAspNetTesterVersion>0.0.0--03lt61k-local</CKAspNetTesterVersion>
-    <CKDBUserUserPasswordVersion>0.0.0--03lwwca-local</CKDBUserUserPasswordVersion>
+    <CKAuthAbstractionsVersion>0.0.0--03m5xm8-local+v2.0.0-a</CKAuthAbstractionsVersion>
+    <CKAspNetVersion>0.0.0--03m7ux3-local+v8.0.0-a</CKAspNetVersion>
+    <CKStObjVersion>0.0.0--03m7w3p-local+v19.0.0-a</CKStObjVersion>
+    <CKAspNetTesterVersion>0.0.0--03m5xf1-local+v4.0.0-a</CKAspNetTesterVersion>
+    <CKDBUserUserPasswordVersion>0.0.0--03m7x0m-local+v14.0.0-a</CKDBUserUserPasswordVersion>
   </PropertyGroup>
   <!--<SourceLink>: is enabled only for ContinuousIntegrationBuild build. -->
   <ItemGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
