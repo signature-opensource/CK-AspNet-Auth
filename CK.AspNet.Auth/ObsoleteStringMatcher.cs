@@ -105,7 +105,7 @@ namespace CK.AspNet.Auth
         /// <param name="content">Extracted content.</param>
         /// <param name="allowNull">True to allow 'null'.</param>
         /// <returns><c>true</c> when matched, <c>false</c> otherwise.</returns>
-        public static bool TryMatchJSONQuotedString( this StringMatcher @this, out string content, bool allowNull = false )
+        public static bool TryMatchJSONQuotedString( this StringMatcher @this, out string? content, bool allowNull = false )
         {
             content = null;
             if( @this.IsEnd ) return false;
@@ -115,7 +115,7 @@ namespace CK.AspNet.Auth
                 return allowNull && @this.TryMatchText( "null" );
             }
             int len = @this.Length - 1;
-            StringBuilder b = null;
+            StringBuilder? b = null;
             while( len >= 0 )
             {
                 if( len == 0 ) return false;
@@ -217,7 +217,7 @@ namespace CK.AspNet.Auth
         /// <param name="this">This <see cref="StringMatcher"/>.</param>
         /// <param name="value">The parsed value. Can be null.</param>
         /// <returns>True if a JSON value has been matched, false otherwise.</returns>
-        public static bool TryMatchJSONTerminalValue( this StringMatcher @this, out object value )
+        public static bool TryMatchJSONTerminalValue( this StringMatcher @this, out object? value )
         {
             string s;
             if( @this.TryMatchJSONQuotedString( out s, true ) )
@@ -252,13 +252,13 @@ namespace CK.AspNet.Auth
         /// <param name="this">This <see cref="StringMatcher"/>.</param>
         /// <param name="o">The read object on success as a list of KeyValuePair.</param>
         /// <returns>True on success, false on error.</returns>
-        public static bool MatchJSONObjectContent( this StringMatcher @this, out List<KeyValuePair<string, object>> o )
+        public static bool MatchJSONObjectContent( this StringMatcher @this, out List<KeyValuePair<string, object>>? o )
         {
             o = null;
             while( !@this.IsEnd )
             {
                 @this.SkipWhiteSpacesAndJSComments();
-                string propName;
+                string? propName;
                 object value;
                 if( @this.TryMatchChar( '}' ) )
                 {

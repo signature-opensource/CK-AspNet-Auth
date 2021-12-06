@@ -56,7 +56,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     configureApplication?.Invoke( app );
                 },
                 builder => builder.UseScopedHttpContext() )
-                .UseMonitoring();
+                .UseCKMonitoring();
             var host = b.Build();
             host.Start();
             Client = new TestServerClient( host );

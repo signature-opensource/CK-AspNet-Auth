@@ -243,6 +243,7 @@ namespace CK.AspNet.Auth
             {
                 if( properties.Items.TryGetValue( "WFA2C", out var currentAuth ) )
                 {
+                    Debug.Assert( currentAuth != null );
                     fAuth = UnprotectAuthenticationInfo( currentAuth );
                 }
                 else
@@ -253,6 +254,7 @@ namespace CK.AspNet.Auth
                 }
                 h.Items.Add( typeof( RemoteAuthenticationEventsContextExtensions ), fAuth );
             }
+            Debug.Assert( fAuth != null );  
             return (FrontAuthenticationInfo)fAuth;
         }
 

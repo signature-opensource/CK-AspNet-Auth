@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             @this.Services.AddSingleton<WebFrontAuthService>();
             @this.AddScheme<WebFrontAuthOptions, WebFrontAuthHandler>( WebFrontAuthOptions.OnlyAuthenticationScheme, "Web Front Authentication", configure );
-            @this.Services.TryAddScoped( sp => sp.GetRequiredService<CK.AspNet.ScopedHttpContext>().HttpContext.WebFrontAuthenticate() );
+            @this.Services.TryAddScoped( sp => sp.GetRequiredService<CK.AspNet.ScopedHttpContext>().HttpContext.GetAuthenticationInfo() );
             return @this;
         }
     }

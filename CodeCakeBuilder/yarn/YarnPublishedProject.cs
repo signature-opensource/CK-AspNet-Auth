@@ -20,7 +20,7 @@ namespace CodeCake
             _ckliLocalFeedMode = json.CKliLocalFeedMode;
             ArtifactInstance = new ArtifactInstance( new Artifact( "NPM", json.Name ), globalInfo.BuildInfo.Version );
             string tgz = json.Name.Replace( "@", "" ).Replace( '/', '-' );
-            TGZName = tgz + "-" + globalInfo.BuildInfo.Version.WithBuildMetaData( "" ).ToNormalizedString() + ".tgz";
+            TGZName = tgz + "-" + globalInfo.BuildInfo.Version + ".tgz";
         }
 
         /// <summary>
@@ -73,9 +73,10 @@ namespace CodeCake
         public void RunPack( Action<JObject> packageJsonPreProcessor = null )
         {
             var tgz = OutputPath.AppendPart( TGZName );
-            using( TemporarySetPackageVersion( ArtifactInstance.Version, true ) )
+            var version = ArtifactInstance.Version;
+            using( TemporarySetPackageVersion( version, true ) )
             {
-                using( TemporaryPrePack( ArtifactInstance.Version, packageJsonPreProcessor, false ) )
+                using( TemporaryPrePack( version, packageJsonPreProcessor, false ) )
                 {
                     GlobalInfo.Cake.NpmPack( new NpmPackSettings()
                     {
@@ -88,7 +89,7 @@ namespace CodeCake
                 {
                     //It meant that we just build a "dirty" package: we need to build the one that will actually get published.
                     File.Move( tgz, tgz.Path + ".local" );
-                    using( TemporaryPrePack( ArtifactInstance.Version, packageJsonPreProcessor, true ) )
+                    using( TemporaryPrePack( version, packageJsonPreProcessor, true ) )
                     {
                         GlobalInfo.Cake.NpmPack( new NpmPackSettings()
                         {
