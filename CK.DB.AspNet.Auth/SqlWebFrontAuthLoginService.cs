@@ -64,7 +64,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
         public virtual async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
-            var c = ctx.RequestServices.GetService<ISqlCallContext>();
+            var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r ); 
@@ -100,7 +100,7 @@ namespace CK.DB.AspNet.Auth
         public virtual async Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true )
         {
             IGenericAuthenticationProvider p = _authPackage.FindRequiredProvider( scheme, false );
-            var c = ctx.RequestServices.GetService<ISqlCallContext>();
+            var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
             return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
