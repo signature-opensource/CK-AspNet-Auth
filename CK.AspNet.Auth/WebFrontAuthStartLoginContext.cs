@@ -107,7 +107,7 @@ namespace CK.AspNet.Auth
         /// </summary>
         internal string[]? DynamicScopes;
 
-        internal Task SendError()
+        internal Task SendErrorAsync()
         {
             Debug.Assert( HasError );
             Debug.Assert( _errorId != null && _errorText != null );

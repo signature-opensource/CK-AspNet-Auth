@@ -29,7 +29,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         [TestCase( true )]
         [TestCase( false )]
-        public async Task basic_authentication_via_generic_wrapper_on_a_created_user( bool allowed )
+        public async Task basic_authentication_via_generic_wrapper_on_a_created_user_Async( bool allowed )
         {
             var user = TestHelper.AutomaticServices.GetRequiredService<UserTable>();
             var auth = TestHelper.AutomaticServices.GetRequiredService<IAuthenticationDatabaseService>();
@@ -40,7 +40,7 @@ namespace CK.DB.AspNet.Auth.Tests
             using( var server = new AuthServer() )
             {
                 string userName = Guid.NewGuid().ToString();
-                int idUser = user.CreateUser( ctx, 1, userName );
+                int idUser = await user.CreateUserAsync( ctx, 1, userName );
                 basic.CreateOrUpdateUser( ctx, 1, idUser, "pass" );
 
                 string? deviceId = null;
@@ -51,7 +51,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     if( allowed )
                     {
                         authBasic.EnsureSuccessStatusCode();
-                        var c = AuthResponse.Parse( server.TypeSystem, authBasic.Content.ReadAsStringAsync().Result );
+                        var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                         c.Info.Level.Should().Be( AuthLevel.Normal );
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -69,7 +69,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
                     HttpResponseMessage authFailed = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
-                    var c = AuthResponse.Parse( server.TypeSystem, authFailed.Content.ReadAsStringAsync().Result );
+                    var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
                     ShouldBeUnsafeUser( c, idUser, deviceId );
                 }
             }
@@ -77,7 +77,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         [TestCase( "Albert", "pass" )]
         [TestCase( "Paula", "pass" )]
-        public async Task basic_authentication_on_user( string userName, string password )
+        public async Task basic_authentication_on_user_Async( string userName, string password )
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
@@ -125,7 +125,7 @@ namespace CK.DB.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format()
+        public async Task unsafe_direct_login_returns_BadRequest_and_JSON_ArgumentException_when_payload_is_not_in_the_expected_format_Async()
         {
             using( DirectLoginAllower.Allow( DirectLoginAllower.What.All ) )
             using( var server = new AuthServer() )
@@ -160,14 +160,14 @@ namespace CK.DB.AspNet.Auth.Tests
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                     AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
-                    r.ErrorText.Should().Contain( "Invalid payload. It must be either a Tuple<int,string>, a Tuple<string,string> or a IDictionary<string,object> or IEnumerable<KeyValuePair<string,object>> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
+                    r.ErrorText.Should().Contain( "Invalid payload. It must be either a Tuple or ValueTuple (int,string) or (string,string) or a IDictionary<string,object?> or IEnumerable<KeyValuePair<string,object?>> or IEnumerable<(string,object?)> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
                 }
             }
         }
 
         [TestCase( "Albert", "pass", true )]
         [TestCase( "Paula", "pass", false )]
-        public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login( string userName, string password, bool okInEvil )
+        public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login_Async( string userName, string password, bool okInEvil )
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
@@ -233,7 +233,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         [TestCase( "Albert", "pass", true )]
         [TestCase( "Paula", "pass", false )]
-        public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login( string userName, string password, bool okInEvil )
+        public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login_Async( string userName, string password, bool okInEvil )
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();

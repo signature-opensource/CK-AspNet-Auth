@@ -15,7 +15,7 @@ namespace CK.AspNet.Auth.Tests
     public class ImpersonationTests
     {
         [Test]
-        public async Task when_no_impersonation_service_is_registered_404_NotFound()
+        public async Task when_no_impersonation_service_is_registered_404_NotFound_Async()
         {
             using( var s = new AuthServer() )
             {
@@ -29,7 +29,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK()
+        public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK_Async()
         {
             using( var s = new AuthServer( configureServices: services =>
             {
@@ -42,7 +42,7 @@ namespace CK.AspNet.Auth.Tests
                 await s.LoginAlbertViaBasicProviderAsync();
                 m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
-                string content = m.Content.ReadAsStringAsync().Result;
+                string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
@@ -51,7 +51,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task impersonate_can_be_called_with_userId_instead_of_userName()
+        public async Task impersonate_can_be_called_with_userId_instead_of_userName_Async()
         {
             using( var s = new AuthServer( configureServices: services =>
             {
@@ -61,7 +61,7 @@ namespace CK.AspNet.Auth.Tests
                 await s.LoginAlbertViaBasicProviderAsync();
                 HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
                 m.EnsureSuccessStatusCode();
-                string content = m.Content.ReadAsStringAsync().Result;
+                string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
@@ -70,7 +70,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task impersonate_to_an_unknown_userName_or_userId_fails_with_403_Forbidden()
+        public async Task impersonate_to_an_unknown_userName_or_userId_fails_with_403_Forbidden_Async()
         {
             using( var s = new AuthServer( configureServices: services =>
             {
@@ -94,7 +94,7 @@ namespace CK.AspNet.Auth.Tests
         [TestCase( @"{""userName"":3}" )]
         [TestCase( @"{""userId"": ""36bis""}" )]
         [TestCase( @"{""userName"":""Robert"",""userId"":3}" )]
-        public async Task impersonate_with_invalid_body_fails_with_400_BadRequest( string body )
+        public async Task impersonate_with_invalid_body_fails_with_400_BadRequest_Async( string body )
         {
             using( var s = new AuthServer( configureServices: services =>
             {

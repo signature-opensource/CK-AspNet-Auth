@@ -56,9 +56,13 @@ namespace CK.AspNet.Auth.Tests
         public Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload, bool actualLogin )
         {
             if( providerName != "Basic" ) throw new ArgumentException( "Unknown provider.", nameof( providerName ) );
-            var o = payload as List<KeyValuePair<string, object>>;
-            if( o == null ) throw new ArgumentException( "Invalid payload." );
-            return BasicLoginAsync( ctx, monitor, (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value, (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value, actualLogin );
+            var o = payload as List<(string Key, object Value)>;
+            if( o == null ) Throw.ArgumentException( nameof(payload), "Invalid payload." );
+            return BasicLoginAsync( ctx,
+                                    monitor,
+                                    (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value,
+                                    (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value,
+                                    actualLogin );
         }
 
         public Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )

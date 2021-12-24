@@ -24,7 +24,7 @@ namespace CK.DB.Auth
         /// <param name="ctx">The call context to use.</param>
         /// <param name="dbResult">The database result to transform.</param>
         /// <returns>The (never null) UserLoginResult.</returns>
-        public static async Task<UserLoginResult> CreateUserLoginResultFromDatabase( this IAuthenticationDatabaseService @this, SqlServer.ISqlCallContext ctx, IAuthenticationTypeSystem typeSystem, LoginResult dbResult )
+        public static async Task<UserLoginResult> CreateUserLoginResultFromDatabaseAsync( this IAuthenticationDatabaseService @this, SqlServer.ISqlCallContext ctx, IAuthenticationTypeSystem typeSystem, LoginResult dbResult )
         {
             IUserInfo info = dbResult.IsSuccess
                                 ? typeSystem.UserInfo.FromUserAuthInfo( await @this.ReadUserAuthInfoAsync( ctx, 1, dbResult.UserId ) )

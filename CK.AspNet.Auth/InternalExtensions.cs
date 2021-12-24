@@ -37,7 +37,7 @@ namespace CK.AspNet.Auth
         /// <param name="this">This request.</param>
         /// <param name="maxLen">The maximal number of characters to read.</param>
         /// <returns>The string or null on error.</returns>
-        static public async Task<string?> TryReadSmallBodyAsString( this HttpRequest @this, int maxLen )
+        static public async Task<string?> TryReadSmallBodyAsStringAsync( this HttpRequest @this, int maxLen )
         {
             using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
             {

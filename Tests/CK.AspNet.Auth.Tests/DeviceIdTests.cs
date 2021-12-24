@@ -13,7 +13,7 @@ namespace CK.AspNet.Auth.Tests
     public class DeviceIdTests
     {
         [Test]
-        public async Task DeviceId_is_not_set_until_wefront_call_and_is_not_changed()
+        public async Task DeviceId_is_not_set_until_wefront_call_and_is_not_changed_Async()
         {
             using( var s = new AuthServer() )
             {
@@ -54,7 +54,7 @@ namespace CK.AspNet.Auth.Tests
 
         [TestCase( true )]
         [TestCase( false )]
-        public async Task DeviceId_is_independent_of_the_authentication( bool callRefreshFirst )
+        public async Task DeviceId_is_independent_of_the_authentication_Async( bool callRefreshFirst )
         {
             using( var s = new AuthServer() )
             {
