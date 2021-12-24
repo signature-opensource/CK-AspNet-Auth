@@ -253,9 +253,9 @@ namespace CK.AspNet.Auth
                 if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                     || LoginMode == WebFrontAuthLoginMode.BasicLogin )
                 {
-                    return SendDirectAuthenticationError();
+                    return SendDirectAuthenticationErrorAsync();
                 }
-                return SendRemoteAuthenticationError();
+                return SendRemoteAuthenticationErrorAsync();
             }
             Debug.Assert( _successfulLogin != null );
             WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, InitialAuthentication, RememberMe );
@@ -263,18 +263,18 @@ namespace CK.AspNet.Auth
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )
             {
-                return SendDirectAuthenticationSuccess( r );
+                return SendDirectAuthenticationSuccessAsync( r );
             }
-            return SendRemoteAuthenticationSuccess( r );
+            return SendRemoteAuthenticationSuccessAsync( r );
         }
 
-        Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
+        Task SendDirectAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
         {
             if( UserData != null ) r.Response.Add( UserData.ToJProperty() );
             return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
         }
 
-        Task SendDirectAuthenticationError()
+        Task SendDirectAuthenticationErrorAsync()
         {
             Debug.Assert( _errorId != null );
             int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
@@ -282,7 +282,7 @@ namespace CK.AspNet.Auth
             return HttpContext.Response.WriteAsync( errObj, code );
         }
 
-        Task SendRemoteAuthenticationSuccess( WebFrontAuthService.LoginResult r )
+        Task SendRemoteAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
         {
             Debug.Assert( CallerOrigin != null, "/c/startLogin has been called." );
             if( ReturnUrl != null )
@@ -302,7 +302,7 @@ namespace CK.AspNet.Auth
             return HttpContext.Response.WriteWindowPostMessageAsync( r.Response, CallerOrigin );
         }
 
-        Task SendRemoteAuthenticationError()
+        Task SendRemoteAuthenticationErrorAsync()
         {
             Debug.Assert( _errorId != null && _errorText != null );
             return _authenticationService.SendRemoteAuthenticationErrorAsync(

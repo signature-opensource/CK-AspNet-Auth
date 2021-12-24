@@ -74,35 +74,35 @@ namespace CK.AspNet.Auth
                     {
                         if( _loginService.HasBasicLogin )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLogin( GetRequestMonitor( Context ) );
+                            if( HttpMethods.IsPost( Request.Method ) ) return DirectBasicLoginAsync( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }
                     else if( cBased.Value == "/startLogin" )
                     {
-                        return HandleStartLogin( GetRequestMonitor( Context ) );
+                        return HandleStartLoginAsync( GetRequestMonitor( Context ) );
                     }
                     else if( cBased.Value == "/unsafeDirectLogin" )
                     {
-                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLogin( GetRequestMonitor( Context ) );
+                        if( HttpMethods.IsPost( Request.Method ) ) return HandleUnsafeDirectLoginAsync( GetRequestMonitor( Context ) );
                         Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                     }
                     else if( cBased.Value == "/logout" )
                     {
-                        return HandleLogout();
+                        return HandleLogoutAsync();
                     }
                     else if( cBased.Value == "/impersonate" )
                     {
                         if( _impersonationService != null )
                         {
-                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonate( GetRequestMonitor( Context ) );
+                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonateAsync( GetRequestMonitor( Context ) );
                             Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         }
                     }
                 }
                 else
                 {
-                    if( remainder.Value == "/token" ) return HandleToken();
+                    if( remainder.Value == "/token" ) return HandleTokenAsync();
                 }
                 return Task.FromResult( true );
             }
@@ -167,14 +167,14 @@ namespace CK.AspNet.Auth
             return response;
         }
 
-        async Task<bool> HandleLogout()
+        async Task<bool> HandleLogoutAsync()
         {
             _authService.Logout( Context );
             await Context.Response.WriteAsync( null, StatusCodes.Status200OK );
             return true;
         }
 
-        async Task<bool> HandleStartLogin( IActivityMonitor monitor )
+        async Task<bool> HandleStartLoginAsync( IActivityMonitor monitor )
         {
             string scheme = Request.Query["scheme"];
             if( scheme == null )
@@ -222,7 +222,7 @@ namespace CK.AspNet.Auth
             }
             if( startContext.HasError )
             {
-                await startContext.SendError();
+                await startContext.SendErrorAsync();
             }
             else
             {
@@ -253,12 +253,12 @@ namespace CK.AspNet.Auth
             }
         }
 
-        async Task<bool> HandleUnsafeDirectLogin( IActivityMonitor monitor )
+        async Task<bool> HandleUnsafeDirectLoginAsync( IActivityMonitor monitor )
         {
             Response.StatusCode = StatusCodes.Status403Forbidden;
             if( _unsafeDirectLoginAllower != null )
             {
-                string? body = await Request.TryReadSmallBodyAsString( 4096 );
+                string? body = await Request.TryReadSmallBodyAsStringAsync( 4096 );
                 ProviderLoginRequest? req = body != null ? ReadDirectLoginRequest( monitor, body ) : null;
                 if( req != null
                     && await _unsafeDirectLoginAllower.AllowAsync( Context, monitor, req.Scheme, req.Payload ) )
@@ -318,16 +318,16 @@ namespace CK.AspNet.Auth
                 // providers.
 
 
-                var m = new StringMatcher( body );
-                if( m.MatchJSONObject( out object val )
-                    && val is List<KeyValuePair<string, object>> o )
+                var m = new ROSpanCharMatcher( body );
+                if( m.TryMatchAnyJSON( out object? val )
+                    && val is List<(string Key, object? Value)> o )
                 {
                     string? provider = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "provider" ) ).Value as string;
                     if( !string.IsNullOrWhiteSpace( provider ) )
                     {
                         req = new ProviderLoginRequest( provider,
                                                         o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "payload" ) ).Value );
-                        object rem = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "rememberMe" ) ).Value;
+                        object? rem = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "rememberMe" ) ).Value;
                         req.RememberMe = rem != null
                                          && (
                                              ((rem is bool rb) && rb)
@@ -335,7 +335,7 @@ namespace CK.AspNet.Auth
                                              (rem is string s && (s == "1" || s.Equals( "true", StringComparison.OrdinalIgnoreCase )))
                                             );
                         var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "userData" ) ).Value;
-                        if( userData is List<KeyValuePair<string, object>> data )
+                        if( userData is List<(string Key, object Value)> data )
                         {
                             foreach( var kv in data )
                             {
@@ -365,10 +365,10 @@ namespace CK.AspNet.Auth
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
-        async Task<bool> DirectBasicLogin( IActivityMonitor monitor )
+        async Task<bool> DirectBasicLoginAsync( IActivityMonitor monitor )
         {
             Debug.Assert( _loginService.HasBasicLogin );
-            string? body  = await Request.TryReadSmallBodyAsString( 4096 );
+            string? body  = await Request.TryReadSmallBodyAsStringAsync( 4096 );
             BasicLoginRequest? req = body != null ? ReadBasicLoginRequest( monitor, body ) : null;
             if( req != null )
             {
@@ -415,14 +415,14 @@ namespace CK.AspNet.Auth
         #endregion
 
         #region Impersonation
-        async Task<bool> HandleImpersonate( IActivityMonitor monitor )
+        async Task<bool> HandleImpersonateAsync( IActivityMonitor monitor )
         {
             Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
             Response.StatusCode = StatusCodes.Status403Forbidden;
             var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             if( fAuth.Info.ActualUser.UserId != 0 )
             {
-                string? body = await Request.TryReadSmallBodyAsString( 1024 );
+                string? body = await Request.TryReadSmallBodyAsStringAsync( 1024 );
                 int userId = -1;
                 string? userName = null;
                 if( body != null && TryReadUserKey( monitor, ref userId, ref userName, body ) )
@@ -454,10 +454,10 @@ namespace CK.AspNet.Auth
 
         bool TryReadUserKey( IActivityMonitor monitor, ref int userId, ref string? userName, string body )
         {
-            var m = new StringMatcher( body );
-            List<KeyValuePair<string, object>>? param;
-            if( m.MatchJSONObject( out object val )
-                && (param = val as List<KeyValuePair<string, object>>) != null
+            var m = new ROSpanCharMatcher( body );
+            List<(string Key, object? Value)>? param;
+            if( m.TryMatchAnyJSON( out object? val )
+                && (param = val as List<(string, object?)>) != null
                 && param.Count == 1 )
             {
                 if( param[0].Key == "userName" )
@@ -508,7 +508,7 @@ namespace CK.AspNet.Auth
 
         #endregion
 
-        Task<bool> HandleToken()
+        Task<bool> HandleTokenAsync()
         {
             IActivityMonitor? monitor = null;
             var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );

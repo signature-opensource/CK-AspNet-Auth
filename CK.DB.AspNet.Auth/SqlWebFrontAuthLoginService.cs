@@ -67,7 +67,7 @@ namespace CK.DB.AspNet.Auth
             var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
-            return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r ); 
+            return await _authPackage.CreateUserLoginResultFromDatabaseAsync( c, _typeSystem, r ); 
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace CK.DB.AspNet.Auth
             var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await p.LoginUserAsync( c, payload, actualLogin );
-            return await _authPackage.CreateUserLoginResultFromDatabase( c, _typeSystem, r );
+            return await _authPackage.CreateUserLoginResultFromDatabaseAsync( c, _typeSystem, r );
         }
 
         /// <summary>

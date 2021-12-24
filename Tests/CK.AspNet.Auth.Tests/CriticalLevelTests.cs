@@ -11,13 +11,13 @@ namespace CK.AspNet.Auth.Tests
     public class CriticalLevelTests
     {
         [Test]
-        public async Task when_no_dictionary_is_set_returns_normal()
+        public async Task when_no_dictionary_is_set_returns_normal_Async()
         {
             using( var s = new AuthServer( options => options.ExpireTimeSpan = TimeSpan.FromHours( 1 ) ) )
             {
                 var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
@@ -25,7 +25,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task when_dictionary_has_no_matching_key_returns_normal()
+        public async Task when_dictionary_has_no_matching_key_returns_normal_Async()
         {
             var scts = new Dictionary<string, TimeSpan> { { "SomeScheme", TimeSpan.FromHours( 1 ) } };
 
@@ -39,7 +39,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
@@ -47,7 +47,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task when_dictionary_has_matching_key_with_valid_value_returns_critical()
+        public async Task when_dictionary_has_matching_key_with_valid_value_returns_critical_Async()
         {
             var scts = new Dictionary<string, TimeSpan> { { "Basic", TimeSpan.FromHours( 1 ) } };
             void SetOptions( WebFrontAuthOptions options )
@@ -60,7 +60,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, r.Content.ReadAsStringAsync().Result );
+                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
@@ -68,7 +68,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task when_dictionary_has_matching_key_with_invalid_value_returns_normal()
+        public async Task when_dictionary_has_matching_key_with_invalid_value_returns_normal_Async()
         {
             var scts = new Dictionary<string, TimeSpan> { { "Basic", TimeSpan.FromHours( -1 ) } };
 
@@ -90,7 +90,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task when_expires_is_shorter_than_critical_expires_then_expires_is_extended()
+        public async Task when_expires_is_shorter_than_critical_expires_then_expires_is_extended_Async()
         {
             var scts = new Dictionary<string, TimeSpan> { { "Basic", TimeSpan.FromHours( 2 ) } };
 

@@ -127,7 +127,7 @@ namespace CK.AspNet.Auth.Tests
             HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
 
-            var c = RefreshResponse.Parse( TypeSystem, response.Content.ReadAsStringAsync().Result );
+            var c = RefreshResponse.Parse( TypeSystem, await response.Content.ReadAsStringAsync() );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserName.Should().Be( "Albert" );
 
@@ -184,8 +184,6 @@ namespace CK.AspNet.Auth.Tests
 
         public (string? AuthCookie, JObject? LTCookie, string? LTDeviceId, string? LTUserId, string? LTUserName) ReadClientCookies()
         {
-            (bool HasWFACookie, JObject LTCookie, string? LTDeviceId, string? LTUserId) result;
-
             var mode = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).CookieMode;
             System.Net.CookieCollection? all = null;
             switch( mode )
@@ -234,7 +232,7 @@ namespace CK.AspNet.Auth.Tests
 
             HttpResponseMessage tokenRefresh = await Client.Get( url );
             tokenRefresh.EnsureSuccessStatusCode();
-            return RefreshResponse.Parse( TypeSystem, tokenRefresh.Content.ReadAsStringAsync().Result );
+            return RefreshResponse.Parse( TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
         }
 
 

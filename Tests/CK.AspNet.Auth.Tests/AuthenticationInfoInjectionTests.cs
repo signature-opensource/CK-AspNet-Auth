@@ -27,7 +27,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task IAuthenticationInfo_is_injected_by_AddWebFrontAuth()
+        public async Task IAuthenticationInfo_is_injected_by_AddWebFrontAuth_Async()
         {
             using( var s = new AuthServer(
                 configureServices: services =>
