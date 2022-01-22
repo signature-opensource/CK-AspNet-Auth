@@ -29,6 +29,46 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
+        public async Task user_can_always_clear_its_own_impersonation_even_if_no_impersonation_service_exists_Async()
+        {
+            using( var s = new AuthServer() )
+            {
+                await s.LoginAlbertViaBasicProviderAsync();
+
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
+                m.EnsureSuccessStatusCode();
+                string content = await m.Content.ReadAsStringAsync();
+                RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                r.Info.IsImpersonated.Should().BeFalse();
+                r.Info.User.UserName.Should().Be( "Albert" );
+                r.Info.ActualUser.UserName.Should().Be( "Albert" );
+            }
+        }
+
+        [Test]
+        public async Task user_can_clear_its_own_impersonation_by_impersontaing_to_itself_Async()
+        {
+            using( var s = new AuthServer( configureServices: services =>
+            {
+                services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
+            } ) )
+            {
+                // Login Albert and impersonate Robert (this is tested below).
+                await s.LoginAlbertViaBasicProviderAsync();
+                await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+
+                // When Albert impersonates to Albert, the impersonation is cleared.
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
+                m.EnsureSuccessStatusCode();
+                string content = await m.Content.ReadAsStringAsync();
+                RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                r.Info.IsImpersonated.Should().BeFalse();
+                r.Info.User.UserName.Should().Be( "Albert" );
+                r.Info.ActualUser.UserName.Should().Be( "Albert" );
+            }
+        }
+
+        [Test]
         public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK_Async()
         {
             using( var s = new AuthServer( configureServices: services =>

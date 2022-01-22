@@ -24,6 +24,7 @@ namespace CK.AspNet.Auth
                                                 WebFrontAuthService authService,
                                                 string scheme,
                                                 FrontAuthenticationInfo current,
+                                                bool impersonateActualUser,
                                                 IEnumerable<KeyValuePair<string, StringValues>> userData,
                                                 string? returnUrl,
                                                 string? callerOrigin )
@@ -40,6 +41,7 @@ namespace CK.AspNet.Auth
             foreach( var d in userData ) UserData.Add( d.Key, d.Value );
             ReturnUrl = returnUrl;
             CallerOrigin = callerOrigin;
+            ImpersonateActualUser = impersonateActualUser;
         }
 
         /// <summary>
@@ -73,6 +75,12 @@ namespace CK.AspNet.Auth
         /// Gets or sets the optional caller origin.
         /// </summary>
         public string? CallerOrigin { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the login wants to keep the previous logged in user as the <see cref="IAuthenticationInfo.ActualUser"/>
+        /// and becomes the <see cref="IAuthenticationInfo.User"/>.
+        /// </summary>
+        public bool ImpersonateActualUser { get; set; }
 
         /// <summary>
         /// Gets the mutable user data.

@@ -19,10 +19,11 @@ namespace CK.AspNet.Auth.Tests
         {
             _typeSystem = typeSystem;
             _users = new List<IUserInfo>();
-            // Albert is registered in Basic.
+            // Albert and Alice are registered in Basic.
             _users.Add( typeSystem.UserInfo.Create( 1, "System" ) );
             _users.Add( typeSystem.UserInfo.Create( 2, "Albert", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } ) );
             _users.Add( typeSystem.UserInfo.Create( 3, "Robert" ) );
+            _users.Add( typeSystem.UserInfo.Create( 4, "Alice", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } ) );
         }
 
         public IReadOnlyList<IUserInfo> AllUsers => _users;
@@ -47,8 +48,8 @@ namespace CK.AspNet.Auth.Tests
                     _users.Remove( u );
                     u = _typeSystem.UserInfo.Create( u.UserId, u.UserName, new[] { new StdUserSchemeInfo( "Basic", DateTime.UtcNow ) } );
                     _users.Add( u );
+                    return Task.FromResult( new UserLoginResult( u, 0, null, false ) );
                 }
-                return Task.FromResult( new UserLoginResult( u, 0, null, false ) );
             }
             return Task.FromResult( new UserLoginResult( null, 1, "Login failed!", false ) );
         }
@@ -57,7 +58,7 @@ namespace CK.AspNet.Auth.Tests
         {
             if( providerName != "Basic" ) throw new ArgumentException( "Unknown provider.", nameof( providerName ) );
             var o = payload as List<(string Key, object Value)>;
-            if( o == null ) Throw.ArgumentException( nameof(payload), "Invalid payload." );
+            if( o == null ) Throw.ArgumentException( nameof( payload ), "Invalid payload (expected list of (string,object))." );
             return BasicLoginAsync( ctx,
                                     monitor,
                                     (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value,

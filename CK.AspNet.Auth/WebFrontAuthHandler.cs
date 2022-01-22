@@ -35,18 +35,16 @@ namespace CK.AspNet.Auth
         readonly IWebFrontAuthImpersonationService? _impersonationService;
         readonly IWebFrontAuthUnsafeDirectLoginAllowService? _unsafeDirectLoginAllower;
 
-        public WebFrontAuthHandler(
-            IOptionsMonitor<WebFrontAuthOptions> options,
-            ILoggerFactory logger,
-            UrlEncoder encoder,
-            ISystemClock clock,
-            WebFrontAuthService authService,
-            IAuthenticationTypeSystem typeSystem,
-            IWebFrontAuthLoginService loginService,
-            IAuthenticationSchemeProvider schemeProvider,
-            IWebFrontAuthImpersonationService? impersonationService = null,
-            IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null
-            ) : base( options, logger, encoder, clock )
+        public WebFrontAuthHandler( IOptionsMonitor<WebFrontAuthOptions> options,
+                                    ILoggerFactory logger,
+                                    UrlEncoder encoder,
+                                    ISystemClock clock,
+                                    WebFrontAuthService authService,
+                                    IAuthenticationTypeSystem typeSystem,
+                                    IWebFrontAuthLoginService loginService,
+                                    IAuthenticationSchemeProvider schemeProvider,
+                                    IWebFrontAuthImpersonationService? impersonationService = null,
+                                    IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null ) : base( options, logger, encoder, clock )
         {
             _authService = authService;
             _typeSystem = typeSystem;
@@ -56,7 +54,7 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
-        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetService<IActivityMonitor>();
+        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetRequiredService<IActivityMonitor>();
 
         public Task<bool> HandleRequestAsync()
         {
@@ -93,11 +91,10 @@ namespace CK.AspNet.Auth
                     }
                     else if( cBased.Value == "/impersonate" )
                     {
-                        if( _impersonationService != null )
-                        {
-                            if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonateAsync( GetRequestMonitor( Context ) );
-                            Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                        }
+                        // When _impersonationService == null, we only support
+                        // impersonation to the ActualUser itself: this clears any current impersonation.
+                        if( HttpMethods.IsPost( Request.Method ) ) return HandleImpersonateAsync( GetRequestMonitor( Context ) );
+                        Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                     }
                 }
                 else
@@ -185,19 +182,22 @@ namespace CK.AspNet.Auth
             string? returnUrl = Request.Query["returnUrl"];
             string? callerOrigin = Request.Query["callerOrigin"];
             string? rememberMe = Request.Query["rememberMe"];
+            string? sImpersonateActualUser = Request.Query["impersonateActualUser"];
 
             IEnumerable<KeyValuePair<string, StringValues>> userData;
             if( HttpMethods.IsPost( Request.Method ) )
             {
                 if( callerOrigin == null ) callerOrigin = Request.Form["callerOrigin"];
                 if( rememberMe == null ) rememberMe = Request.Form["rememberMe"];
+                if( sImpersonateActualUser == null ) sImpersonateActualUser = Request.Form["impersonateActualUser"];
                 userData = Request.Form;
             }
             else userData = Request.Query;
             userData = userData.Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase )
-                                            && !string.Equals( k.Key, "rememberMe", StringComparison.OrdinalIgnoreCase ) );
+                                            && !string.Equals( k.Key, "rememberMe", StringComparison.OrdinalIgnoreCase )
+                                            && !string.Equals( k.Key, "impersonateActualUser", StringComparison.OrdinalIgnoreCase ) );
 
             var fAuthCurrent = _authService.EnsureAuthenticationInfo( Context, ref monitor );
 
@@ -208,10 +208,12 @@ namespace CK.AspNet.Auth
                 fAuthCurrent.SetRememberMe( rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase ) );
             }
 
-            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, userData, returnUrl, callerOrigin );
+            bool impersonateActualUser = sImpersonateActualUser != null && (sImpersonateActualUser == "1" || sImpersonateActualUser.Equals( "true", StringComparison.OrdinalIgnoreCase ));
+
+            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, impersonateActualUser, userData, returnUrl, callerOrigin );
             // We test impersonation here: login is forbidden whenever the user is impersonated.
             // This check will also be done by WebFrontAuthService.UnifiedLogin.
-            if( fAuthCurrent.Info.IsImpersonated )
+            if( fAuthCurrent.Info.IsImpersonated && !impersonateActualUser )
             {
                 startContext.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
                 monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active: {fAuthCurrent.Info.ActualUser.UserId} impersonated into {fAuthCurrent.Info.User.UserId}." );
@@ -227,7 +229,7 @@ namespace CK.AspNet.Auth
             else
             {
                 AuthenticationProperties p = new AuthenticationProperties();
-                _authService.SetWFAData( p, fAuthCurrent, startContext.Scheme, startContext.CallerOrigin, startContext.ReturnUrl, startContext.UserData );
+                _authService.SetWFAData( p, fAuthCurrent, startContext.ImpersonateActualUser, startContext.Scheme, startContext.CallerOrigin, startContext.ReturnUrl, startContext.UserData );
                 if( startContext.DynamicScopes != null )
                 {
                     // This is how wanted OAuth scope are transfered to the target.
@@ -244,6 +246,7 @@ namespace CK.AspNet.Auth
             public string Scheme { get; set; }
             public object Payload { get; set; }
             public bool RememberMe { get; set; }
+            public bool ImpersonateActualUser { get; set; }
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
 
             public ProviderLoginRequest( string scheme, object? payload )
@@ -273,6 +276,7 @@ namespace CK.AspNet.Auth
                                         authProps: null,
                                         req.Scheme,
                                         _authService.EnsureAuthenticationInfo( Context, ref monitor ).SetRememberMe( req.RememberMe ),
+                                        req.ImpersonateActualUser,
                                         returnUrl: null,
                                         callerOrigin: null,
                                         req.UserData.ToList()
@@ -326,15 +330,22 @@ namespace CK.AspNet.Auth
                     if( !string.IsNullOrWhiteSpace( provider ) )
                     {
                         req = new ProviderLoginRequest( provider,
-                                                        o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "payload" ) ).Value );
-                        object? rem = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "rememberMe" ) ).Value;
+                                                        o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, nameof( ProviderLoginRequest.Payload ) ) ).Value );
+                        object? rem = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, nameof( ProviderLoginRequest.RememberMe ) ) ).Value;
                         req.RememberMe = rem != null
                                          && (
                                              ((rem is bool rb) && rb)
                                              ||
                                              (rem is string s && (s == "1" || s.Equals( "true", StringComparison.OrdinalIgnoreCase )))
                                             );
-                        var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "userData" ) ).Value;
+                        object? imp = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, nameof( ProviderLoginRequest.ImpersonateActualUser ) ) ).Value;
+                        req.ImpersonateActualUser = imp != null
+                                         && (
+                                             ((imp is bool ri) && ri)
+                                             ||
+                                             (imp is string sI && (sI == "1" || sI.Equals( "true", StringComparison.OrdinalIgnoreCase )))
+                                            );
+                        var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, nameof( ProviderLoginRequest.UserData ) ) ).Value;
                         if( userData is List<(string Key, object Value)> data )
                         {
                             foreach( var kv in data )
@@ -362,6 +373,7 @@ namespace CK.AspNet.Auth
             public string? UserName { get; set; }
             public string? Password { get; set; }
             public bool RememberMe { get; set; }
+            public bool ImpersonateActualUser { get; set; }
             public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
         }
 
@@ -373,20 +385,19 @@ namespace CK.AspNet.Auth
             if( req != null )
             {
                 Debug.Assert( req.UserName != null && req.Password != null );
-                var wfaSC = new WebFrontAuthLoginContext(
-                    Context,
-                    _authService,
-                    _typeSystem,
-                    WebFrontAuthLoginMode.BasicLogin,
-                    "Basic",
-                    Tuple.Create( req.UserName, req.Password ),
-                    authProps: null,
-                    initialScheme: "Basic",
-                    _authService.EnsureAuthenticationInfo( Context, ref monitor ).SetRememberMe( req.RememberMe ),
-                    returnUrl: null,
-                    callerOrigin: null,
-                    req.UserData.ToList()
-                    ); ; ;
+                var wfaSC = new WebFrontAuthLoginContext( Context,
+                                                          _authService,
+                                                          _typeSystem,
+                                                          WebFrontAuthLoginMode.BasicLogin,
+                                                          "Basic",
+                                                          Tuple.Create( req.UserName, req.Password ),
+                                                          authProps: null,
+                                                          initialScheme: "Basic",
+                                                          _authService.EnsureAuthenticationInfo( Context, ref monitor ).SetRememberMe( req.RememberMe ),
+                                                          req.ImpersonateActualUser,
+                                                          returnUrl: null,
+                                                          callerOrigin: null,
+                                                          req.UserData.ToList() );
 
                 await _authService.UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
                 {
@@ -417,8 +428,8 @@ namespace CK.AspNet.Auth
         #region Impersonation
         async Task<bool> HandleImpersonateAsync( IActivityMonitor monitor )
         {
-            Debug.Assert( _impersonationService != null && HttpMethods.IsPost( Request.Method ) );
-            Response.StatusCode = StatusCodes.Status403Forbidden;
+            Debug.Assert( HttpMethods.IsPost( Request.Method ) );
+            Response.StatusCode = _impersonationService == null ? StatusCodes.Status404NotFound : StatusCodes.Status403Forbidden;
             var fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
             if( fAuth.Info.ActualUser.UserId != 0 )
             {
@@ -434,13 +445,16 @@ namespace CK.AspNet.Auth
                     }
                     else
                     {
-                        IUserInfo target = userName != null
-                                            ? await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userName )
-                                            : await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userId );
-                        if( target != null )
+                        if( _impersonationService != null )
                         {
-                            fAuth = fAuth.SetInfo( fAuth.Info.Impersonate( target ) );
-                            Response.StatusCode = StatusCodes.Status200OK;
+                            IUserInfo target = userName != null
+                                                ? await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userName )
+                                                : await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userId );
+                            if( target != null )
+                            {
+                                fAuth = fAuth.SetInfo( fAuth.Info.Impersonate( target ) );
+                                Response.StatusCode = StatusCodes.Status200OK;
+                            }
                         }
                     }
                     if( Response.StatusCode == StatusCodes.Status200OK )

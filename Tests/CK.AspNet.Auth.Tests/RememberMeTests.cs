@@ -12,7 +12,6 @@ namespace CK.AspNet.Auth.Tests
     [TestFixture]
     public class RememberMeTests
     {
-
         [TestCase( true, false )]
         [TestCase( true, true )]
         [TestCase( false, true )]
