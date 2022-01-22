@@ -433,12 +433,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param userName The user name.
      * @param password The password to use.
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
+     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
      * @param userData Optional user data that the server may use.
      */
-    public async basicLogin(userName: string, password: string, rememberMe?: boolean, userData?: object): Promise<void> {
+    public async basicLogin(userName: string, password: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
-        await this.sendRequest('basicLogin', { body: { userName, password, userData, rememberMe } });
+        await this.sendRequest('basicLogin', { body: { userName, password, userData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -446,11 +447,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param provider The authentication scheme to use.
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param payload The object payload that contain any information required to authenticate with the scheme.
+     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
+     * @param userData Optional user data that the server may use.
      */
-    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean): Promise<void> {
+    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
-        await this.sendRequest('unsafeDirectLogin', { body: { provider, payload } });
+        await this.sendRequest('unsafeDirectLogin', { body: { provider, payload, userData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -500,7 +503,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         await this.refresh();
     }
 
-    public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, userData?: object): Promise<void> {
+     /**
+     * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages 
+     * before redirecting to the provided return url. 
+     * @param provider The authentication scheme to use.
+     * @param returnUrl The final return url.
+     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
+     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
+     * @param userData Optional user data that the server may use.
+     */
+      public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
         this.checkClosed();
         if (!returnUrl) { throw new Error('returnUrl must be defined.'); }
         if (!(returnUrl.startsWith('http://') || returnUrl.startsWith('https://'))) {
@@ -511,12 +523,19 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const params = [
             { key: 'returnUrl', value: encodeURIComponent(returnUrl) },
             { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
-            rememberMe ? 'rememberMe' : ''
+            rememberMe ? 'rememberMe' : '',
+            impersonateActualUser ? 'impersonateActualUser' : ''
         ];
         document.location.href = this.buildStartLoginUrl( scheme, params, userData );
     }
 
-    public async startPopupLogin(scheme: string, rememberMe?: boolean, userData?: {[index:string]: any}): Promise<void> {
+     /**
+     * Starts a login process in a popup window: this is the preferred way to do.
+     * @param provider The authentication scheme to use.
+     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
+     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
+     * @param userData Optional user data that the server may use.
+     */    public async startPopupLogin(scheme: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: {[index:string]: any}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {
@@ -536,7 +555,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorDiv.innerHTML = this.popupDescriptor.basicMissingCredentialsError;
                     errorDiv.style.display = 'block';
                 } else {
-                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, userData);
+                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, false, userData);
 
                     if (this.authenticationInfo.level >= AuthLevel.Normal) {
                         popup!.close();
@@ -554,7 +573,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         else {
             const data = [
                 { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
-                rememberMe ? 'rememberMe' : ''
+                rememberMe ? 'rememberMe' : '',
+                impersonateActualUser ? 'impersonateActualUser' : ''
             ];
             window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
         }
