@@ -15,7 +15,7 @@ namespace CodeCake
     /// <summary>
     /// Standard build "script".
     /// </summary>
-    [AddPath( "%UserProfile%/.nuget/packages/**/tools*" )]
+    
     public partial class Build : CodeCakeHost
     {
         public Build()
@@ -38,7 +38,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Clean();
-                     Cake.CleanDirectories( globalInfo.ReleasesFolder );
+                     Cake.CleanDirectories( globalInfo.ReleasesFolder.ToString() );
                      globalInfo.GetYarnSolution().Clean();
                  } );
 
@@ -78,9 +78,9 @@ namespace CodeCake
             Task( "Push-Packages" )
                 .WithCriteria( () => globalInfo.IsValid )
                 .IsDependentOn( "Create-Packages" )
-                .Does( () =>
+                .Does( async () =>
                  {
-                     globalInfo.PushArtifacts();
+                     await globalInfo.PushArtifactsAsync();
                  } );
 
             // The Default task for this script can be set here.
