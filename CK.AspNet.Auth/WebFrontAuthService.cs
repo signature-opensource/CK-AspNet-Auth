@@ -17,6 +17,7 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using CK.Text;
 
 #nullable enable
 
@@ -45,6 +46,7 @@ namespace CK.AspNet.Auth
         public string UnsafeCookieName => AuthCookieName + "LT";
 
         internal readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly IReadOnlyList<string> AllowedReturnUrls;
         readonly IWebFrontAuthLoginService _loginService;
 
         readonly IDataProtector _genericProtector;
@@ -71,7 +73,6 @@ namespace CK.AspNet.Auth
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
-        /// <param name="validateAuthenticationInfoService">Optional service that is called each time authentication information is restored.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -104,6 +105,7 @@ namespace CK.AspNet.Auth
             CookieMode = initialOptions.CookieMode;
             _cookiePolicy = initialOptions.CookieSecurePolicy;
             AuthCookieName = initialOptions.AuthCookieName;
+            AllowedReturnUrls = initialOptions.AllowedReturnUrls.ToArray();
         }
 
         /// <summary>
@@ -773,6 +775,18 @@ namespace CK.AspNet.Auth
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
                 monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
             }
+            // Double check of the ReturnUrl (already checked in StartLogin and everywhere else returnUrl is null) but since it costs
+            // nothing, do it again.
+            // If here the check fails, it means that the AuthenticationProperties have been tampered!
+            // This is highly unlikely.
+            if( !ctx.HasError
+                && ctx.ReturnUrl != null
+                && !AllowedReturnUrls.Any( p => ctx.ReturnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
+            {
+                ctx.SetError( "DisallowedReturnUrl", $"The returnUrl='{ctx.ReturnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
+                monitor.Fatal( $"Invalid ReturnUrl '{ctx.ReturnUrl}' from AuthenticationProperties. Configured AllowedReturnUrls prefixes are: '{AllowedReturnUrls.Concatenate( "', '" )}'.", WebFrontAuthService.WebFrontAuthMonitorTag );
+            }
+
             UserLoginResult? u = null;
             if( !ctx.HasError )
             {

@@ -66,6 +66,7 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Gets or sets the return url.
+        /// This url is always checked against the <see cref="WebFrontAuthOptions.AllowedReturnUrls"/> set of allowed prefixes. 
         /// </summary>
         public string? ReturnUrl { get; set; }
 

@@ -218,6 +218,15 @@ namespace CK.AspNet.Auth
             else
             {
                 await _authService.OnHandlerStartLoginAsync( monitor, startContext );
+                
+                // ReturnUrl check.
+                if( !startContext.HasError 
+                    && startContext.ReturnUrl != null 
+                    && !_authService.AllowedReturnUrls.Any( p => startContext.ReturnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
+                {
+                    startContext.SetError( "DisallowedReturnUrl", $"The returnUrl='{startContext.ReturnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
+                    monitor.Error( $"Invalid ReturnUrl '{startContext.ReturnUrl}'. Configured AllowedReturnUrls prefixes are: '{_authService.AllowedReturnUrls.Concatenate("', '")}'.", WebFrontAuthService.WebFrontAuthMonitorTag );
+                }
             }
             if( startContext.HasError )
             {
