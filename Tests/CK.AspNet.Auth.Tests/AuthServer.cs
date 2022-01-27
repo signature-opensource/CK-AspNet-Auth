@@ -69,6 +69,10 @@ namespace CK.AspNet.Auth.Tests
                                 }
                                 await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
                             }
+                            else if( ctx.Request.Path.StartsWithSegments( "/CallChallengeAsync", out _ ) )
+                            {
+                                await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.ChallengeAsync( ctx );
+                            }
                             else
                             {
                                 await prev( ctx );
