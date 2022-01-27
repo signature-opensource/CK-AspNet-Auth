@@ -45,23 +45,44 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
-        [Test]
-        public async Task user_can_clear_its_own_impersonation_by_impersontaing_to_itself_Async()
+        [TestCase( true )]
+        [TestCase( false )]
+        public async Task user_can_clear_its_own_impersonation_by_impersonating_to_itself_Async( bool byUserId )
         {
             using( var s = new AuthServer( configureServices: services =>
             {
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                // Login Albert and impersonate Robert (this is tested below).
+                // Login Albert.
                 await s.LoginAlbertViaBasicProviderAsync();
-                await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
-
-                // When Albert impersonates to Albert, the impersonation is cleared.
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
+                // ...and impersonate Robert.
+                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                r.Info.IsImpersonated.Should().BeTrue();
+                r.Info.User.UserName.Should().Be( "Robert" );
+                r.Info.ActualUser.UserName.Should().Be( "Albert" );
+
+                // Impersonating again in Robert: nothing changes.
+                m = byUserId
+                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.User.UserId}"" }}" )
+                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                m.EnsureSuccessStatusCode();
+                content = await m.Content.ReadAsStringAsync();
+                r = RefreshResponse.Parse( s.TypeSystem, content );
+                r.Info.IsImpersonated.Should().BeTrue();
+                r.Info.User.UserName.Should().Be( "Robert" );
+                r.Info.ActualUser.UserName.Should().Be( "Albert" );
+
+                // When Albert impersonates to Albert, the impersonation is cleared.
+                m = byUserId
+                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.ActualUser.UserId}"" }}" )
+                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
+                m.EnsureSuccessStatusCode();
+                content = await m.Content.ReadAsStringAsync();
+                r = RefreshResponse.Parse( s.TypeSystem, content );
                 r.Info.IsImpersonated.Should().BeFalse();
                 r.Info.User.UserName.Should().Be( "Albert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );

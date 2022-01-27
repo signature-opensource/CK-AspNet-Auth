@@ -477,7 +477,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
      * Request an impersonation to a user. This may be honored or not by the server.
-     * @param user The user into whom the currently authenticated user wants to be impersonated.
+     * This is always successful when the user is the actual user: the impersonation is cleared.
+     * @param user The user name or identifier into whom the currently authenticated user wants to be impersonated.
      */
     public async impersonate(user: string | number): Promise<void> {
         this.checkClosed();

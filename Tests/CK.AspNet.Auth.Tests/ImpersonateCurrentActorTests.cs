@@ -85,5 +85,36 @@ namespace CK.AspNet.Auth.Tests
             }
         }
 
+        [TestCase( true )]
+        [TestCase( false )]
+        public async Task user_can_clear_its_own_impersonation_by_impersonating_to_itself_Async( bool byUserId )
+        {
+            using( var s = new AuthServer() )
+            {
+                // Login Albert.
+                var initial = await s.LoginAlbertViaBasicProviderAsync();
+                initial.Info.IsImpersonated.Should().BeFalse();
+
+                // Alice impersonates Albert.
+                var imp = await s.LoginViaBasicProviderAsync( "Alice", impersonateActualUser: true );
+                imp.Info.IsImpersonated.Should().BeTrue();
+
+                // Again (nothing is done).
+                imp = await s.LoginViaBasicProviderAsync( "Alice", impersonateActualUser: true );
+                imp.Info.IsImpersonated.Should().BeTrue();
+
+                // When Albert impersonates to Albert, the impersonation is cleared.
+                var m = byUserId
+                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{imp.Info.ActualUser.UserId}"" }}" )
+                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
+                m.EnsureSuccessStatusCode();
+                var content = await m.Content.ReadAsStringAsync();
+                var r = RefreshResponse.Parse( s.TypeSystem, content );
+                r.Info.IsImpersonated.Should().BeFalse();
+                r.Info.User.UserName.Should().Be( "Albert" );
+                r.Info.ActualUser.UserName.Should().Be( "Albert" );
+            }
+        }
+
     }
 }
