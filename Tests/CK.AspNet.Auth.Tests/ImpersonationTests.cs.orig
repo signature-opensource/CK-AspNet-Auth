@@ -29,6 +29,9 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
+<<<<<<< HEAD
+        public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK()
+=======
         public async Task user_can_always_clear_its_own_impersonation_even_if_no_impersonation_service_exists_Async()
         {
             using( var s = new AuthServer() )
@@ -70,6 +73,7 @@ namespace CK.AspNet.Auth.Tests
 
         [Test]
         public async Task anonymous_can_not_impersonate_with_403_Forbidden_but_allowed_user_can_with_200_OK_Async()
+>>>>>>> 2490599 (New ImpersonateActualUser login parameter.)
         {
             using( var s = new AuthServer( configureServices: services =>
             {
