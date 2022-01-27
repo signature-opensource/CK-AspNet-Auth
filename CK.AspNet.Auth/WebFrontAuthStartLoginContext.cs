@@ -1,19 +1,22 @@
 using CK.Auth;
+using CK.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
+
     /// <summary>
     /// Captures initial login request information and provides a context to interact with the flow
     /// before challenging the actual remote authentication.
     /// </summary>
-    public sealed class WebFrontAuthStartLoginContext
+    public sealed class WebFrontAuthStartLoginContext : IErrorContext
     {
         readonly WebFrontAuthService _webFrontAuthService;
         readonly FrontAuthenticationInfo _currentAuth;
@@ -22,7 +25,7 @@ namespace CK.AspNet.Auth
 
         internal WebFrontAuthStartLoginContext( HttpContext ctx,
                                                 WebFrontAuthService authService,
-                                                string scheme,
+                                                string? scheme,
                                                 FrontAuthenticationInfo current,
                                                 bool impersonateActualUser,
                                                 IEnumerable<KeyValuePair<string, StringValues>> userData,
@@ -36,12 +39,23 @@ namespace CK.AspNet.Auth
             HttpContext = ctx;
             _webFrontAuthService = authService;
             _currentAuth = current;
-            Scheme = scheme;
+            // will be validated below.
+            Scheme = scheme ?? String.Empty;
             UserData = new Dictionary<string, StringValues>();
             foreach( var d in userData ) UserData.Add( d.Key, d.Value );
             ReturnUrl = returnUrl;
             CallerOrigin = callerOrigin;
             ImpersonateActualUser = impersonateActualUser;
+        }
+
+        internal void ValidateStartLoginRequest( IActivityMonitor monitor )
+        {
+            if( string.IsNullOrWhiteSpace( Scheme ) )
+            {
+                SetError( "RequiredSchemeParameter", "A scheme parameter is required." );
+                return;
+            }
+            _webFrontAuthService.ValidateCoreParameters( monitor, WebFrontAuthLoginMode.StartLogin, ReturnUrl, CallerOrigin, Current, ImpersonateActualUser, this );
         }
 
         /// <summary>
@@ -61,20 +75,21 @@ namespace CK.AspNet.Auth
         public bool RememberMe => _currentAuth.RememberMe;
 
         /// <summary>
-        /// Gets or sets the scheme to challenge.
+        /// Gets the scheme to challenge.
         /// Never null or empty.
         /// </summary>
-        public string Scheme { get; set; }
+        public string Scheme { get; }
 
         /// <summary>
-        /// Gets or sets the return url.
+        /// Gets the return url. Not null if and only if "inline login" is used.
+        /// This url is always checked against the <see cref="WebFrontAuthOptions.AllowedReturnUrls"/> set of allowed prefixes. 
         /// </summary>
         public string? ReturnUrl { get; set; }
 
         /// <summary>
-        /// Gets or sets the optional caller origin.
+        /// Gets the caller origin. Not null if and only if "popup login" is used.
         /// </summary>
-        public string? CallerOrigin { get; set; }
+        public string? CallerOrigin { get; }
 
         /// <summary>
         /// Gets or sets whether the login wants to keep the previous logged in user as the <see cref="IAuthenticationInfo.ActualUser"/>

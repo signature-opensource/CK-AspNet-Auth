@@ -3,20 +3,18 @@ using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -45,6 +43,7 @@ namespace CK.AspNet.Auth
         public string UnsafeCookieName => AuthCookieName + "LT";
 
         internal readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly IReadOnlyList<string> AllowedReturnUrls;
         readonly IWebFrontAuthLoginService _loginService;
 
         readonly IDataProtector _genericProtector;
@@ -71,7 +70,6 @@ namespace CK.AspNet.Auth
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
-        /// <param name="validateAuthenticationInfoService">Optional service that is called each time authentication information is restored.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -104,6 +102,7 @@ namespace CK.AspNet.Auth
             CookieMode = initialOptions.CookieMode;
             _cookiePolicy = initialOptions.CookieSecurePolicy;
             AuthCookieName = initialOptions.AuthCookieName;
+            AllowedReturnUrls = initialOptions.AllowedReturnUrls.ToArray();
         }
 
         /// <summary>
@@ -622,11 +621,11 @@ namespace CK.AspNet.Auth
         {
             if( returnUrl != null )
             {
-                Debug.Assert( callerOrigin != null, "Since returnUrl is not null: /c/startLogin has been used." );
+                Debug.Assert( callerOrigin == null, "Since returnUrl is not null: /c/startLogin has been used without callerOrigin." );
                 int idxQuery = returnUrl.IndexOf( '?' );
                 var path = idxQuery > 0
                             ? returnUrl.Substring( 0, idxQuery )
-                            : string.Empty;
+                            : returnUrl;
                 var parameters = idxQuery > 0
                                     ? new QueryString( returnUrl.Substring( idxQuery ) )
                                     : new QueryString();
@@ -656,11 +655,11 @@ namespace CK.AspNet.Auth
                 if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );
                 if( callingScheme != null ) parameters = parameters.Add( "callingScheme", callingScheme );
 
-                var caller = new Uri( callerOrigin );
-                var target = new Uri( caller, path + parameters.ToString() );
+                var target = new Uri( path + parameters.ToString() );
                 c.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
+            Debug.Assert( callerOrigin != null, "Since returnUrl is null /c/startLogin has callerOrigin." );
             JObject errObj = CreateErrorAuthResponse( c, fAuth, errorId, errorText, initialScheme, callingScheme, userData, failedLogin );
             return c.Response.WriteWindowPostMessageAsync( errObj, callerOrigin );
         }
@@ -784,7 +783,7 @@ namespace CK.AspNet.Auth
                                                       fAuth,
                                                       impersonateActualUser,
                                                       returnUrl,
-                                                      callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}",
+                                                      callerOrigin,
                                                       userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
@@ -795,13 +794,47 @@ namespace CK.AspNet.Auth
             } );
         }
 
-        internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
+        internal void ValidateCoreParameters( IActivityMonitor monitor,
+                                              WebFrontAuthLoginMode mode,
+                                              string? returnUrl, 
+                                              string? callerOrigin, 
+                                              IAuthenticationInfo current, 
+                                              bool impersonateActualUser, 
+                                              IErrorContext ctx )
         {
-            if( ctx.InitialAuthentication.IsImpersonated && !ctx.ImpersonateActualUser )
+            if( mode == WebFrontAuthLoginMode.StartLogin )
+            {
+                // ReturnUrl (inline) and CallerOrigin (popup) cannot be both null or both not null.
+                if( (returnUrl != null) == (callerOrigin != null) )
+                {
+                    ctx.SetError( "ReturnXOrCaller", "One and only one among returnUrl and callerOrigin must be specified." );
+                    monitor.Error( WebFrontAuthMonitorTag, "One and only one among returnUrl and callerOrigin must be specified." );
+                    return;
+                }
+            }
+            // Login is always forbidden whenever the user is impersonated unless we must impersonate the actual user.
+            // This check will also be done by WebFrontAuthService.UnifiedLogin.
+            if( current.IsImpersonated && !impersonateActualUser )
             {
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}." );
+                monitor.Error( WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active. UserId: {current.User.UserId}, ActualUserId: {current.ActualUser.UserId}." );
+                return;
             }
+            if( returnUrl != null
+                && !AllowedReturnUrls.Any( p => returnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
+            {
+                ctx.SetError( "DisallowedReturnUrl", $"The returnUrl='{returnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
+                monitor.Error( WebFrontAuthMonitorTag, $"ReturnUrl '{returnUrl}' doesn't match: '{AllowedReturnUrls.Concatenate("', '")}'." );
+                return;
+            }
+        }
+
+        internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
+        {
+            // Double check of the core parameters.
+            // If here the check fails, it means that the AuthenticationProperties have been tampered!
+            // This is highly unlikely.
+            ValidateCoreParameters( monitor, ctx.LoginMode, ctx.ReturnUrl, ctx.CallerOrigin, ctx.InitialAuthentication, ctx.ImpersonateActualUser, ctx );
             UserLoginResult? u = null;
             if( !ctx.HasError )
             {

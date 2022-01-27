@@ -522,7 +522,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
         const params = [
             { key: 'returnUrl', value: encodeURIComponent(returnUrl) },
-            { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
             rememberMe ? 'rememberMe' : '',
             impersonateActualUser ? 'impersonateActualUser' : ''
         ];
@@ -535,7 +534,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
      * @param userData Optional user data that the server may use.
-     */    public async startPopupLogin(scheme: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: {[index:string]: any}): Promise<void> {
+     */    
+    public async startPopupLogin(scheme: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: {[index:string]: any}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {

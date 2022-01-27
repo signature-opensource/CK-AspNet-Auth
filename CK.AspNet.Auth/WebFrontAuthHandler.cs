@@ -174,11 +174,6 @@ namespace CK.AspNet.Auth
         async Task<bool> HandleStartLoginAsync( IActivityMonitor monitor )
         {
             string scheme = Request.Query["scheme"];
-            if( scheme == null )
-            {
-                Response.StatusCode = StatusCodes.Status400BadRequest;
-                return true;
-            }
             string? returnUrl = Request.Query["returnUrl"];
             string? callerOrigin = Request.Query["callerOrigin"];
             string? rememberMe = Request.Query["rememberMe"];
@@ -193,6 +188,7 @@ namespace CK.AspNet.Auth
                 userData = Request.Form;
             }
             else userData = Request.Query;
+
             userData = userData.Where( k => !string.Equals( k.Key, "scheme", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "returnUrl", StringComparison.OrdinalIgnoreCase )
                                             && !string.Equals( k.Key, "callerOrigin", StringComparison.OrdinalIgnoreCase )
@@ -211,19 +207,15 @@ namespace CK.AspNet.Auth
             bool impersonateActualUser = sImpersonateActualUser != null && (sImpersonateActualUser == "1" || sImpersonateActualUser.Equals( "true", StringComparison.OrdinalIgnoreCase ));
 
             var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, impersonateActualUser, userData, returnUrl, callerOrigin );
-            // We test impersonation here: login is forbidden whenever the user is impersonated.
-            // This check will also be done by WebFrontAuthService.UnifiedLogin.
-            if( fAuthCurrent.Info.IsImpersonated && !impersonateActualUser )
-            {
-                startContext.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active: {fAuthCurrent.Info.ActualUser.UserId} impersonated into {fAuthCurrent.Info.User.UserId}." );
-            }
-            else
+            
+            startContext.ValidateStartLoginRequest( monitor );
+            if( !startContext.HasError )
             {
                 await _authService.OnHandlerStartLoginAsync( monitor, startContext );
             }
             if( startContext.HasError )
             {
+                Response.StatusCode = StatusCodes.Status400BadRequest;
                 await startContext.SendErrorAsync();
             }
             else

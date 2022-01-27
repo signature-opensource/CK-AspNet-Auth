@@ -31,6 +31,9 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
         /// Null otherwise.
+        /// <para>
+        /// This url is always checked against the <see cref="WebFrontAuthOptions.AllowedReturnUrls"/> set of allowed prefixes. 
+        /// </para>
         /// </summary>
         string? ReturnUrl { get; }
 
