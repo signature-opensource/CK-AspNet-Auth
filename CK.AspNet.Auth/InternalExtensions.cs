@@ -14,13 +14,10 @@ namespace CK.AspNet.Auth
 {
     static class InternalExtensions
     {
-        static public JProperty ToJProperty( this IEnumerable<KeyValuePair< string,StringValues>> @this, string name = "userData" )
+        static public JProperty ToJProperty( this IDictionary<string, string?> @this, string name = "userData" )
         {
             return new JProperty( name,
-                            new JObject( @this.Select( d => new JProperty( d.Key,
-                                                                              d.Value.Count == 1
-                                                                                ? (JToken)d.Value.ToString()
-                                                                                : new JArray( d.Value ) ) ) ) );
+                            new JObject( @this.Select( d => new JProperty( d.Key, (string?)d.Value ) ) ) );
         }
 
         static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )

@@ -50,7 +50,7 @@ namespace CK.AspNet.Auth
                                            bool impersonateActualUser,
                                            string? returnUrl,
                                            string? callerOrigin,
-                                           List<KeyValuePair<string, StringValues>> userData )
+                                           IDictionary<string, string?> userData )
         {
             Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null );
             HttpContext = ctx;
@@ -148,12 +148,9 @@ namespace CK.AspNet.Auth
         public IAuthenticationInfo InitialAuthentication => _initialAuth.Info;
 
         /// <summary>
-        /// Gets the query (for GET) or form (when POST was used) data of the 
-        /// initial .webfront/c/starLogin call as a readonly list.
-        /// This is null when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
-        /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>. 
+        /// Gets the user data that follows the process.
         /// </summary>
-        public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
+        public IDictionary<string, string?> UserData { get; }
 
         /// <summary>
         /// Gets whether SetError or SetSuccessfulLogin methods have been called.

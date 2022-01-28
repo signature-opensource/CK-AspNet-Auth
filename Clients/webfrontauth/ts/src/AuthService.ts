@@ -70,10 +70,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
      */
-    constructor(
-        configuration: IAuthServiceConfiguration,
-        axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>
+    constructor( configuration: IAuthServiceConfiguration,
+                 axiosInstance: AxiosInstance,
+                 typeSystem?: IAuthenticationInfoTypeSystem<T>
         ) {
         if (!configuration) { throw new Error('Configuration must be defined.'); }
         this._configuration = new AuthServiceConfiguration(configuration);
@@ -113,12 +112,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.)
      * @returns A new AuthService that may have a currentError if parameter throwOnError is false (the default).
      */
-    public static async createAsync<T extends IUserInfo = IUserInfo>(
-        configuration: IAuthServiceConfiguration,
-        axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>,
-        throwOnError: boolean = false
-    ): Promise<AuthService> {
+    public static async createAsync<T extends IUserInfo = IUserInfo>( configuration: IAuthServiceConfiguration,
+                                                                      axiosInstance: AxiosInstance,
+                                                                      typeSystem?: IAuthenticationInfoTypeSystem<T>,
+                                                                      throwOnError: boolean = false ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         await authService.refresh(true);
         if (authService.currentError) {
@@ -218,11 +215,15 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private onMessage(): (this: Window, ev: MessageEvent) => void {
         return (messageEvent) => {
             if (messageEvent.data.WFA === 'WFA') {
+                // We are the only one (in terms of domain origin) that can receive this message since we call the server with this
+                // document.location.origin and this has been used by the postMessage targetOrigin parameter. 
+                // Still, anybody may send us such a message so here we check the other way around before accepting the message: the
+                // sender must origin from our endPoint.
                 const origin = messageEvent.origin + '/';
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
                     throw new Error(`Incorrect origin in postMessage. Expected '${this._configuration.webFrontAuthEndPoint}', but was '${origin}'`);
                 }
-                this.handleServerResponse(messageEvent.data.data);
+                this.handleServerResponse(messageEvent.data.data,true);
             }
         };
     }
@@ -258,11 +259,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param requestOptions
      * @param skipResponseHandling
      */
-    private async sendRequest(
-        entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
-        requestOptions: { body?: object, queries?: Array<string | { key: string, value: string }> },
-        skipResponseHandling: boolean = false
-    ): Promise<void> {
+    private async sendRequest( entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
+                               requestOptions: { body?: object, queries?: Array<string | { key: string, value: string }> },
+                               skipResponseHandling: boolean = false ): Promise<void> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
 
@@ -335,7 +334,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private handleServerResponse(r: IWebFrontAuthResponse): void {
+    private handleServerResponse(r: IWebFrontAuthResponse, fromRemote?: boolean): void {
         if (!r) {
             this.localDisconnect();
             return;

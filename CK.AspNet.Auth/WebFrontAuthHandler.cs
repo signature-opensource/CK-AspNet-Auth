@@ -206,9 +206,9 @@ namespace CK.AspNet.Auth
 
             bool impersonateActualUser = sImpersonateActualUser != null && (sImpersonateActualUser == "1" || sImpersonateActualUser.Equals( "true", StringComparison.OrdinalIgnoreCase ));
 
-            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, impersonateActualUser, userData, returnUrl, callerOrigin );
+            var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, impersonateActualUser, returnUrl, callerOrigin );
             
-            startContext.ValidateStartLoginRequest( monitor );
+            startContext.ValidateStartLoginRequest( monitor, userData );
             if( !startContext.HasError )
             {
                 await _authService.OnHandlerStartLoginAsync( monitor, startContext );
@@ -239,7 +239,7 @@ namespace CK.AspNet.Auth
             public object Payload { get; set; }
             public bool RememberMe { get; set; }
             public bool ImpersonateActualUser { get; set; }
-            public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
+            public Dictionary<string, string?> UserData { get; } = new Dictionary<string, string?>();
 
             public ProviderLoginRequest( string scheme, object? payload )
             {
@@ -271,7 +271,7 @@ namespace CK.AspNet.Auth
                                         req.ImpersonateActualUser,
                                         returnUrl: null,
                                         callerOrigin: null,
-                                        req.UserData.ToList()
+                                        req.UserData
                                         );
 
                     await _authService.UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
@@ -366,7 +366,7 @@ namespace CK.AspNet.Auth
             public string? Password { get; set; }
             public bool RememberMe { get; set; }
             public bool ImpersonateActualUser { get; set; }
-            public Dictionary<string, StringValues> UserData { get; } = new Dictionary<string, StringValues>();
+            public Dictionary<string, string?> UserData { get; } = new Dictionary<string, string?>();
         }
 
         async Task<bool> DirectBasicLoginAsync( IActivityMonitor monitor )
@@ -389,7 +389,7 @@ namespace CK.AspNet.Auth
                                                           req.ImpersonateActualUser,
                                                           returnUrl: null,
                                                           callerOrigin: null,
-                                                          req.UserData.ToList() );
+                                                          req.UserData );
 
                 await _authService.UnifiedLoginAsync( monitor, wfaSC, actualLogin =>
                 {
