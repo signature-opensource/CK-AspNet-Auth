@@ -60,7 +60,7 @@ namespace CK.AspNet.Auth
         /// Gets the query parameters (for GET) or form data (when POST was used) of the 
         /// initial .webfront/c/starLogin call as a readonly list.
         /// </summary>
-        IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
+        IDictionary<string, string?> UserData { get; }
 
         /// <summary>
         /// Gets the authentication information of the current authentication.

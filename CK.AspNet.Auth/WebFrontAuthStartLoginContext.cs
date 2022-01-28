@@ -28,33 +28,46 @@ namespace CK.AspNet.Auth
                                                 string? scheme,
                                                 FrontAuthenticationInfo current,
                                                 bool impersonateActualUser,
-                                                IEnumerable<KeyValuePair<string, StringValues>> userData,
                                                 string? returnUrl,
                                                 string? callerOrigin )
         {
             Debug.Assert( ctx != null && authService != null );
             Debug.Assert( scheme != null );
             Debug.Assert( current != null );
-            Debug.Assert( userData != null );
             HttpContext = ctx;
             _webFrontAuthService = authService;
             _currentAuth = current;
             // will be validated below.
             Scheme = scheme ?? String.Empty;
-            UserData = new Dictionary<string, StringValues>();
-            foreach( var d in userData ) UserData.Add( d.Key, d.Value );
+            // will be really set (or not on error) by Validate below.
+            UserData = null!;
             ReturnUrl = returnUrl;
             CallerOrigin = callerOrigin;
             ImpersonateActualUser = impersonateActualUser;
         }
 
-        internal void ValidateStartLoginRequest( IActivityMonitor monitor )
+        internal void ValidateStartLoginRequest( IActivityMonitor monitor, IEnumerable<KeyValuePair<string, StringValues>> userData )
         {
             if( string.IsNullOrWhiteSpace( Scheme ) )
             {
                 SetError( "RequiredSchemeParameter", "A scheme parameter is required." );
+                monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, "Missing required scheme parameter." );
                 return;
             }
+            var ud = new Dictionary<string, string?>();
+            foreach( var kv in userData )
+            {
+                int c = kv.Value.Count;
+                if( c > 1 )
+                {
+                    var msg = $"Form or Query data must not contain more than one string value per key: {kv.Key}: {kv.Value}.";
+                    SetError( "MultipleUserDataValueNotSuported", msg );
+                    monitor.Error( WebFrontAuthService.WebFrontAuthMonitorTag, msg );
+                    return;
+                }
+                ud.Add( kv.Key, c == 0 ? null : kv.Value[0] );
+            }
+            UserData = ud;
             _webFrontAuthService.ValidateCoreParameters( monitor, WebFrontAuthLoginMode.StartLogin, ReturnUrl, CallerOrigin, Current, ImpersonateActualUser, this );
         }
 
@@ -100,7 +113,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets the mutable user data.
         /// </summary>
-        public IDictionary<string, StringValues> UserData { get; }
+        public IDictionary<string, string?> UserData { get; private set; }
 
         /// <summary>
         /// Gets whether an error has been set.

@@ -173,19 +173,19 @@ namespace CK.AspNet.Auth
         internal FrontAuthenticationInfo UnprotectAuthenticationInfo( string data )
         {
             Debug.Assert( data != null );
-            return _tokenFormat.Unprotect( data );
+            return _tokenFormat.Unprotect( data )!;
         }
 
-        internal string ProtectExtraData( IEnumerable<KeyValuePair<string, StringValues>> info )
+        internal string ProtectExtraData( IDictionary<string, string?> info )
         {
             Debug.Assert( info != null );
             return _extraDataFormat.Protect( info );
         }
 
-        internal List<KeyValuePair<string, StringValues>> UnprotectExtraData( string data )
+        internal IDictionary<string, string?> UnprotectExtraData( string data )
         {
             Debug.Assert( data != null );
-            return (List<KeyValuePair<string, StringValues>>)_extraDataFormat.Unprotect( data );
+            return _extraDataFormat.Unprotect( data )!;
         }
 
         internal void SetWFAData( AuthenticationProperties p,
@@ -194,7 +194,7 @@ namespace CK.AspNet.Auth
                                   string? initialScheme,
                                   string? callerOrigin,
                                   string? returnUrl,
-                                  IDictionary<string, StringValues> userData )
+                                  IDictionary<string, string?> userData )
         {
             p.Items.Add( "WFA2C", ProtectAuthenticationInfo( fAuth ) );
             if( !String.IsNullOrWhiteSpace( initialScheme ) )
@@ -226,21 +226,21 @@ namespace CK.AspNet.Auth
                                   out string? initialScheme,
                                   out string? callerOrigin,
                                   out string? returnUrl,
-                                  out List<KeyValuePair<string, StringValues>> userData )
+                                  out IDictionary<string, string?> userData )
         {
             fAuth = GetFrontAuthenticationInfo( h, properties );
-            impersonateActualUser = properties.Items.ContainsKey( "WFA2I" );
             properties.Items.TryGetValue( "WFA2S", out initialScheme );
             properties.Items.TryGetValue( "WFA2O", out callerOrigin );
             properties.Items.TryGetValue( "WFA2R", out returnUrl );
-            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) )
+            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) && sUData != null )
             {
                 userData = UnprotectExtraData( sUData );
             }
             else
             {
-                userData = new List<KeyValuePair<string, StringValues>>();
+                userData = new Dictionary<string, string?>();
             }
+            impersonateActualUser = properties.Items.ContainsKey( "WFA2I" );
         }
 
         internal FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext h, AuthenticationProperties properties )
@@ -616,7 +616,7 @@ namespace CK.AspNet.Auth
                                                           string errorText,
                                                           string? initialScheme = null,
                                                           string? callingScheme = null,
-                                                          IEnumerable<KeyValuePair<string, StringValues>>? userData = null,
+                                                          IDictionary<string, string?>? userData = null,
                                                           UserLoginResult? failedLogin = null )
         {
             if( returnUrl != null )
@@ -685,7 +685,7 @@ namespace CK.AspNet.Auth
                                                   string? errorText,
                                                   string? initialScheme,
                                                   string? callingScheme,
-                                                  IEnumerable<KeyValuePair<string, StringValues>>? userData,
+                                                  IDictionary<string, string?>? userData,
                                                   UserLoginResult? failedLogin )
         {
             var response = CreateAuthResponse( c, false, fAuth, failedLogin );

@@ -1,4 +1,5 @@
 using CK.Auth;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,8 @@ namespace CK.AspNet.Auth.Tests
 
         public string? Version { get; set; }
 
+        public List<KeyValuePair<string, StringValues>>? UserData { get; set; }
+
         public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
         {
             JObject o = JObject.Parse( json );
@@ -35,6 +38,21 @@ namespace CK.AspNet.Auth.Tests
             r.RememberMe = (bool?)o["rememberMe"] ?? false;
             r.Schemes = o["schemes"]?.Values<string>().ToArray();
             r.Version = (string?)o["version"];
+            var d = o["userData"];
+            if( d != null )
+            {
+                var values = new List<KeyValuePair<string,StringValues>>();
+                var uD = (JObject)d;
+                foreach( var kv in uD )
+                {
+                    StringValues v; 
+                    if( kv.Value == null ) v = StringValues.Empty;
+                    else if( kv.Value is JArray a ) v = new StringValues( a.Select( c => (string)c ).ToArray() );
+                    else v = new StringValues( (string)kv.Value );
+                    values.Add( KeyValuePair.Create( kv.Key, v ) );
+                }
+                r.UserData = values;
+            }
             return r;
         }
     }

@@ -14,57 +14,48 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Secure IQueryCollection and/or IFormCollection data serialization, using a binary serialization.
     /// </summary>
-    public class ExtraDataSecureDataFormat : SecureDataFormat<IEnumerable<KeyValuePair<string, StringValues>>>
+    public class ExtraDataSecureDataFormat : SecureDataFormat<IDictionary<string, string?>>
     {
-        class Serializer : IDataSerializer<IEnumerable<KeyValuePair<string, StringValues>>>
+        class Serializer : IDataSerializer<IDictionary<string, string?>>
         {
-            public IEnumerable<KeyValuePair<string, StringValues>> Deserialize(byte[] data)
+            public IDictionary<string, string?> Deserialize(byte[] data)
             {
-                var result = new List<KeyValuePair<string, StringValues>>();
+                var result = new Dictionary<string, string?>();
                 using (var s = new MemoryStream(data))
                 using (var r = new CKBinaryReader(s))
                 {
-                    string? key;
-                    while( (key = r.ReadNullableString()) != null )
+                    int c = r.ReadNonNegativeSmallInt32();
+                    while( --c >= 0 )
                     {
-                        var values = new string[r.ReadSmallInt32()];
-                        for(int i = 0; i < values.Length; ++i )
-                        {
-                            // If the value was null, we restore a null.
-                            values[i] = r.ReadNullableString()!;
-                        }
-                        result.Add( new KeyValuePair<string, StringValues>( key, new StringValues( values ) ) );
+                        result.Add( r.ReadString(), r.ReadNullableString() );
                     }
                     return result;
                 }
             }
-            public byte[] Serialize( IEnumerable<KeyValuePair<string, StringValues>> model )
+            public byte[] Serialize( IDictionary<string, string?> model )
             {
                 using (var s = new MemoryStream())
                 using (var w = new CKBinaryWriter(s))
                 {
+                    w.WriteNonNegativeSmallInt32( model.Count );
                     foreach( var k in model )
                     {
-                        if( k.Key == null ) throw new InvalidDataException( "Key can not be null." );
-                        w.WriteNullableString( k.Key );
-                        w.WriteSmallInt32( k.Value.Count );
-                        foreach( var v in k.Value )
-                        {
-                            w.WriteNullableString( v );
-                        }
+                        w.Write( k.Key );
+                        w.WriteNullableString( k.Value );
                     }
-                    w.WriteNullableString( null );
                     return s.ToArray();
                 }
             }
         }
+
+        static readonly Serializer _serializer = new Serializer();
 
         /// <summary>
         /// Initialize a new AuthenticationInfoSecureDataFormat.
         /// </summary>
         /// <param name="p">Data protector to use.</param>
         public ExtraDataSecureDataFormat( IDataProtector p )
-            : base( new Serializer(), p )
+            : base( _serializer, p )
         {
         }
     }

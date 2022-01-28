@@ -101,7 +101,11 @@ namespace CK.AspNet.Auth.Tests
         public Task<RefreshResponse> LoginAlbertViaBasicProviderAsync( bool useGenericWrapper = false, bool rememberMe = true, bool impersonateActualUser = false )
             => LoginViaBasicProviderAsync( "Albert", useGenericWrapper, rememberMe, impersonateActualUser );
 
-        public async Task<RefreshResponse> LoginViaBasicProviderAsync( string userName, bool useGenericWrapper = false, bool rememberMe = true, bool impersonateActualUser = false )
+        public async Task<RefreshResponse> LoginViaBasicProviderAsync( string userName,
+                                                                       bool useGenericWrapper = false,
+                                                                       bool rememberMe = true,
+                                                                       bool impersonateActualUser = false,
+                                                                       string? jsonUserData = null )
         {
             string uri;
             string body;
@@ -112,22 +116,22 @@ namespace CK.AspNet.Auth.Tests
                 {
                     if( impersonateActualUser )
                     {
-                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\""+userName+"\",\"password\":\"success\"} }";
+                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\""+userName+"\",\"password\":\"success\"}";
                     }
                     else
                     {
-                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"}";
                     }
                 }
                 else
                 {
                     if( impersonateActualUser )
                     {
-                        body = "{ \"Provider\":\"Basic\", \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                        body = "{ \"Provider\":\"Basic\", \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"}";
                     }
                     else
                     {
-                        body = "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                        body = "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"}";
                     }
                 }
             }
@@ -138,25 +142,30 @@ namespace CK.AspNet.Auth.Tests
                 {
                     if( impersonateActualUser )
                     {
-                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true, \"impersonateActualUser\":true}";
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true, \"impersonateActualUser\":true";
                     }
                     else
                     {
-                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true}";
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true";
                     }
                 }
                 else
                 {
                     if( impersonateActualUser )
                     {
-                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"ImpersonateActualUser\":true}";
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"ImpersonateActualUser\":true";
                     }
                     else
                     {
-                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\"}";
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\"";
                     }
                 }
             }
+            if( jsonUserData != null )
+            {
+                body += $@", ""userData"": {jsonUserData}";
+            }
+            body += "}";
             HttpResponseMessage response = await Client.PostJSON( uri, body );
             response.EnsureSuccessStatusCode();
 

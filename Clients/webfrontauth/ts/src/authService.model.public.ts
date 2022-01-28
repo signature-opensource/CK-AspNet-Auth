@@ -137,6 +137,14 @@ export interface IEndPoint {
     readonly disableSsl?: boolean;
 }
 
+/**
+ * Defines the data that 
+ */
+export interface IStartPopupLoginUserData {
+    serverData?: {[index:string]: string | undefined};
+    localData?: any;
+}
+
 export interface IWebFrontAuthError {
     readonly type: string;
     readonly errorId: string;
