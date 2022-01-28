@@ -2,6 +2,7 @@ using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -135,17 +136,32 @@ namespace CK.AspNet.Auth
             Debug.Assert( HasError );
             Debug.Assert( _errorId != null && _errorText != null );
 
+            // This is called on the initial request: if ReturnUrl is set (inline), we must not
+            // redirect the error there!
+            if( ReturnUrl != null )
+            {
+                Debug.Assert( _errorId != null );
+                JObject o = new JObject( new JProperty( "errorId", _errorId ) );
+                if( !String.IsNullOrWhiteSpace( _errorText ) && _errorText != _errorId )
+                {
+                    o.Add( new JProperty( "errorText", _errorText ) );
+                }
+                HttpContext.Response.ContentType = "application/json";
+                return HttpContext.Response.WriteAsync( o.ToString( Newtonsoft.Json.Formatting.None ) );
+            }
+            // We are in popup mode: use the SendRemoteAuthenticationError that generates a proper error message (including the
+            // downgraded authentication).
             return _webFrontAuthService.SendRemoteAuthenticationErrorAsync(
                         HttpContext,
                         _currentAuth,
-                        ReturnUrl,
+                        returnUrl: null,
                         CallerOrigin,
                         _errorId,
                         _errorText,
                         Scheme,
-                        null,
+                        callingScheme: null,
                         UserData,
-                        null );
+                        failedLogin: null );
         }
 
     }

@@ -99,28 +99,15 @@ namespace CK.AspNet.Auth
         public AuthenticationProperties? AuthenticationProperties { get; }
 
         /// <summary>
-        /// Gets the return url if '/c/startLogin' has been called with a 'returnUrl' parameter.
-        /// <see cref="IsInlineLogin"/> is true.
+        /// Gets the return url if '/c/startLogin' has been called with a 'returnUrl' parameter (the "inline login").
         /// </summary>
         public string? ReturnUrl { get; }
 
         /// <summary>
         /// Gets the caller scheme and host.
         /// Not null only if '/c/startLogin' has been called.
-        /// If startLogin has been called without 'callerOrigin' parameter, this defaults to the request's scheme and host.
         /// </summary>
         public string? CallerOrigin { get; }
-
-        /// <summary>
-        /// Gets whether this is an "inline login" rather than a ""popup login".
-        /// <para>
-        /// When true: <see cref="ReturnUrl"/> is not null and <see cref="CallerOrigin"/> is null.
-        /// </para>
-        /// <para>
-        /// When false: <see cref="CallerOrigin"/> is not null and <see cref="ReturnUrl"/> is null.
-        /// </para>
-        /// </summary>
-        public bool IsInlineLogin => ReturnUrl != null;
 
         /// <summary>
         /// Gets whether the login wants to keep the previous logged in user as the <see cref="IAuthenticationInfo.ActualUser"/>
