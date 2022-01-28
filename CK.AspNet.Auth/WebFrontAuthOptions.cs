@@ -1,13 +1,8 @@
 using CK.Auth;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
@@ -182,8 +177,8 @@ namespace CK.AspNet.Auth
         /// Gets a mutable list of accepted returnUrl prefixes.
         /// <para>
         /// The returnUrl optional parameter submitted to the '/c/startLogin' end point (case of an "inline login" based 
-        /// on page redirections rather that the recommended popup window) must exactly start (<see cref="StringComparison.Ordinal"/> is used) 
-        /// with one of this prefix otherwise a 403 Forbidden error code is returned.
+        /// on page redirections rather that the recommended popup window) must exactly start with one of this 
+        /// prefix (<see cref="StringComparison.Ordinal"/> is used) otherwise a 400 Bad Request error code is returned.
         /// </para>
         /// <para>
         /// This cannot be changed dynamically.
