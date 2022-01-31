@@ -30,10 +30,9 @@ namespace CK.AspNet.Auth.Tests
 
         IAuthenticationTypeSystem _typeSystem;
 
-        public AuthServer(
-            Action<WebFrontAuthOptions>? options = null,
-            Action<IServiceCollection>? configureServices = null,
-            Action<IApplicationBuilder>? configureApplication = null )
+        public AuthServer( Action<WebFrontAuthOptions>? options = null,
+                           Action<IServiceCollection>? configureServices = null,
+                           Action<IApplicationBuilder>? configureApplication = null )
         {
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
@@ -70,6 +69,10 @@ namespace CK.AspNet.Auth.Tests
                                 }
                                 await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
                             }
+                            else if( ctx.Request.Path.StartsWithSegments( "/CallChallengeAsync", out _ ) )
+                            {
+                                await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.ChallengeAsync( ctx );
+                            }
                             else
                             {
                                 await prev( ctx );
@@ -95,8 +98,10 @@ namespace CK.AspNet.Auth.Tests
 
         public TestServerClient Client { get; }
 
+        public Task<RefreshResponse> LoginAlbertViaBasicProviderAsync( bool useGenericWrapper = false, bool rememberMe = true, bool impersonateActualUser = false )
+            => LoginViaBasicProviderAsync( "Albert", useGenericWrapper, rememberMe, impersonateActualUser );
 
-        public async Task<RefreshResponse> LoginAlbertViaBasicProviderAsync( bool useGenericWrapper = false, bool rememberMe = true )
+        public async Task<RefreshResponse> LoginViaBasicProviderAsync( string userName, bool useGenericWrapper = false, bool rememberMe = true, bool impersonateActualUser = false )
         {
             string uri;
             string body;
@@ -105,11 +110,25 @@ namespace CK.AspNet.Auth.Tests
                 uri = UnsafeDirectLoginUri;
                 if( rememberMe )
                 {
-                    body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }";
+                    if( impersonateActualUser )
+                    {
+                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\""+userName+"\",\"password\":\"success\"} }";
+                    }
+                    else
+                    {
+                        body = "{ \"Provider\":\"Basic\", \"RememberMe\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                    }
                 }
                 else
                 {
-                    body = "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"Albert\",\"password\":\"success\"} }";
+                    if( impersonateActualUser )
+                    {
+                        body = "{ \"Provider\":\"Basic\", \"ImpersonateActualUser\":true, \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                    }
+                    else
+                    {
+                        body = "{ \"Provider\":\"Basic\", \"Payload\": {\"userName\":\"" + userName + "\",\"password\":\"success\"} }";
+                    }
                 }
             }
             else
@@ -117,11 +136,25 @@ namespace CK.AspNet.Auth.Tests
                 uri = BasicLoginUri;
                 if( rememberMe )
                 {
-                    body = "{\"userName\":\"Albert\",\"password\":\"success\",\"rememberMe\":true}";
+                    if( impersonateActualUser )
+                    {
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true, \"impersonateActualUser\":true}";
+                    }
+                    else
+                    {
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"rememberMe\":true}";
+                    }
                 }
                 else
                 {
-                    body = "{\"userName\":\"Albert\",\"password\":\"success\"}";
+                    if( impersonateActualUser )
+                    {
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\",\"ImpersonateActualUser\":true}";
+                    }
+                    else
+                    {
+                        body = "{\"userName\":\"" + userName + "\",\"password\":\"success\"}";
+                    }
                 }
             }
             HttpResponseMessage response = await Client.PostJSON( uri, body );
@@ -129,7 +162,7 @@ namespace CK.AspNet.Auth.Tests
 
             var c = RefreshResponse.Parse( TypeSystem, response.Content.ReadAsStringAsync().Result );
             c.Info.Level.Should().Be( AuthLevel.Normal );
-            c.Info.User.UserName.Should().Be( "Albert" );
+            c.Info.User.UserName.Should().Be( userName );
 
             var cookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName;
             var ltCookieName = cookieName + "LT";

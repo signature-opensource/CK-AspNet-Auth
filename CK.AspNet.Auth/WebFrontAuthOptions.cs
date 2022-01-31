@@ -1,13 +1,8 @@
 using CK.Auth;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth
 {
@@ -129,7 +124,7 @@ namespace CK.AspNet.Auth
         /// </para>
         /// <para>
         /// This configuration can be changed dynamically: modifying the configuration will take the
-        /// new schemes into account.
+        /// new schemes into account immediately.
         /// </para>
         /// </summary>
         public List<string>? AvailableSchemes { get; set; }
@@ -139,9 +134,11 @@ namespace CK.AspNet.Auth
         /// When set to other than <see cref="TimeSpan.Zero"/> the middleware will re-issue a new token 
         /// (and new authentication cookie if <see cref="CookieMode"/> allows it) with a new expiration time any time it 
         /// processes a ".webfront/c/refresh" request.
+        /// <para>
         /// This applies to <see cref="IAuthenticationInfo.Expires"/> but not to <see cref="IAuthenticationInfo.CriticalExpires"/>. 
         /// This configuration can be changed dynamically: modifying the configuration will take the
         /// new value into account.
+        /// </para>
         /// </summary>
         public TimeSpan SlidingExpirationTime { get; set; }
 
@@ -170,7 +167,23 @@ namespace CK.AspNet.Auth
         /// <para>
         /// Default to false: the login service method is called only if a <c>callBackend</c> parameter appear in the query string: "/.webfront/c/refresh?callBackend".
         /// </para>
+        /// <para>
+        /// This configuration can be changed dynamically.
+        /// </para>
         /// </summary>
         public bool AlwaysCallBackendOnRefresh { get; set; }
+
+        /// <summary>
+        /// Gets a mutable list of accepted returnUrl prefixes.
+        /// <para>
+        /// The returnUrl optional parameter submitted to the '/c/startLogin' end point (case of an "inline login" based 
+        /// on page redirections rather that the recommended popup window) must exactly start with one of this 
+        /// prefix (<see cref="StringComparison.Ordinal"/> is used) otherwise a 400 Bad Request error code is returned.
+        /// </para>
+        /// <para>
+        /// This cannot be changed dynamically.
+        /// </para>
+        /// </summary>
+        public List<string> AllowedReturnUrls { get; } = new List<string>();
     }
 }

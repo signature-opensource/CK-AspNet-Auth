@@ -87,7 +87,7 @@ namespace CK.AspNet.Auth
         {
             h.HandleResponse();
             var authService = h.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-            authService.GetWFAData( h.HttpContext, properties, out var fAuth, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
+            authService.GetWFAData( h.HttpContext, properties, out var fAuth, out var impersonateActualUser, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
             if( setUnsafeLevel )
             {
                 fAuth = fAuth.SetUnsafeLevel();
