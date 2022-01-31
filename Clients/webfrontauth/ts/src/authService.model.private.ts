@@ -13,7 +13,7 @@ export interface  IWebFrontAuthResponse {
     errorText?: string;
     initialScheme?: string;
     callingScheme?: string;
-    userData?: any;
+    userData?: {[index:string]: string | null};
     version?: string;
 }
 

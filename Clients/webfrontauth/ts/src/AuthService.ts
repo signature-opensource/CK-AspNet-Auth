@@ -1,7 +1,7 @@
 import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
 
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { AuthLevel, IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError } from './authService.model.public';
+import { AuthLevel, IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
 import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';
@@ -18,6 +18,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _endPointVersion: string;
     private _configuration: AuthServiceConfiguration;
     private _currentError?: IWebFrontAuthError;
+    private _lastResult: ILastResult;
 
     private _axiosInstance: AxiosInstance;
     private _interceptor: number;
@@ -30,6 +31,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _onMessage?: (this: Window, ev: MessageEvent) => void;
     private _closed: boolean;
     private _checkVersion: boolean;
+    private _popupWin: Window | undefined;
 
     /** Gets the current authentication information. */
     public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
@@ -45,8 +47,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get endPointVersion(): string { return this._endPointVersion; }
     /** Gets this client version. This must be the same as the endPointVersion otherwise behavior is not guaranteed. */
     public static get clientVersion(): string { return version; }
-    /** Gets the current error if any. */
-    public get currentError(): IWebFrontAuthError|undefined { return this._currentError; }
+    /** Gets the last server result with the last server data and error if any. */
+    public get lastResult(): ILastResult { return this._lastResult; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
     public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }
     /** Gets whether this AuthService is closed: no method should be called anymore. */
@@ -93,6 +95,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._refreshable = false;
         this._rememberMe = false;
         this._token = '';
+        this._lastResult = {serverData:undefined, error: undefined};
         this._popupDescriptor = undefined;
 
         if (!(typeof window === 'undefined')) {
@@ -118,11 +121,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                                                                       throwOnError: boolean = false ): Promise<AuthService> {
         const authService = new AuthService<T>(configuration, axiosInstance, typeSystem);
         await authService.refresh(true);
-        if (authService.currentError) {
+        if (authService.lastResult.error) {
             console.error(
                 'Error while initalizing new AuthService.',
-                authService.currentError.errorId,
-                authService.currentError.errorText
+                authService.lastResult.error.errorId,
+                authService.lastResult.error.errorText
             );
 
             if (throwOnError) {
@@ -223,7 +226,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 if (origin !== this._configuration.webFrontAuthEndPoint) {
                     throw new Error(`Incorrect origin in postMessage. Expected '${this._configuration.webFrontAuthEndPoint}', but was '${origin}'`);
                 }
-                this.handleServerResponse(messageEvent.data.data,true);
+                this.handleServerResponse(messageEvent.data.data);
             }
         };
     }
@@ -231,6 +234,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#endregion
 
     //#region request handling
+
+    /** helper that assigns a new LastResult instance. Must be called before onChange(). */
+    private setLastResult(data?:IWebFrontAuthResponse) : void {
+        this._lastResult = { error: this._currentError, serverData: data ? data.userData : undefined };
+    }
 
     /**
      * When the server cannot be reached, there is no point to call localDisconnect(): we'd better wait its availability.
@@ -284,6 +292,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 errorId: `HTTP.Status.${status}`,
                 errorText: 'Unhandled success status'
             });
+            this.setLastResult( response.data );
         } catch (error) {
 
             // This should not happen too often nor contain dangerous secrets...
@@ -326,15 +335,19 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             }
         }
         // There has been an error.
+        this.setLastResult();
         const a = this._authenticationInfo.checkExpiration();
         if( a != this._authenticationInfo )
         {
             this._authenticationInfo = a;
             this.onNewAuthenticationInfo();
         }
+        else {
+            this.onChange();
+        }
     }
 
-    private handleServerResponse(r: IWebFrontAuthResponse, fromRemote?: boolean): void {
+    private handleServerResponse(r: IWebFrontAuthResponse): void {
         if (!r) {
             this.localDisconnect();
             return;
@@ -353,6 +366,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorId: 'ClientEndPointVersionMismatch',
                     errorText: msg
                 });
+                this.setLastResult(r);
                 throw new Error(msg);
             }
         }
@@ -373,13 +387,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
 
         if (this._currentError) {
-            this.localDisconnect();
+            this.localDisconnect( undefined, r );
             return;
         }
 
 
         if (!r.info) {
-            this.localDisconnect();
+            this.localDisconnect(undefined, r);
             return;
         }
 
@@ -390,6 +404,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         const info = this._typeSystem.authenticationInfo.fromServerResponse(r.info, this._availableSchemes) ;
         this._authenticationInfo = info !== null ? info : this._typeSystem.authenticationInfo.none.setDeviceId(this._authenticationInfo.deviceId);
 
+        this.setLastResult( r );
         this.onNewAuthenticationInfo();
     }
 
@@ -408,7 +423,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.onChange();
     }
 
-    private localDisconnect( fromLocalStorage?: IAuthenticationInfoImpl<T> ): void {
+    private localDisconnect( fromLocalStorage?: IAuthenticationInfoImpl<T>, data?: IWebFrontAuthResponse ): void {
         // Keep (and applies) the current rememberMe configuration: this is the "local" disconnect.
         this._token = '';
         this._refreshable = false;
@@ -420,6 +435,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             this._authenticationInfo = this._typeSystem.authenticationInfo.none.setDeviceId( this._authenticationInfo.deviceId );
         }
         this.clearTimeouts();
+        this.setLastResult( data );
         this.onChange();
     }
 
@@ -433,12 +449,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param password The password to use.
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
-     * @param userData Optional user data that the server may use.
+     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
+     * and can modify this dictionary of nullable strings. 
      */
-    public async basicLogin(userName: string, password: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
+    public async basicLogin( userName: string, 
+                             password: string, 
+                             rememberMe?: boolean, 
+                             impersonateActualUser?: boolean, 
+                             serverData?: {[index:string]: string | null}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
-        await this.sendRequest('basicLogin', { body: { userName, password, userData, rememberMe, impersonateActualUser } });
+        await this.sendRequest('basicLogin', { body: { userName, password, userData: serverData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -447,12 +468,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param payload The object payload that contain any information required to authenticate with the scheme.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
-     * @param userData Optional user data that the server may use.
+     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
+     * and can modify this dictionary of nullable strings. 
      */
-    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
+    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: {[index:string]: string | null}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
-        await this.sendRequest('unsafeDirectLogin', { body: { provider, payload, userData, rememberMe, impersonateActualUser } });
+        await this.sendRequest('unsafeDirectLogin', { body: { provider, payload, userData: serverData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -467,6 +489,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public async refresh(callBackend: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false): Promise<void> {
         this.checkClosed();
+        // No need to encodeURIComponent these parameters.
         const queries: string[] = [];
         if (callBackend) { queries.push('callBackend'); }
         if (requestSchemes || this._availableSchemes.length === 0 ) { queries.push('schemes'); }
@@ -507,25 +530,25 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages 
      * before redirecting to the provided return url. 
      * @param provider The authentication scheme to use.
-     * @param returnUrl The final return url.
+     * @param returnUrl The final return url. Must starts with one of the configured AllowedReturnUrls. 
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
-     * @param userData Optional user data that the server may use.
+     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
+     * and can modify this dictionary of nullable strings. 
      */
-      public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: object): Promise<void> {
+      public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: {[index:string]: string | null}): Promise<void> {
         this.checkClosed();
         if (!returnUrl) { throw new Error('returnUrl must be defined.'); }
         if (!(returnUrl.startsWith('http://') || returnUrl.startsWith('https://'))) {
             if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
             returnUrl = document.location.origin + returnUrl;
         }
-
         const params = [
             { key: 'returnUrl', value: encodeURIComponent(returnUrl) },
             rememberMe ? 'rememberMe' : '',
             impersonateActualUser ? 'impersonateActualUser' : ''
         ];
-        document.location.href = this.buildStartLoginUrl( scheme, params, userData );
+        document.location.href = this.buildStartLoginUrl( scheme, params, serverData );
     }
 
      /**
@@ -533,15 +556,17 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param provider The authentication scheme to use.
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
-     * @param userData Optional user data that the server may use.
+     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
+     * and can modify this dictionary of nullable strings. 
      */    
-    public async startPopupLogin(scheme: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: {[index:string]: any}): Promise<void> {
+    public async startPopupLogin( scheme: string, 
+                                  rememberMe?: boolean, 
+                                  impersonateActualUser?: boolean,
+                                  serverData?: {[index:string]: string | null}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
         if (scheme === 'Basic') {
-            const popup = window.open('about:blank', this.popupDescriptor.popupTitle, this.popupDescriptor.features);
-            if( popup == null ) throw new Error( "Unable to open popup window." );
-
+            const popup = this.ensurePopup('about:blank');
             popup.document.write(this.popupDescriptor.generateBasicHtml( rememberMe ));
             const onClick = async () => {
 
@@ -555,7 +580,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     errorDiv.innerHTML = this.popupDescriptor.basicMissingCredentialsError;
                     errorDiv.style.display = 'block';
                 } else {
-                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, false, userData);
+                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, false, serverData);
 
                     if (this.authenticationInfo.level >= AuthLevel.Normal) {
                         popup!.close();
@@ -565,7 +590,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     }
                 }
             }
-
             const eOnClick = popup.document.getElementById('submit-button');
             if( eOnClick == null ) throw new Error( "Unable to find required 'submit-button' element." );
             eOnClick.onclick = (async () => await onClick());
@@ -576,9 +600,21 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 rememberMe ? 'rememberMe' : '',
                 impersonateActualUser ? 'impersonateActualUser' : ''
             ];
-            window.open(this.buildStartLoginUrl(scheme, data, userData), this.popupDescriptor.popupTitle, this.popupDescriptor.features);
+            this.ensurePopup(this.buildStartLoginUrl(scheme, data, serverData));
         }
+        
     }
+    private ensurePopup( url: string ) : Window {
+        if( !this._popupWin || this._popupWin.closed ) {
+            this._popupWin = window.open(url, this.popupDescriptor.popupTitle, this.popupDescriptor.features)!;
+            if( this._popupWin === null ) throw new Error( "Unable to open popup window." );
+        }
+        else {
+            this._popupWin.location.href = url;
+            this._popupWin.focus();
+        }
+        return this._popupWin;
+    } 
 
     /**
      * Checks whether calling the provided url requires the header bearer token to be added or not.
@@ -622,12 +658,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
     //#endregion
 
-    private buildQueryString( params?: Array<string | { key: string, value: string }>, scheme?: string ): string {
+    private buildQueryString( params?: Array<string | { key: string, value: string|null }>, scheme?: string ): string {
         let query = params && params.length
-                ? `?${params.map(q => typeof q === 'string' ? q : `${q.key}=${q.value}`).join('&')}`
-                : '';
-
-        let schemeParam = scheme ? `scheme=${scheme}` : '';
+                        ? `?${params.map(q => typeof(q) === "string" 
+                                                ? q 
+                                                : q.value === null 
+                                                    ? q.key 
+                                                    : `${q.key}=${q.value}`)
+                                    .join('&')}`
+                        : '';
+        let schemeParam = scheme ? `scheme=${encodeURIComponent(scheme)}` : '';
         if( query && schemeParam )
         {
             query += `&${schemeParam}`;
@@ -636,19 +676,20 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         {
             query += `?${schemeParam}`;
         }
-
         return query;
     }
 
-    private buildStartLoginUrl(
-        scheme: string,
-        params: Array<string | { key: string, value: string }>,
-        userData?: { [index: string]: any }
+    private buildStartLoginUrl( scheme: string,
+                                params: Array<string | { key: string, value: string|null }>,
+                                serverData?: {[index:string]: string | null}
     ): string {
-        if( userData ) {
-            Object.keys(userData).forEach( i => params.push({key: i, value: userData[i]}));
+        if( serverData ) {
+            Object.keys(serverData).forEach( i => params.push({key: encodeURIComponent(i), value: this.encData(serverData[i])}));
         }
         return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString(params, scheme)}`;
+    }
+    private encData( v: string|null) : string|null {
+        return v === null ? null : encodeURIComponent(v);
     }
 
 }

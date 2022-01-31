@@ -38,22 +38,22 @@ namespace CK.AspNet.Auth.Tests
                 }
             } ) )
             {
-                var expectation = new List<KeyValuePair<string, StringValues>>();
+                var expectation = new Dictionary<string, string?>();
 
                 {
-                    expectation.Add( KeyValuePair.Create( "d", new StringValues( "a" ) ) );
+                    expectation.Add( "d", "a" );
                     var r = await s.LoginViaBasicProviderAsync( "Albert", useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a""}" );
                     r.UserData.Should().BeEquivalentTo( expectation );
                 }
                 {
-                    expectation.Add( KeyValuePair.Create( "e", new StringValues( "b" ) ) );
+                    expectation.Add( "e", "b" );
                     var r = await s.LoginViaBasicProviderAsync( "Albert", useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a"",""e"":""b""}" );
                     r.UserData.Should().BeEquivalentTo( expectation );
                 }
                 {
-                    expectation.Add( KeyValuePair.Create( "f", new StringValues( new[] { "a", "b" } ) ) );
-                    expectation.Add( KeyValuePair.Create( "g", StringValues.Empty ) );
-                    var r = await s.LoginViaBasicProviderAsync( "Albert", useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a"",""e"":""b"",""f"":[""a"",""b""],""g"":[]}" );
+                    expectation.Add( "f", null );
+                    expectation.Add( "g", String.Empty );
+                    var r = await s.LoginViaBasicProviderAsync( "Albert", useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a"",""e"":""b"",""f"":null,""g"":""""}" );
                     r.UserData.Should().BeEquivalentTo( expectation );
                 }
             }

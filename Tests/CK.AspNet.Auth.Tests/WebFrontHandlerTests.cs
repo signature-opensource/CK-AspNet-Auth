@@ -279,7 +279,7 @@ namespace CK.AspNet.Auth.Tests
         }
 
         [Test]
-        public async Task AllowedReturnUrls_quick_test()
+        public async Task AllowedReturnUrls_quick_test_Async()
         {
             using( var s = new AuthServer( opt =>
             {
@@ -288,29 +288,29 @@ namespace CK.AspNet.Auth.Tests
             {
                 // This scheme is not known but the test of the return url is done before.
                 var m = await s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://no.no" ) );
-                m.StatusCode.Should().Be( 400 );
+                m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 (await m.Content.ReadAsStringAsync()).Should()
                     .Be( @"{""errorId"":""DisallowedReturnUrl"",""errorText"":""The returnUrl='https://no.no' doesn't start with any of configured AllowedReturnUrls prefixes.""}" );
 
                 // Currently invalid schemes throws (error 500 in real host).
-                FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) ) )
-                    .Should().Throw<Exception>();
+                await FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) ) )
+                    .Should().ThrowAsync<Exception>();
 
-                FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) ) )
-                    .Should().Throw<Exception>();
+                await FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) ) )
+                    .Should().ThrowAsync<Exception>();
 
             }
         }
 
 
         [Test]
-        public async Task empty_AllowedReturnUrls_forbids_any_inline_login()
+        public async Task empty_AllowedReturnUrls_forbids_any_inline_login_Async()
         {
             using( var s = new AuthServer() )
             {
                 // This scheme is not known but the test of the return url is done before.
                 var m = await s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://un.reg.ister.ed" ) );
-                m.StatusCode.Should().Be( 400 );
+                m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 (await m.Content.ReadAsStringAsync()).Should()
                     .Be( @"{""errorId"":""DisallowedReturnUrl"",""errorText"":""The returnUrl='https://un.reg.ister.ed' doesn't start with any of configured AllowedReturnUrls prefixes.""}" );
             }

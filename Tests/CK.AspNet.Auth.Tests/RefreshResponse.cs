@@ -23,7 +23,7 @@ namespace CK.AspNet.Auth.Tests
 
         public string? Version { get; set; }
 
-        public List<KeyValuePair<string, StringValues>>? UserData { get; set; }
+        public Dictionary<string, string?>? UserData { get; set; }
 
         public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
         {
@@ -41,15 +41,11 @@ namespace CK.AspNet.Auth.Tests
             var d = o["userData"];
             if( d != null )
             {
-                var values = new List<KeyValuePair<string,StringValues>>();
+                var values = new Dictionary<string, string?>();
                 var uD = (JObject)d;
                 foreach( var kv in uD )
                 {
-                    StringValues v; 
-                    if( kv.Value == null ) v = StringValues.Empty;
-                    else if( kv.Value is JArray a ) v = new StringValues( a.Select( c => (string)c ).ToArray() );
-                    else v = new StringValues( (string)kv.Value );
-                    values.Add( KeyValuePair.Create( kv.Key, v ) );
+                    values.Add( kv.Key, (string?)kv.Value );
                 }
                 r.UserData = values;
             }
