@@ -333,6 +333,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             this._authenticationInfo = a;
             this.onNewAuthenticationInfo();
         }
+        else
+        {
+            this.onChange();
+        }
     }
 
     private handleServerResponse(r: IWebFrontAuthResponse): void {
