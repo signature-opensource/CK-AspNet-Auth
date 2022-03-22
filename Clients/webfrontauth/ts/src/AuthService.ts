@@ -160,8 +160,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private readonly maxTimeout: number = 2147483647;
 
+    private static getSafeTimeDifference(timeDifference: number): number {
+        return timeDifference * 2/3;
+    }
+
     private setExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.expires!.getTime() - Date.now()
+        const timeDifference = this._authenticationInfo.expires!.getTime() - Date.now();
 
         if (timeDifference > this.maxTimeout) {
             this._expTimer = setTimeout(this.setExpirationTimeout, this.maxTimeout);
@@ -173,12 +177,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     this._authenticationInfo = this._authenticationInfo.setExpires(undefined);
                     this.onChange();
                 }
-            }, timeDifference);
+            }, AuthService.getSafeTimeDifference(timeDifference));
         }
     }
 
     private setCriticialExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.criticalExpires!.getTime() - Date.now()
+        const timeDifference = this._authenticationInfo.criticalExpires!.getTime() - Date.now();
 
         if (timeDifference > this.maxTimeout) {
             this._cexpTimer = setTimeout(this.setCriticialExpirationTimeout, this.maxTimeout);
@@ -190,7 +194,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     this._authenticationInfo = this._authenticationInfo.setCriticalExpires();
                     this.onChange();
                 }
-            }, timeDifference);
+            }, AuthService.getSafeTimeDifference(timeDifference));
         }
     }
 
@@ -508,8 +512,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
      /**
-     * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages 
-     * before redirecting to the provided return url. 
+     * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages
+     * before redirecting to the provided return url.
      * @param provider The authentication scheme to use.
      * @param returnUrl The final return url.
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
@@ -538,7 +542,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
      * @param userData Optional user data that the server may use.
-     */    
+     */
     public async startPopupLogin(scheme: string, rememberMe?: boolean, impersonateActualUser?: boolean, userData?: {[index:string]: any}): Promise<void> {
         this.checkClosed();
         if( rememberMe === undefined ) rememberMe = this._rememberMe;
