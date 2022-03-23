@@ -9,6 +9,6 @@
     <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
     <PackageReference Include="CK.StObj.Model" Version="$(CKStObjVersion)" />
     <PackageReference Include="CK.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="6.0.3" />
   </ItemGroup>
 </Project>
