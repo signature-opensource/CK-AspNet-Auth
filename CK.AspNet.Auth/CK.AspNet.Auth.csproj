@@ -5,9 +5,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="2.0.0-r02" />
-    <PackageReference Include="CK.StObj.Model" Version="19.0.0-r09" />
-    <PackageReference Include="CK.AspNet" Version="8.0.0-r08" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="2.0.0-r02-00-0003-develop" />
+    <PackageReference Include="CK.StObj.Model" Version="19.0.0-r09-00-0015-develop" />
+    <PackageReference Include="CK.AspNet" Version="8.0.0-r08-00-0003-develop" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="6.0.3" />
   </ItemGroup>
 </Project>

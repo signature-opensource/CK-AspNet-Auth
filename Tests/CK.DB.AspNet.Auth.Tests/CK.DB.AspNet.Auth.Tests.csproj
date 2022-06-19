@@ -4,10 +4,10 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Tester" Version="4.0.0-r01-01" />
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="19.0.0-r09" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="14.0.0-r09" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="14.0.0-r09" />
+    <PackageReference Include="CK.AspNet.Tester" Version="4.0.0-r01-01-0005-develop" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="19.0.0-r09-00-0004-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="14.0.0-r09-00-0004-develop" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="14.0.0-r09-00-0006-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
   </ItemGroup>
