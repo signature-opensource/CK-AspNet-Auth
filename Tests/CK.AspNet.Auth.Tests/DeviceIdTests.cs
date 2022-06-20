@@ -19,7 +19,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 string? deviceId = null;
                 {
-                    using var message = await s.Client.Get( "echo/outside" );
+                    using var message = await s.Client.GetAsync( "echo/outside" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/outside" );
                     var cookies = s.ReadClientCookies();
@@ -35,7 +35,7 @@ namespace CK.AspNet.Auth.Tests
                     deviceId = cookies.LTDeviceId;
                 }
                 {
-                    using var message = await s.Client.Get( "echo/hop" );
+                    using var message = await s.Client.GetAsync( "echo/hop" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/hop" );
                     var cookies = s.ReadClientCookies();
@@ -60,7 +60,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 string? deviceId = null;
                 {
-                    using var message = await s.Client.Get( "echo/none-yet" );
+                    using var message = await s.Client.GetAsync( "echo/none-yet" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/none-yet" );
                     var cookies = s.ReadClientCookies();
@@ -89,7 +89,7 @@ namespace CK.AspNet.Auth.Tests
                     else deviceId = cookies.LTDeviceId;
                 }
                 {
-                    using var message = await s.Client.Get( "echo/hop" );
+                    using var message = await s.Client.GetAsync( "echo/hop" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/hop" );
                     var cookies = s.ReadClientCookies();
@@ -106,7 +106,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 {
                     // Calling without Token: the call is "Anonymous" but nothing must have changed.
-                    using var message = await s.Client.Get( "echo/plop?userName" );
+                    using var message = await s.Client.GetAsync( "echo/plop?userName" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/plop => ?userName (UserName: '')" );
                     var cookies = s.ReadClientCookies();
@@ -126,7 +126,7 @@ namespace CK.AspNet.Auth.Tests
                 {
                     // Calling with a Token.
                     s.Client.Token = token;
-                    using var message = await s.Client.Get( "echo/plop?userName" );
+                    using var message = await s.Client.GetAsync( "echo/plop?userName" );
                     var textMessage = await message.Content.ReadAsStringAsync();
                     textMessage.Should().Be( "/plop => ?userName (UserName: 'Albert')" );
                     var cookies = s.ReadClientCookies();

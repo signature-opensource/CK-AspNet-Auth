@@ -47,7 +47,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "pass" ) );
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage authBasic = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage authBasic = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     if( allowed )
                     {
                         authBasic.EnsureSuccessStatusCode();
@@ -67,7 +67,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" ) );
                     var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
-                    HttpResponseMessage authFailed = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage authFailed = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
                     var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
                     ShouldBeUnsafeUser( c, idUser, deviceId );
@@ -93,7 +93,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var payload = new JObject(
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", password ) );
-                    HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     deviceId = c.Info.DeviceId;
                     deviceId.Should().NotBeNullOrWhiteSpace();
@@ -107,7 +107,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var payload = new JObject(
                                         new JProperty( "userName", userName ),
                                         new JProperty( "password", "failed" + password ) );
-                    HttpResponseMessage authFailed = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    HttpResponseMessage authFailed = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
                     ShouldBeUnsafeUser( c, idUser, deviceId );
                 }
@@ -135,7 +135,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var param = new JObject( new JProperty( "provider", "Basic" ),
                                              new JProperty( "payload",
                                                     new JObject( new JProperty( "password", "pass" ) ) ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage m = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                     AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
@@ -146,7 +146,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var param = new JObject( new JProperty( "provider", "Basic" ),
                                              new JProperty( "payload",
                                                     new JObject( new JProperty( "userId", "3712" ) ) ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage m = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                     AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
@@ -156,7 +156,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 {
                     var param = new JObject( new JProperty( "provider", "Basic" ),
                                              new JProperty( "payload", null ) );
-                    HttpResponseMessage m = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage m = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                     AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
                     r.ErrorId.Should().Be( "System.ArgumentException" );
@@ -189,7 +189,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                             new JProperty( "password", password ) ) ),
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "good" ) ) ) );
-                    HttpResponseMessage authBasic = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage authBasic = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     deviceId = c.Info.DeviceId;
                     deviceId.Should().NotBeNullOrWhiteSpace();
@@ -208,7 +208,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                             new JProperty( "password", password ) ) ),
                                         new JProperty( "userData",
                                             new JObject( new JProperty( "zone", "<&>vil" ) ) ) );
-                    HttpResponseMessage auth = await server.Client.PostJSON( unsafeDirectLoginUri, param.ToString() );
+                    HttpResponseMessage auth = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil )
                     {
@@ -253,7 +253,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "password", password ),
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "good" ) ) ) );
-                    HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
                     deviceId = c.Info.DeviceId;
                     c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -270,7 +270,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "password", password ),
                                         new JProperty( "userData", new JObject(
                                                 new JProperty( "zone", "<&>vil" ) ) ) );
-                    HttpResponseMessage auth = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+                    HttpResponseMessage auth = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil ) // When userName is "Albert".
                     {

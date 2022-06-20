@@ -54,12 +54,11 @@ namespace CK.AspNet.Auth
             _unsafeDirectLoginAllower = unsafeDirectLoginAllower;
         }
 
-        IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetRequiredService<IActivityMonitor>();
+        static IActivityMonitor GetRequestMonitor( HttpContext c ) => c.RequestServices.GetRequiredService<IActivityMonitor>();
 
         public Task<bool> HandleRequestAsync()
         {
-            PathString remainder;
-            if( Request.Path.StartsWithSegments( Options.EntryPath, out remainder ) )
+            if( Request.Path.StartsWithSegments( Options.EntryPath, out PathString remainder ) )
             {
                 Response.SetNoCacheAndDefaultStatus( StatusCodes.Status404NotFound );
                 if( remainder.StartsWithSegments( _cSegmentPath, StringComparison.Ordinal, out PathString cBased ) )
@@ -340,9 +339,9 @@ namespace CK.AspNet.Auth
                         var userData = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, nameof( ProviderLoginRequest.UserData ) ) ).Value;
                         if( userData is List<(string Key, object Value)> data )
                         {
-                            foreach( var kv in data )
+                            foreach( var (k, v) in data )
                             {
-                                req.UserData.Add( kv.Key, (string)kv.Value );
+                                req.UserData.Add( k, (string)v );
                             }
                         }
                     }

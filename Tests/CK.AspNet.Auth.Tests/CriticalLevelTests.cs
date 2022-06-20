@@ -15,7 +15,7 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( options => options.ExpireTimeSpan = TimeSpan.FromHours( 1 ) ) )
             {
-                var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -37,7 +37,7 @@ namespace CK.AspNet.Auth.Tests
 
             using( var s = new AuthServer( SetOptions ) )
             {
-                var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -58,7 +58,7 @@ namespace CK.AspNet.Auth.Tests
 
             using( var s = new AuthServer( SetOptions ) )
             {
-                var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
@@ -80,7 +80,7 @@ namespace CK.AspNet.Auth.Tests
 
             using( var s = new AuthServer( SetOptions ) )
             {
-                var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -102,7 +102,7 @@ namespace CK.AspNet.Auth.Tests
 
             using( var s = new AuthServer( SetOptions ) )
             {
-                var r = await s.Client.PostJSON( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.Critical );

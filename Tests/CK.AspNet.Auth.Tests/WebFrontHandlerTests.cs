@@ -30,7 +30,7 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer() )
             {
-                HttpResponseMessage response = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage response = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await response.Content.ReadAsStringAsync() );
                 Debug.Assert( c.Info != null );
@@ -52,7 +52,7 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer(configureServices: services => services.Replace<IWebFrontAuthLoginService, NoAuthWebFrontLoginService>() ) )
             {
-                HttpResponseMessage response = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage response = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.NotFound );
             }
         }
@@ -90,7 +90,7 @@ namespace CK.AspNet.Auth.Tests
                 // Request with token: the authentication is based on the token.
                 {
                     s.Client.Token = originalToken;
-                    HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
+                    HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -101,7 +101,7 @@ namespace CK.AspNet.Auth.Tests
                 // Token less request: the authentication is restored from the cookie.
                 {
                     s.Client.Token = null;
-                    HttpResponseMessage tokenLessRefresh = await s.Client.Get( refreshUri );
+                    HttpResponseMessage tokenLessRefresh = await s.Client.GetAsync( refreshUri );
                     tokenLessRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenLessRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -112,7 +112,7 @@ namespace CK.AspNet.Auth.Tests
                 // Request with token and ?schemes query parametrers: we receive the providers.
                 {
                     s.Client.Token = originalToken;
-                    HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri + "?schemes" );
+                    HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri + "?schemes" );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -155,11 +155,11 @@ namespace CK.AspNet.Auth.Tests
                 string originalToken = firstLogin.Token;
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
-                HttpResponseMessage logout = await s.Client.Get( logoutUri );
+                HttpResponseMessage logout = await s.Client.GetAsync( logoutUri );
                 logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
                 s.Client.Token = null;
-                HttpResponseMessage tokenRefresh = await s.Client.Get( refreshUri );
+                HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                 c.Info.Level.Should().Be( AuthLevel.None );
@@ -171,12 +171,12 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer() )
             {
-                HttpResponseMessage response = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}" );
+                HttpResponseMessage response = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) ).Should().HaveCount( 0 );
-                response = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}" );
+                response = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-                response = await s.Client.PostJSON( basicLoginUri, "not a json" );
+                response = await s.Client.PostJSONAsync( basicLoginUri, "not a json" );
                 response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
             }
         }
@@ -187,19 +187,19 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer( opt => opt.CookieMode = rootCookiePath ? AuthenticationCookieMode.RootPath : AuthenticationCookieMode.WebFrontPath ) )
             {
-                HttpResponseMessage auth = await s.Client.PostJSON( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
+                HttpResponseMessage auth = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 var c = RefreshResponse.Parse( s.TypeSystem, await auth.Content.ReadAsStringAsync() );
                 {
                     // With token: it always works.
                     s.Client.Token = c.Token;
-                    HttpResponseMessage req = await s.Client.Get( tokenExplainUri );
+                    HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
                     var tokenClear = await req.Content.ReadAsStringAsync();
                     tokenClear.Should().Contain( "Albert" );
                 }
                 {
                     // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
                     s.Client.Token = null;
-                    HttpResponseMessage req = await s.Client.Get( tokenExplainUri );
+                    HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
                     var tokenClear = await req.Content.ReadAsStringAsync();
                     if( rootCookiePath )
                     {
@@ -265,7 +265,7 @@ namespace CK.AspNet.Auth.Tests
                 while( next > DateTime.UtcNow ) ;
 
                 // Calling token endpoint (like any other endpoint that sollicitates authentication) is enough.
-                HttpResponseMessage req = await s.Client.Get( tokenExplainUri );
+                HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
                 var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
 
                 ((bool)response["rememberMe"]).Should().BeTrue();
@@ -287,16 +287,16 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 // This scheme is not known but the test of the return url is done before.
-                var m = await s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://no.no" ) );
+                var m = await s.Client.GetAsync( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://no.no" ) );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 (await m.Content.ReadAsStringAsync()).Should()
                     .Be( @"{""errorId"":""DisallowedReturnUrl"",""errorText"":""The returnUrl='https://no.no' doesn't start with any of configured AllowedReturnUrls prefixes.""}" );
 
                 // Currently invalid schemes throws (error 500 in real host).
-                await FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) ) )
+                await FluentActions.Awaiting( () => s.Client.GetAsync( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) ) )
                     .Should().ThrowAsync<Exception>();
 
-                await FluentActions.Awaiting( () => s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) ) )
+                await FluentActions.Awaiting( () => s.Client.GetAsync( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) ) )
                     .Should().ThrowAsync<Exception>();
 
             }
@@ -309,7 +309,7 @@ namespace CK.AspNet.Auth.Tests
             using( var s = new AuthServer() )
             {
                 // This scheme is not known but the test of the return url is done before.
-                var m = await s.Client.Get( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://un.reg.ister.ed" ) );
+                var m = await s.Client.GetAsync( AuthServer.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://un.reg.ister.ed" ) );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 (await m.Content.ReadAsStringAsync()).Should()
                     .Be( @"{""errorId"":""DisallowedReturnUrl"",""errorText"":""The returnUrl='https://un.reg.ister.ed' doesn't start with any of configured AllowedReturnUrls prefixes.""}" );

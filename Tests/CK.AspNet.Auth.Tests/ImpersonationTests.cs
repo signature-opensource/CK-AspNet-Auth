@@ -19,11 +19,11 @@ namespace CK.AspNet.Auth.Tests
         {
             using( var s = new AuthServer() )
             {
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
 
                 await s.LoginAlbertViaBasicProviderAsync();
-                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.NotFound );
             }
         }
@@ -35,7 +35,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 await s.LoginAlbertViaBasicProviderAsync();
 
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -57,7 +57,7 @@ namespace CK.AspNet.Auth.Tests
                 // Login Albert.
                 await s.LoginAlbertViaBasicProviderAsync();
                 // ...and impersonate Robert.
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -67,8 +67,8 @@ namespace CK.AspNet.Auth.Tests
 
                 // Impersonating again in Robert: nothing changes.
                 m = byUserId
-                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.User.UserId}"" }}" )
-                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                        ? await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.User.UserId}"" }}" )
+                        : await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 content = await m.Content.ReadAsStringAsync();
                 r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -78,8 +78,8 @@ namespace CK.AspNet.Auth.Tests
 
                 // When Albert impersonates to Albert, the impersonation is cleared.
                 m = byUserId
-                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.ActualUser.UserId}"" }}" )
-                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
+                        ? await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @$"{{""userId"": ""{r.Info.ActualUser.UserId}"" }}" )
+                        : await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
                 m.EnsureSuccessStatusCode();
                 content = await m.Content.ReadAsStringAsync();
                 r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -97,11 +97,11 @@ namespace CK.AspNet.Auth.Tests
                 services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             } ) )
             {
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
                 await s.LoginAlbertViaBasicProviderAsync();
-                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
+                m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -120,7 +120,7 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 await s.LoginAlbertViaBasicProviderAsync();
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userId"": 3 }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -139,10 +139,10 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 await s.LoginAlbertViaBasicProviderAsync();
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userId"": 1e34 }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userId"": 1e34 }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
 
-                m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""kexistepas"" }" );
+                m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""kexistepas"" }" );
                 m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
             }
         }
@@ -163,7 +163,7 @@ namespace CK.AspNet.Auth.Tests
             } ) )
             {
                 await s.LoginAlbertViaBasicProviderAsync();
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, body );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, body );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
             }
         }

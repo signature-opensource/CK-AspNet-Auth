@@ -166,7 +166,7 @@ namespace CK.AspNet.Auth.Tests
                 body += $@", ""userData"": {jsonUserData}";
             }
             body += "}";
-            HttpResponseMessage response = await Client.PostJSON( uri, body );
+            HttpResponseMessage response = await Client.PostJSONAsync( uri, body );
             response.EnsureSuccessStatusCode();
 
             var c = RefreshResponse.Parse( TypeSystem, await response.Content.ReadAsStringAsync() );
@@ -272,7 +272,7 @@ namespace CK.AspNet.Auth.Tests
             else if( withVersion ) url += "?version";
             else if( withSchemes ) url += "?schemes";
 
-            HttpResponseMessage tokenRefresh = await Client.Get( url );
+            HttpResponseMessage tokenRefresh = await Client.GetAsync( url );
             tokenRefresh.EnsureSuccessStatusCode();
             return RefreshResponse.Parse( TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
         }

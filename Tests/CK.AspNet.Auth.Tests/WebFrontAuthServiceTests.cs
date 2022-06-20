@@ -31,7 +31,7 @@ namespace CK.AspNet.Auth.Tests
                 // Login: the 2 cookies are set on .webFront/c/ path.
                 var login = await s.LoginAlbertViaBasicProviderAsync();
                 Debug.Assert( login.Info != null );
-                await s.Client.Get( "/CallChallengeAsync" );
+                await s.Client.GetAsync( "/CallChallengeAsync" );
             }
         }
     }

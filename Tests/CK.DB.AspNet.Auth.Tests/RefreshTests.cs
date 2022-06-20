@@ -88,7 +88,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         static async Task<AuthResponse> ImpersonateAsync( AuthServer server, int idTarget, bool expectedImpersonated )
         {
-            HttpResponseMessage m = await server.Client.PostJSON( impersonateUri, $@"{{ ""userId"": ""{idTarget}"" }}" );
+            HttpResponseMessage m = await server.Client.PostJSONAsync( impersonateUri, $@"{{ ""userId"": ""{idTarget}"" }}" );
             var r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
             r.Info.IsImpersonated.Should().Be( expectedImpersonated );
             return r;
@@ -96,7 +96,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         static async Task<RefreshResponse> RefreshSuccessAsync( AuthServer server, bool callBackend, AuthLevel expectedLevel )
         {
-            HttpResponseMessage m = await server.Client.Get( callBackend ? refreshUri + "?callBackend" : refreshUri );
+            HttpResponseMessage m = await server.Client.GetAsync( callBackend ? refreshUri + "?callBackend" : refreshUri );
             var r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
             r.Info.Level.Should().Be( expectedLevel );
             return r;
@@ -107,7 +107,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var payload = new JObject(
                                 new JProperty( "userName", userName ),
                                 new JProperty( "password", password ) );
-            HttpResponseMessage authBasic = await server.Client.PostJSON( basicLoginUri, payload.ToString() );
+            HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
             var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserId.Should().Be( idAlbert );

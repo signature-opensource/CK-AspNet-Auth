@@ -48,7 +48,7 @@ namespace CK.AspNet.Auth.Tests
                 r2.Info.IsImpersonated.Should().BeTrue();
 
                 // Impersonate to Albert: this clears the impersonation.
-                HttpResponseMessage m = await s.Client.PostJSON( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
+                HttpResponseMessage m = await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @"{ ""userName"": ""Albert"" }" );
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
@@ -105,8 +105,8 @@ namespace CK.AspNet.Auth.Tests
 
                 // When Albert impersonates to Albert, the impersonation is cleared.
                 var m = byUserId
-                        ? await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userId"": ""{imp.Info.ActualUser.UserId}"" }}" )
-                        : await s.Client.PostJSON( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
+                        ? await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @$"{{""userId"": ""{imp.Info.ActualUser.UserId}"" }}" )
+                        : await s.Client.PostJSONAsync( AuthServer.ImpersonateUri, @$"{{""userName"": ""Albert"" }}" );
                 m.EnsureSuccessStatusCode();
                 var content = await m.Content.ReadAsStringAsync();
                 var r = RefreshResponse.Parse( s.TypeSystem, content );
