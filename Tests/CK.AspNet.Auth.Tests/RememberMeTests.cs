@@ -12,12 +12,11 @@ namespace CK.AspNet.Auth.Tests
     [TestFixture]
     public class RememberMeTests
     {
-
         [TestCase( true, false )]
         [TestCase( true, true )]
         [TestCase( false, true )]
         [TestCase( false, false )]
-        public async Task remember_me_sets_appropriate_cookies( bool useGenericWrapper, bool rememberMe )
+        public async Task remember_me_sets_appropriate_cookies_Async( bool useGenericWrapper, bool rememberMe )
         {
             // Note: the SlidingExpiration_works_as_expected_in_bearer_only_mode_by_calling_refresh_endpoint test challenges the
             // None cookie mode and the rememberMe option.

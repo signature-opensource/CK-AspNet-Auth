@@ -59,7 +59,7 @@ namespace CK.AspNet.Auth
         /// <returns>The awaitable.</returns>
         public static Task WebFrontAuthOnRemoteFailureAsync( this RemoteFailureContext f, bool setUnsafeLevel = false, string errorId = "RemoteFailure", string? errorText = null )
         {
-            return OnError( f, f.Properties, setUnsafeLevel, errorId, errorText ?? f.Failure.Message );
+            return OnErrorAsync( f, f.Properties, setUnsafeLevel, errorId, errorText ?? f.Failure.Message );
         }
 
         /// <summary>
@@ -78,16 +78,23 @@ namespace CK.AspNet.Auth
         /// </param>
         /// <param name="errorText">When null, <paramref name="errorId"/> is used.</param>
         /// <returns>The awaitable.</returns>
-        public static Task WebFrontAuthOnAccessDeniedAsync( this AccessDeniedContext d, bool setUnsafeLevel = false, string errorId = "AccessDenied", string? errorText = null )
+        public static Task WebFrontAuthOnAccessDeniedAsync( this AccessDeniedContext d,
+                                                            bool setUnsafeLevel = false,
+                                                            string errorId = "AccessDenied",
+                                                            string? errorText = null )
         {
-            return OnError( d, d.Properties, setUnsafeLevel, errorId, errorText ?? errorId );
+            return OnErrorAsync( d, d.Properties, setUnsafeLevel, errorId, errorText ?? errorId );
         }
 
-        static Task OnError( HandleRequestContext<RemoteAuthenticationOptions> h, AuthenticationProperties properties, bool setUnsafeLevel, string errorId, string errorText )
+        static Task OnErrorAsync( HandleRequestContext<RemoteAuthenticationOptions> h,
+                                  AuthenticationProperties properties,
+                                  bool setUnsafeLevel,
+                                  string errorId,
+                                  string errorText )
         {
             h.HandleResponse();
             var authService = h.HttpContext.RequestServices.GetRequiredService<WebFrontAuthService>();
-            authService.GetWFAData( h.HttpContext, properties, out var fAuth, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
+            authService.GetWFAData( h.HttpContext, properties, out var fAuth, out var impersonateActualUser, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
             if( setUnsafeLevel )
             {
                 fAuth = fAuth.SetUnsafeLevel();

@@ -8,7 +8,6 @@ using CK.Core;
 using CK.DB.Auth;
 using System.Linq;
 using CK.SqlServer;
-using CK.Text;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.DB.AspNet.Auth
@@ -72,7 +71,7 @@ namespace CK.DB.AspNet.Auth
             // In such case, CreateUserLoginResultFromDatabase must not be called but a UserLoginResult must be returned
             // that is based on the current context.InitialAuthentication: in such case, the returned scemes is NOT modified.
             UCLResult result  = await p.CreateOrUpdateUserAsync( ctx, 1, auth.User.UserId, context.Payload, UCLMode.CreateOrUpdate|UCLMode.WithActualLogin );
-            return await _authPackage.CreateUserLoginResultFromDatabase( ctx, context.AuthenticationTypeSystem, result.LoginResult );
+            return await _authPackage.CreateUserLoginResultFromDatabaseAsync( ctx, context.AuthenticationTypeSystem, result.LoginResult );
         }
     }
 }

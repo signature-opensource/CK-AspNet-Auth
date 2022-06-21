@@ -14,13 +14,10 @@ namespace CK.AspNet.Auth
 {
     static class InternalExtensions
     {
-        static public JProperty ToJProperty( this IEnumerable<KeyValuePair< string,StringValues>> @this, string name = "userData" )
+        static public JProperty ToJProperty( this IDictionary<string, string?> @this, string name = "userData" )
         {
             return new JProperty( name,
-                            new JObject( @this.Select( d => new JProperty( d.Key,
-                                                                              d.Value.Count == 1
-                                                                                ? (JToken)d.Value.ToString()
-                                                                                : new JArray( d.Value ) ) ) ) );
+                            new JObject( @this.Select( d => new JProperty( d.Key, (string?)d.Value ) ) ) );
         }
 
         static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
@@ -37,7 +34,7 @@ namespace CK.AspNet.Auth
         /// <param name="this">This request.</param>
         /// <param name="maxLen">The maximal number of characters to read.</param>
         /// <returns>The string or null on error.</returns>
-        static public async Task<string?> TryReadSmallBodyAsString( this HttpRequest @this, int maxLen )
+        static public async Task<string?> TryReadSmallBodyAsStringAsync( this HttpRequest @this, int maxLen )
         {
             using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
             {

@@ -1,6 +1,7 @@
 using CK.Auth;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace CK.AspNet.Auth
@@ -68,6 +69,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets whether the login succeeded.
         /// </summary>
+        [MemberNotNullWhen(true,nameof(UserInfo))]
         public bool IsSuccess => UserInfo != null;
 
         /// <summary>

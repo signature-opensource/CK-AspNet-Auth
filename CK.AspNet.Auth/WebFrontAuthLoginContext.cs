@@ -24,7 +24,8 @@ namespace CK.AspNet.Auth
     /// </summary>
     internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext,
                                               IWebFrontAuthAutoCreateAccountContext,
-                                              IWebFrontAuthAutoBindingAccountContext
+                                              IWebFrontAuthAutoBindingAccountContext,
+                                              IErrorContext
     {
         readonly WebFrontAuthService _authenticationService;
         UserLoginResult? _successfulLogin;
@@ -37,19 +38,19 @@ namespace CK.AspNet.Auth
         // Used for Direct login (post return code).
         int _httpErrorCode;
 
-        internal WebFrontAuthLoginContext( 
-            HttpContext ctx, 
-            WebFrontAuthService authService,
-            IAuthenticationTypeSystem typeSystem,
-            WebFrontAuthLoginMode loginMode,
-            string callingScheme,
-            object payload,
-            AuthenticationProperties? authProps,
-            string? initialScheme, 
-            FrontAuthenticationInfo initialAuth, 
-            string? returnUrl,
-            string? callerOrigin,
-            List<KeyValuePair<string, StringValues>> userData )
+        internal WebFrontAuthLoginContext( HttpContext ctx,
+                                           WebFrontAuthService authService,
+                                           IAuthenticationTypeSystem typeSystem,
+                                           WebFrontAuthLoginMode loginMode,
+                                           string callingScheme,
+                                           object payload,
+                                           AuthenticationProperties? authProps,
+                                           string? initialScheme,
+                                           FrontAuthenticationInfo initialAuth,
+                                           bool impersonateActualUser,
+                                           string? returnUrl,
+                                           string? callerOrigin,
+                                           IDictionary<string, string?> userData )
         {
             Debug.Assert( ctx != null && authService != null && typeSystem != null && !String.IsNullOrWhiteSpace( callingScheme ) && payload != null );
             HttpContext = ctx;
@@ -60,6 +61,8 @@ namespace CK.AspNet.Auth
             Payload = payload;
 
             _initialAuth = initialAuth;
+            ImpersonateActualUser = impersonateActualUser;
+
             // CookieMode == None prevents any RememberMe.
             // And note that when CurrentOptions.UseLongTermCookie is false, we nevertheless allow the "RememberMe" functionality:
             // The cookie will be a non-session one (a regular cookie that will expire according to CurrentOptions.ExpireTimeSpan)
@@ -96,17 +99,21 @@ namespace CK.AspNet.Auth
         public AuthenticationProperties? AuthenticationProperties { get; }
 
         /// <summary>
-        /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
-        /// Null otherwise.
+        /// Gets the return url if '/c/startLogin' has been called with a 'returnUrl' parameter (the "inline login").
         /// </summary>
         public string? ReturnUrl { get; }
 
         /// <summary>
         /// Gets the caller scheme and host.
         /// Not null only if '/c/startLogin' has been called.
-        /// If startLogin has been called without 'callerOrigin' parameter, this defaults to the request's scheme and host.
         /// </summary>
         public string? CallerOrigin { get; }
+
+        /// <summary>
+        /// Gets whether the login wants to keep the previous logged in user as the <see cref="IAuthenticationInfo.ActualUser"/>
+        /// and becomes the <see cref="IAuthenticationInfo.User"/>.
+        /// </summary>
+        public bool ImpersonateActualUser { get; }
 
         /// <summary>
         /// Gets the authentication provider on which .webfront/c/starLogin has been called.
@@ -141,12 +148,9 @@ namespace CK.AspNet.Auth
         public IAuthenticationInfo InitialAuthentication => _initialAuth.Info;
 
         /// <summary>
-        /// Gets the query (for GET) or form (when POST was used) data of the 
-        /// initial .webfront/c/starLogin call as a readonly list.
-        /// This is null when <see cref="LoginMode"/> is <see cref="WebFrontAuthLoginMode.BasicLogin"/>
-        /// or <see cref="WebFrontAuthLoginMode.UnsafeDirectLogin"/>. 
+        /// Gets the user data that follows the process.
         /// </summary>
-        public IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
+        public IDictionary<string, string?> UserData { get; }
 
         /// <summary>
         /// Gets whether SetError or SetSuccessfulLogin methods have been called.
@@ -234,8 +238,8 @@ namespace CK.AspNet.Auth
 
         /// <summary>
         /// Sets a successful login.
-        /// Must be called only if no <see cref="SetError(string, string)"/> or <see cref="SetError(UserLoginResult)"/>
-        /// have been called before.
+        /// Must be called only if <see cref="SetError(string, string)"/> or <see cref="SetError(UserLoginResult)"/>
+        /// have not been called before.
         /// </summary>
         /// <param name="successResult">The result that must be successful.</param>
         public void SetSuccessfulLogin( UserLoginResult successResult )
@@ -253,36 +257,45 @@ namespace CK.AspNet.Auth
                 if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                     || LoginMode == WebFrontAuthLoginMode.BasicLogin )
                 {
-                    return SendDirectAuthenticationError();
+                    return SendDirectAuthenticationErrorAsync();
                 }
-                return SendRemoteAuthenticationError();
+                return SendRemoteAuthenticationErrorAsync();
             }
             Debug.Assert( _successfulLogin != null );
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext, _successfulLogin, CallingScheme, InitialAuthentication, RememberMe );
+            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext,
+                                                                                    _successfulLogin,
+                                                                                    CallingScheme,
+                                                                                    InitialAuthentication,
+                                                                                    RememberMe,
+                                                                                    ImpersonateActualUser );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )
             {
-                return SendDirectAuthenticationSuccess( r );
+                return SendDirectAuthenticationSuccessAsync( r );
             }
-            return SendRemoteAuthenticationSuccess( r );
+            return SendRemoteAuthenticationSuccessAsync( r );
         }
 
-        Task SendDirectAuthenticationSuccess( WebFrontAuthService.LoginResult r )
+        Task SendDirectAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
         {
             if( UserData != null ) r.Response.Add( UserData.ToJProperty() );
             return HttpContext.Response.WriteAsync( r.Response, StatusCodes.Status200OK );
         }
 
-        Task SendDirectAuthenticationError()
+        Task SendDirectAuthenticationErrorAsync()
         {
             Debug.Assert( _errorId != null );
             int code = _httpErrorCode == 0 ? StatusCodes.Status401Unauthorized : _httpErrorCode;
-            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, _initialAuth.SetUnsafeLevel(), _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
+            var newAuth = ImpersonateActualUser
+                            ? _initialAuth
+                            : _initialAuth.SetUnsafeLevel();
+
+            JObject errObj = _authenticationService.CreateErrorAuthResponse( HttpContext, newAuth, _errorId, _errorText, InitialScheme, CallingScheme, UserData, _failedLogin );
             return HttpContext.Response.WriteAsync( errObj, code );
         }
 
-        Task SendRemoteAuthenticationSuccess( WebFrontAuthService.LoginResult r )
+        Task SendRemoteAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
         {
             Debug.Assert( CallerOrigin != null, "/c/startLogin has been called." );
             if( ReturnUrl != null )
@@ -302,12 +315,12 @@ namespace CK.AspNet.Auth
             return HttpContext.Response.WriteWindowPostMessageAsync( r.Response, CallerOrigin );
         }
 
-        Task SendRemoteAuthenticationError()
+        Task SendRemoteAuthenticationErrorAsync()
         {
             Debug.Assert( _errorId != null && _errorText != null );
             return _authenticationService.SendRemoteAuthenticationErrorAsync(
                         HttpContext,
-                        _initialAuth.SetUnsafeLevel(),
+                        ImpersonateActualUser ? _initialAuth : _initialAuth.SetUnsafeLevel(),
                         ReturnUrl,
                         CallerOrigin,
                         _errorId,

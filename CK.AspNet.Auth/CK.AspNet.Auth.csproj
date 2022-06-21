@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\Common\Shared.props" />
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <Description>Implements CK.AspNet.Auth.WebFrontAuthMiddleware CK.AspNet.Auth.WebFrontAuthService abstract base class.</Description>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="$(CKAuthAbstractionsVersion)" />
-    <PackageReference Include="CK.StObj.Model" Version="$(CKStObjVersion)" />
-    <PackageReference Include="CK.AspNet" Version="$(CKAspNetVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="3.1.10" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="2.0.0" />
+    <PackageReference Include="CK.StObj.Model" Version="19.0.0" />
+    <PackageReference Include="CK.AspNet" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="6.0.6" />
   </ItemGroup>
 </Project>

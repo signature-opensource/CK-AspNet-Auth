@@ -137,6 +137,22 @@ export interface IEndPoint {
     readonly disableSsl?: boolean;
 }
 
+/**
+ * Captures the last interaction with the backend.
+ */
+export interface ILastResult {
+
+    /**
+     * Gets the server data that has been sent to the backend and may have been modified. 
+     */
+    serverData?: {[index:string]: string | null};
+
+    /**
+     * Gets the error if any.
+     */
+    error?: IWebFrontAuthError;
+}
+
 export interface IWebFrontAuthError {
     readonly type: string;
     readonly errorId: string;

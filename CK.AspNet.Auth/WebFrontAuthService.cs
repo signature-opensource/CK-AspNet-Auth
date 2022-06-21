@@ -3,20 +3,18 @@ using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -45,6 +43,7 @@ namespace CK.AspNet.Auth
         public string UnsafeCookieName => AuthCookieName + "LT";
 
         internal readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly IReadOnlyList<string> AllowedReturnUrls;
         readonly IWebFrontAuthLoginService _loginService;
 
         readonly IDataProtector _genericProtector;
@@ -71,7 +70,6 @@ namespace CK.AspNet.Auth
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
-        /// <param name="validateAuthenticationInfoService">Optional service that is called each time authentication information is restored.</param>
         public WebFrontAuthService(
             IAuthenticationTypeSystem typeSystem,
             IWebFrontAuthLoginService loginService,
@@ -104,6 +102,7 @@ namespace CK.AspNet.Auth
             CookieMode = initialOptions.CookieMode;
             _cookiePolicy = initialOptions.CookieSecurePolicy;
             AuthCookieName = initialOptions.AuthCookieName;
+            AllowedReturnUrls = initialOptions.AllowedReturnUrls.ToArray();
         }
 
         /// <summary>
@@ -174,27 +173,28 @@ namespace CK.AspNet.Auth
         internal FrontAuthenticationInfo UnprotectAuthenticationInfo( string data )
         {
             Debug.Assert( data != null );
-            return _tokenFormat.Unprotect( data );
+            return _tokenFormat.Unprotect( data )!;
         }
 
-        internal string ProtectExtraData( IEnumerable<KeyValuePair<string, StringValues>> info )
+        internal string ProtectExtraData( IDictionary<string, string?> info )
         {
             Debug.Assert( info != null );
             return _extraDataFormat.Protect( info );
         }
 
-        internal List<KeyValuePair<string, StringValues>> UnprotectExtraData( string data )
+        internal IDictionary<string, string?> UnprotectExtraData( string data )
         {
             Debug.Assert( data != null );
-            return (List<KeyValuePair<string, StringValues>>)_extraDataFormat.Unprotect( data );
+            return _extraDataFormat.Unprotect( data )!;
         }
 
         internal void SetWFAData( AuthenticationProperties p,
                                   FrontAuthenticationInfo fAuth,
+                                  bool impersonateActualUser,
                                   string? initialScheme,
                                   string? callerOrigin,
                                   string? returnUrl,
-                                  IDictionary<string, StringValues> userData )
+                                  IDictionary<string, string?> userData )
         {
             p.Items.Add( "WFA2C", ProtectAuthenticationInfo( fAuth ) );
             if( !String.IsNullOrWhiteSpace( initialScheme ) )
@@ -213,28 +213,34 @@ namespace CK.AspNet.Auth
             {
                 p.Items.Add( "WFA2D", ProtectExtraData( userData ) );
             }
+            if( impersonateActualUser )
+            {
+                p.Items.Add( "WFA2I", "" );
+            }
         }
 
         internal void GetWFAData( HttpContext h,
                                   AuthenticationProperties properties,
                                   out FrontAuthenticationInfo fAuth,
+                                  out bool impersonateActualUser,
                                   out string? initialScheme,
                                   out string? callerOrigin,
                                   out string? returnUrl,
-                                  out List<KeyValuePair<string, StringValues>> userData )
+                                  out IDictionary<string, string?> userData )
         {
             fAuth = GetFrontAuthenticationInfo( h, properties );
             properties.Items.TryGetValue( "WFA2S", out initialScheme );
             properties.Items.TryGetValue( "WFA2O", out callerOrigin );
             properties.Items.TryGetValue( "WFA2R", out returnUrl );
-            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) )
+            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) && sUData != null )
             {
                 userData = UnprotectExtraData( sUData );
             }
             else
             {
-                userData = new List<KeyValuePair<string, StringValues>>();
+                userData = new Dictionary<string, string?>();
             }
+            impersonateActualUser = properties.Items.ContainsKey( "WFA2I" );
         }
 
         internal FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext h, AuthenticationProperties properties )
@@ -243,6 +249,7 @@ namespace CK.AspNet.Auth
             {
                 if( properties.Items.TryGetValue( "WFA2C", out var currentAuth ) )
                 {
+                    Debug.Assert( currentAuth != null );
                     fAuth = UnprotectAuthenticationInfo( currentAuth );
                 }
                 else
@@ -253,6 +260,7 @@ namespace CK.AspNet.Auth
                 }
                 h.Items.Add( typeof( RemoteAuthenticationEventsContextExtensions ), fAuth );
             }
+            Debug.Assert( fAuth != null );  
             return (FrontAuthenticationInfo)fAuth;
         }
 
@@ -522,8 +530,14 @@ namespace CK.AspNet.Auth
         /// The calling scheme is used to set a critical expires depending on <see cref="WebFrontAuthOptions.SchemesCriticalTimeSpan"/>.
         /// </param>
         /// <param name="initial">The <see cref="WebFrontAuthLoginContext.InitialAuthentication"/>.</param>
+        /// <param name="impersonateActualUser">True to impersonate the current actor.</param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c, UserLoginResult u, string callingScheme, IAuthenticationInfo initial, bool rememberMe )
+        internal LoginResult HandleLogin( HttpContext c,
+                                          UserLoginResult u,
+                                          string callingScheme,
+                                          IAuthenticationInfo initial,
+                                          bool rememberMe,
+                                          bool impersonateActualUser )
         {
             string deviceId = initial.DeviceId;
             if( deviceId.Length == 0 ) deviceId = CreateNewDeviceId();
@@ -531,20 +545,34 @@ namespace CK.AspNet.Auth
             if( u.IsSuccess )
             {
                 DateTime expires = DateTime.UtcNow + CurrentOptions.ExpireTimeSpan;
-                DateTime? criticalExpires = null;
-                // Handling Critical level configured for this scheme.
-                IDictionary<string, TimeSpan>? scts = CurrentOptions.SchemesCriticalTimeSpan;
-                if( scts != null
-                    && scts.TryGetValue( callingScheme, out var criticalTimeSpan )
-                    && criticalTimeSpan > TimeSpan.Zero )
+                if( impersonateActualUser
+                    && initial.ActualUser.UserId != 0
+                    && initial.ActualUser.UserId != u.UserInfo.UserId )
                 {
-                    criticalExpires = DateTime.UtcNow + criticalTimeSpan;
-                    if( expires < criticalExpires ) expires = criticalExpires.Value;
+                    // This is where the future IActualAuthentication will clearly be better:
+                    // We will be able to CriticalLevel the User (depending on the CurrentOptions.SchemesCriticalTimeSpan),
+                    // but NOT the ActualUser!
+                    // Since we currently have only one Level, we ignore this for the moment, we just update
+                    // the expiration time.
+                    authInfo = initial.Impersonate( u.UserInfo ).SetExpires( expires );
                 }
-                authInfo = _typeSystem.AuthenticationInfo.Create( u.UserInfo,
-                                                                  expires,
-                                                                  criticalExpires,
-                                                                  deviceId );
+                else
+                {
+                    DateTime? criticalExpires = null;
+                    // Handling Critical level configured for this scheme.
+                    IDictionary<string, TimeSpan>? scts = CurrentOptions.SchemesCriticalTimeSpan;
+                    if( scts != null
+                        && scts.TryGetValue( callingScheme, out var criticalTimeSpan )
+                        && criticalTimeSpan > TimeSpan.Zero )
+                    {
+                        criticalExpires = DateTime.UtcNow + criticalTimeSpan;
+                        if( expires < criticalExpires ) expires = criticalExpires.Value;
+                    }
+                    authInfo = _typeSystem.AuthenticationInfo.Create( u.UserInfo,
+                                                                      expires,
+                                                                      criticalExpires,
+                                                                      deviceId );
+                }
             }
             else
             {
@@ -588,16 +616,16 @@ namespace CK.AspNet.Auth
                                                           string errorText,
                                                           string? initialScheme = null,
                                                           string? callingScheme = null,
-                                                          IEnumerable<KeyValuePair<string, StringValues>>? userData = null,
+                                                          IDictionary<string, string?>? userData = null,
                                                           UserLoginResult? failedLogin = null )
         {
             if( returnUrl != null )
             {
-                Debug.Assert( callerOrigin != null, "Since returnUrl is not null: /c/startLogin has been used." );
+                Debug.Assert( callerOrigin == null, "Since returnUrl is not null: /c/startLogin has been used without callerOrigin." );
                 int idxQuery = returnUrl.IndexOf( '?' );
                 var path = idxQuery > 0
                             ? returnUrl.Substring( 0, idxQuery )
-                            : string.Empty;
+                            : returnUrl;
                 var parameters = idxQuery > 0
                                     ? new QueryString( returnUrl.Substring( idxQuery ) )
                                     : new QueryString();
@@ -627,11 +655,11 @@ namespace CK.AspNet.Auth
                 if( initialScheme != null ) parameters = parameters.Add( "initialScheme", initialScheme );
                 if( callingScheme != null ) parameters = parameters.Add( "callingScheme", callingScheme );
 
-                var caller = new Uri( callerOrigin );
-                var target = new Uri( caller, path + parameters.ToString() );
+                var target = new Uri( path + parameters.ToString() );
                 c.Response.Redirect( target.ToString() );
                 return Task.CompletedTask;
             }
+            Debug.Assert( callerOrigin != null, "Since returnUrl is null /c/startLogin has callerOrigin." );
             JObject errObj = CreateErrorAuthResponse( c, fAuth, errorId, errorText, initialScheme, callingScheme, userData, failedLogin );
             return c.Response.WriteWindowPostMessageAsync( errObj, callerOrigin );
         }
@@ -657,7 +685,7 @@ namespace CK.AspNet.Auth
                                                   string? errorText,
                                                   string? initialScheme,
                                                   string? callingScheme,
-                                                  IEnumerable<KeyValuePair<string, StringValues>>? userData,
+                                                  IDictionary<string, string?>? userData,
                                                   UserLoginResult? failedLogin )
         {
             var response = CreateAuthResponse( c, false, fAuth, failedLogin );
@@ -730,7 +758,7 @@ namespace CK.AspNet.Auth
             if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
             var monitor = GetRequestMonitor( context.HttpContext );
 
-            GetWFAData( context.HttpContext, context.Properties, out var fAuth, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
+            GetWFAData( context.HttpContext, context.Properties, out var fAuth, out var impersonateActualUser, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
 
             string callingScheme = context.Scheme.Name;
             object payload = _loginService.CreatePayload( context.HttpContext, monitor, callingScheme );
@@ -742,21 +770,21 @@ namespace CK.AspNet.Auth
             {
                 returnUrl = context.ReturnUri;
             }
-            var wfaSC = new WebFrontAuthLoginContext(
-                                context.HttpContext,
-                                this,
-                                _typeSystem,
-                                initialScheme != null
-                                    ? WebFrontAuthLoginMode.StartLogin
-                                    : WebFrontAuthLoginMode.None,
-                                callingScheme,
-                                payload,
-                                context.Properties,
-                                initialScheme,
-                                fAuth,
-                                returnUrl,
-                                callerOrigin ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}",
-                                userData );
+            var wfaSC = new WebFrontAuthLoginContext( context.HttpContext,
+                                                      this,
+                                                      _typeSystem,
+                                                      initialScheme != null
+                                                          ? WebFrontAuthLoginMode.StartLogin
+                                                          : WebFrontAuthLoginMode.None,
+                                                      callingScheme,
+                                                      payload,
+                                                      context.Properties,
+                                                      initialScheme,
+                                                      fAuth,
+                                                      impersonateActualUser,
+                                                      returnUrl,
+                                                      callerOrigin,
+                                                      userData );
             // We always handle the response (we skip the final standard SignIn process).
             context.HandleResponse();
 
@@ -766,13 +794,47 @@ namespace CK.AspNet.Auth
             } );
         }
 
-        internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
+        internal void ValidateCoreParameters( IActivityMonitor monitor,
+                                              WebFrontAuthLoginMode mode,
+                                              string? returnUrl, 
+                                              string? callerOrigin, 
+                                              IAuthenticationInfo current, 
+                                              bool impersonateActualUser, 
+                                              IErrorContext ctx )
         {
-            if( ctx.InitialAuthentication.IsImpersonated )
+            if( mode == WebFrontAuthLoginMode.StartLogin )
+            {
+                // ReturnUrl (inline) and CallerOrigin (popup) cannot be both null or both not null.
+                if( (returnUrl != null) == (callerOrigin != null) )
+                {
+                    ctx.SetError( "ReturnXOrCaller", "One and only one among returnUrl and callerOrigin must be specified." );
+                    monitor.Error( WebFrontAuthMonitorTag, "One and only one among returnUrl and callerOrigin must be specified." );
+                    return;
+                }
+            }
+            // Login is always forbidden whenever the user is impersonated unless we must impersonate the actual user.
+            // This check will also be done by WebFrontAuthService.UnifiedLogin.
+            if( current.IsImpersonated && !impersonateActualUser )
             {
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
-                monitor.Error( $"Login is not allowed while impersonation is active: {ctx.InitialAuthentication.ActualUser.UserId} impersonated into {ctx.InitialAuthentication.User.UserId}.", WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active. UserId: {current.User.UserId}, ActualUserId: {current.ActualUser.UserId}." );
+                return;
             }
+            if( returnUrl != null
+                && !AllowedReturnUrls.Any( p => returnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
+            {
+                ctx.SetError( "DisallowedReturnUrl", $"The returnUrl='{returnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
+                monitor.Error( WebFrontAuthMonitorTag, $"ReturnUrl '{returnUrl}' doesn't match: '{AllowedReturnUrls.Concatenate("', '")}'." );
+                return;
+            }
+        }
+
+        internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
+        {
+            // Double check of the core parameters.
+            // If here the check fails, it means that the AuthenticationProperties have been tampered!
+            // This is highly unlikely.
+            ValidateCoreParameters( monitor, ctx.LoginMode, ctx.ReturnUrl, ctx.CallerOrigin, ctx.InitialAuthentication, ctx.ImpersonateActualUser, ctx );
             UserLoginResult? u = null;
             if( !ctx.HasError )
             {
@@ -785,59 +847,70 @@ namespace CK.AspNet.Auth
                 int currentlyLoggedIn = ctx.InitialAuthentication.User.UserId;
                 if( !u.IsSuccess )
                 {
-                    // Login failed because user is not registered: entering the account binding or auto registration features.
-                    if( u.IsUnregisteredUser )
+                    // login failed.
+                    // If the login failed because user is not registered: entering the account binding or auto registration features,
+                    // but only if the login is not trying to impersonate the current actor.
+                    if( ctx.ImpersonateActualUser )
                     {
-                        if( currentlyLoggedIn != 0 )
+                        ctx.SetError( u );
+                        monitor.Error( WebFrontAuthMonitorTag, $"User.LoginError: Login with ImpersonateActualUser (current is {currentlyLoggedIn}) tried '{ctx.CallingScheme}' scheme and failed." );
+                    }
+                    else 
+                    {
+                        if( u.IsUnregisteredUser )
                         {
-                            bool raiseError = true;
-                            if( _autoBindingAccountService != null )
+                            if( currentlyLoggedIn != 0 )
                             {
-                                UserLoginResult uBound = await _autoBindingAccountService.BindAccountAsync( monitor, ctx );
-                                if( uBound != null )
+                                bool raiseError = true;
+                                // A user is currently logged in.
+                                if( _autoBindingAccountService != null )
                                 {
-                                    raiseError = false;
-                                    if( !uBound.IsSuccess ) ctx.SetError( uBound );
-                                    else
+                                    UserLoginResult uBound = await _autoBindingAccountService.BindAccountAsync( monitor, ctx );
+                                    if( uBound != null )
                                     {
-                                        if( u != uBound )
+                                        raiseError = false;
+                                        if( !uBound.IsSuccess ) ctx.SetError( uBound );
+                                        else
                                         {
-                                            u = uBound;
-                                            monitor.Info( $"[Account.AutoBinding] {currentlyLoggedIn} now bound to '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                                            if( u != uBound )
+                                            {
+                                                u = uBound;
+                                                monitor.Info( WebFrontAuthMonitorTag, $"Account.AutoBinding: {currentlyLoggedIn} now bound to '{ctx.CallingScheme}' scheme." );
+                                            }
                                         }
                                     }
                                 }
+                                if( raiseError )
+                                {
+                                    ctx.SetError( "Account.AutoBindingDisabled", "Automatic account binding is disabled." );
+                                    monitor.Error( WebFrontAuthMonitorTag, $"Account.AutoBindingDisabled: {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme." );
+                                }
                             }
-                            if( raiseError )
+                            else
                             {
-                                ctx.SetError( "Account.NoAutoBinding", "Automatic account binding is disabled." );
-                                monitor.Error( $"[Account.NoAutoBinding] {currentlyLoggedIn} tried '{ctx.CallingScheme}' scheme.", WebFrontAuthMonitorTag );
+                                bool raiseError = true;
+                                if( _autoCreateAccountService != null )
+                                {
+                                    UserLoginResult uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
+                                    if( uAuto != null )
+                                    {
+                                        raiseError = false;
+                                        if( !uAuto.IsSuccess ) ctx.SetError( uAuto );
+                                        else u = uAuto;
+                                    }
+                                }
+                                if( raiseError )
+                                {
+                                    ctx.SetError( "User.AutoRegistrationDisabled", "Automatic user registration is disabled." );
+                                    monitor.Error( WebFrontAuthMonitorTag, $"User.AutoRegistrationDisabled: Automatic user registration is disabled (scheme: {ctx.CallingScheme})." );
+                                }
                             }
                         }
                         else
                         {
-                            bool raiseError = true;
-                            if( _autoCreateAccountService != null )
-                            {
-                                UserLoginResult uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
-                                if( uAuto != null )
-                                {
-                                    raiseError = false;
-                                    if( !uAuto.IsSuccess ) ctx.SetError( uAuto );
-                                    else u = uAuto;
-                                }
-                            }
-                            if( raiseError )
-                            {
-                                ctx.SetError( "User.NoAutoRegistration", "Automatic user registration is disabled." );
-                                monitor.Error( $"[User.NoAutoRegistration] Automatic user registration is disabled (scheme: {ctx.CallingScheme}).", WebFrontAuthMonitorTag );
-                            }
+                            ctx.SetError( u );
+                            monitor.Trace( WebFrontAuthMonitorTag, $"User.LoginError: ({u.LoginFailureCode}) {u.LoginFailureReason}" );
                         }
-                    }
-                    else
-                    {
-                        ctx.SetError( u );
-                        monitor.Trace( $"[User.LoginError] ({u.LoginFailureCode}) {u.LoginFailureReason}", WebFrontAuthMonitorTag );
                     }
                 }
                 else
@@ -859,12 +932,12 @@ namespace CK.AspNet.Auth
                 if( !ctx.HasError )
                 {
                     Debug.Assert( u != null && u.UserInfo != null, "Login succeeds." );
-                    if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn )
+                    if( currentlyLoggedIn != 0 && u.UserInfo.UserId != currentlyLoggedIn && !ctx.ImpersonateActualUser )
                     {
-                        monitor.Warn( $"[Account.Relogin] User {currentlyLoggedIn} logged again as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout.", WebFrontAuthMonitorTag );
+                        monitor.Warn( WebFrontAuthMonitorTag, $"Account.Relogin: User {currentlyLoggedIn} logged again as {u.UserInfo.UserId} via '{ctx.CallingScheme}' scheme without logout." );
                     }
                     ctx.SetSuccessfulLogin( u );
-                    monitor.Info( $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'.", WebFrontAuthMonitorTag );
+                    monitor.Info( WebFrontAuthMonitorTag, $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'." );
                 }
             }
             await ctx.SendResponseAsync();
@@ -887,13 +960,13 @@ namespace CK.AspNet.Auth
                 u = await logger( actualLogin );
                 if( u == null )
                 {
-                    monitor.Fatal( "Login service returned a null UserLoginResult.", WebFrontAuthMonitorTag );
+                    monitor.Fatal( WebFrontAuthMonitorTag, "Login service returned a null UserLoginResult." );
                     ctx.SetError( "InternalError", "Login service returned a null UserLoginResult." );
                 }
             }
             catch( Exception ex )
             {
-                monitor.Error( "While calling login service.", ex, WebFrontAuthMonitorTag );
+                monitor.Error( WebFrontAuthMonitorTag, "While calling login service.", ex );
                 ctx.SetError( ex );
             }
             return u;

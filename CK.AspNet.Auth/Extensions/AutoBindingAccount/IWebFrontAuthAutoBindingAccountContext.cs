@@ -31,6 +31,9 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Gets the return url only if '/c/startLogin' has been called with a 'returnUrl' parameter.
         /// Null otherwise.
+        /// <para>
+        /// This url is always checked against the <see cref="WebFrontAuthOptions.AllowedReturnUrls"/> set of allowed prefixes. 
+        /// </para>
         /// </summary>
         string? ReturnUrl { get; }
 
@@ -57,7 +60,7 @@ namespace CK.AspNet.Auth
         /// Gets the query parameters (for GET) or form data (when POST was used) of the 
         /// initial .webfront/c/starLogin call as a readonly list.
         /// </summary>
-        IReadOnlyList<KeyValuePair<string, StringValues>> UserData { get; }
+        IDictionary<string, string?> UserData { get; }
 
         /// <summary>
         /// Gets the authentication information of the current authentication.
