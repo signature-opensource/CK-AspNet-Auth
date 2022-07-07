@@ -15,9 +15,6 @@
     <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="%24StObjGen\" />
     <Folder Include="Logs\" />
   </ItemGroup>
