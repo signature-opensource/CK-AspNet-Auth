@@ -23,10 +23,10 @@ namespace CK.AspNet.Auth
         /// <param name="info">The current user information.</param>
         /// <param name="userId">The target user identifier.</param>
         /// <returns>The target impersonated user or null if impersonation is not possible.</returns>
-        Task<IUserInfo> ImpersonateAsync( HttpContext ctx,
-                                          IActivityMonitor monitor,
-                                          IAuthenticationInfo info,
-                                          int userId );
+        Task<IUserInfo?> ImpersonateAsync( HttpContext ctx,
+                                           IActivityMonitor monitor,
+                                           IAuthenticationInfo info,
+                                           int userId );
 
         /// <summary>
         /// Attempts to impersonate the current user into another one.
@@ -37,9 +37,9 @@ namespace CK.AspNet.Auth
         /// <param name="info">The current user information.</param>
         /// <param name="userName">The target user name.</param>
         /// <returns>The target impersonated user or null if impersonation is not possible.</returns>
-        Task<IUserInfo> ImpersonateAsync( HttpContext ctx,
-                                          IActivityMonitor monitor,
-                                          IAuthenticationInfo info,
-                                          string userName );
+        Task<IUserInfo?> ImpersonateAsync( HttpContext ctx,
+                                           IActivityMonitor monitor,
+                                           IAuthenticationInfo info,
+                                           string userName );
     }
 }
