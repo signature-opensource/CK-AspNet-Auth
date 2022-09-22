@@ -29,6 +29,6 @@ namespace CK.AspNet.Auth
         /// or <see cref="IWebFrontAuthAutoBindingAccountContext.SetError(Exception)"/>.
         /// </para>
         /// </returns>
-        Task<UserLoginResult> BindAccountAsync( IActivityMonitor monitor, IWebFrontAuthAutoBindingAccountContext context );
+        Task<UserLoginResult?> BindAccountAsync( IActivityMonitor monitor, IWebFrontAuthAutoBindingAccountContext context );
     }
 }

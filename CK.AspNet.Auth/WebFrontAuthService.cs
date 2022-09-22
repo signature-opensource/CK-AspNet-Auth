@@ -865,7 +865,7 @@ namespace CK.AspNet.Auth
                                 // A user is currently logged in.
                                 if( _autoBindingAccountService != null )
                                 {
-                                    UserLoginResult uBound = await _autoBindingAccountService.BindAccountAsync( monitor, ctx );
+                                    UserLoginResult? uBound = await _autoBindingAccountService.BindAccountAsync( monitor, ctx );
                                     if( uBound != null )
                                     {
                                         raiseError = false;
@@ -891,7 +891,7 @@ namespace CK.AspNet.Auth
                                 bool raiseError = true;
                                 if( _autoCreateAccountService != null )
                                 {
-                                    UserLoginResult uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
+                                    UserLoginResult? uAuto = await _autoCreateAccountService.CreateAccountAndLoginAsync( monitor, ctx );
                                     if( uAuto != null )
                                     {
                                         raiseError = false;

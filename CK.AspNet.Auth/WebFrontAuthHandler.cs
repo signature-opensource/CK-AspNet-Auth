@@ -232,7 +232,7 @@ namespace CK.AspNet.Auth
         }
 
         #region Unsafe Direct Login
-        class ProviderLoginRequest
+        sealed class ProviderLoginRequest
         {
             public string Scheme { get; set; }
             public object Payload { get; set; }
@@ -438,7 +438,7 @@ namespace CK.AspNet.Auth
                     {
                         if( _impersonationService != null )
                         {
-                            IUserInfo target = userName != null
+                            IUserInfo? target = userName != null
                                                 ? await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userName )
                                                 : await _impersonationService.ImpersonateAsync( Context, monitor, fAuth.Info, userId );
                             if( target != null )

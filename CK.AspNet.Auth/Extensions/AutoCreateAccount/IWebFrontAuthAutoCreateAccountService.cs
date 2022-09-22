@@ -31,6 +31,6 @@ namespace CK.AspNet.Auth
         /// or the error identifier and error text have been set via <see cref="IWebFrontAuthAutoCreateAccountContext.SetError(string, string)"/>
         /// or <see cref="IWebFrontAuthAutoCreateAccountContext.SetError(Exception)"/>.
         /// </returns>
-        Task<UserLoginResult> CreateAccountAndLoginAsync( IActivityMonitor monitor, IWebFrontAuthAutoCreateAccountContext context );
+        Task<UserLoginResult?> CreateAccountAndLoginAsync( IActivityMonitor monitor, IWebFrontAuthAutoCreateAccountContext context );
     }
 }
