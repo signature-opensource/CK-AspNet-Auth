@@ -2,9 +2,11 @@
   "name": "@signature/webfrontauth-ngx",
   "version": "0.0.0-0",
   "peerDependencies": {
-    "@angular/common": "^8.2.5",
-    "@angular/core": "^8.2.5",
-    "@signature/webfrontauth": "file:../../../webfrontauth"
+    "@angular/common": "12.2.13",
+    "@angular/core": "12.2.13",
+    "@signature/webfrontauth": "../../../webfrontauth"
   },
-  "dependencies": {}
+  "dependencies": {
+    "tslib": "^2.0.0"
+  }
 }
