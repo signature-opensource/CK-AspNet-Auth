@@ -2206,10 +2206,10 @@ __metadata:
 
 "@signature/webfrontauth@file:../webfrontauth::locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A.":
   version: 0.0.0-0
-  resolution: "@signature/webfrontauth@file:../webfrontauth#../webfrontauth::hash=bfa554&locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
+  resolution: "@signature/webfrontauth@file:../webfrontauth#../webfrontauth::hash=1a7b89&locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
   dependencies:
     axios: ^1.1.3
-  checksum: f662bedd903b28f66cba9f489eaad2f9942af45ee2b4254c32a2eb315ad2c34975670450a7235ff11865a1ccd589a81e826ad83a9b2d66115d76fef3d68e88ad
+  checksum: 790e65ef240e0a2f841703f7d5d5581cba1068a3780bae11ac44a8834cdf024e6f64e4520c9624cc78586ee1f91228c3ad0cefab2d786b002597e3668a0a8b5b
   languageName: node
   linkType: hard
 
