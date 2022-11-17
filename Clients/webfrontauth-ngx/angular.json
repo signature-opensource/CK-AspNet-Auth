@@ -161,5 +161,8 @@
       }
     }
   },
-  "defaultProject": "webfrontauth-ngx-demo"
+  "defaultProject": "webfrontauth-ngx-demo",
+  "cli": {
+    "analytics": false
+  }
 }
