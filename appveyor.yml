@@ -7,6 +7,7 @@ branches:
   only:
     - master
     - develop
+    - ci-iteration
 environment:
   SqlServer/MasterConnectionString: Server=(local)\SQL2017;Database=master;User ID=sa;Password=Password12!
   CODECAKEBUILDER_SECRET_KEY:
