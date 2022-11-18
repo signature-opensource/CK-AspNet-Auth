@@ -11,6 +11,8 @@ environment:
   SqlServer/MasterConnectionString: Server=(local)\SQL2017;Database=master;User ID=sa;Password=Password12!
   CODECAKEBUILDER_SECRET_KEY:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=
+init:
+  - cmd: set NODE_OPTIONS=--openssl-legacy-provider
 build_script:
   - dotnet run --project CodeCakeBuilder -nointeraction
 test: off

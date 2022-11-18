@@ -2,6 +2,7 @@
   <SimpleGitVersion StartingVersion="16.0.0-alpha">
     <Branches>
       <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
+      <Branch Name="ci-iteration" CIVersionMode="LastReleaseBased" VersionName="citest" />
     </Branches>
   </SimpleGitVersion>
 </RepositoryInfo>
