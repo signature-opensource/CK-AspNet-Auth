@@ -147,14 +147,11 @@
           }
         },
         "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
+          "builder": "@angular-eslint/builder:lint",
           "options": {
-            "tsConfig": [
-              "projects/webfrontauth-ngx/tsconfig.lib.json",
-              "projects/webfrontauth-ngx/tsconfig.spec.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
+            "lintFilePatterns": [
+              "projects/webfrontauth-ngx/**/*.ts",
+              "projects/webfrontauth-ngx/**/*.html"
             ]
           }
         }
