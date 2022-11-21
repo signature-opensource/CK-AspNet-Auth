@@ -741,15 +741,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@signature/webfrontauth@workspace:."
   dependencies:
-    "@types/jest": 29.2.3
-    "@types/tough-cookie": 4.0.2
+    "@types/jest": ^29.2.3
+    "@types/tough-cookie": 2.3.4
     axios: ^1.1.3
-    axios-cookiejar-support: 4.0.3
+    axios-cookiejar-support: 0.5.1
     genversion: ^3.0.1
-    jest: 29.3.1
+    jest: ^29.3.1
     jest-localstorage-mock: ^2.4.22
     rimraf: ^3.0.2
-    tough-cookie: 4.1.2
+    tough-cookie: 2.3.4
     ts-jest: ^29.0.3
     typescript: 4.8.2
   languageName: unknown
@@ -862,7 +862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:29.2.3":
+"@types/jest@npm:^29.2.3":
   version: 29.2.3
   resolution: "@types/jest@npm:29.2.3"
   dependencies:
@@ -893,10 +893,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tough-cookie@npm:4.0.2":
-  version: 4.0.2
-  resolution: "@types/tough-cookie@npm:4.0.2"
-  checksum: e055556ffdaa39ad85ede0af192c93f93f986f4bd9e9426efdc2948e3e2632db3a4a584d4937dbf6d7620527419bc99e6182d3daf2b08685e710f2eda5291905
+"@types/tough-cookie@npm:2.3.4":
+  version: 2.3.4
+  resolution: "@types/tough-cookie@npm:2.3.4"
+  checksum: 859f6e2efff60d861832e60d9367e2677176bd45bc9e98d266fcbf0cf8dd54d95d5afd270997dcf6b87386e2001e8de0fdda037fbb01d6bea8b9a34794547e2a
+  languageName: node
+  linkType: hard
+
+"@types/tough-cookie@npm:^2.3.3":
+  version: 2.3.8
+  resolution: "@types/tough-cookie@npm:2.3.8"
+  checksum: 42a57bee5a6d2abb2c7ec30182f4dc95bcad01b43d6bc000d9fa15ed302d2bff0891beeb665e5c331c98ed80bbd9fffda613388030d45b82514fc3725372899c
   languageName: node
   linkType: hard
 
@@ -1037,15 +1044,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios-cookiejar-support@npm:4.0.3":
-  version: 4.0.3
-  resolution: "axios-cookiejar-support@npm:4.0.3"
+"axios-cookiejar-support@npm:0.5.1":
+  version: 0.5.1
+  resolution: "axios-cookiejar-support@npm:0.5.1"
   dependencies:
-    http-cookie-agent: ^4.0.2
+    "@types/tough-cookie": ^2.3.3
+    is-redirect: ^1.0.0
+    pify: ^4.0.0
+    tough-cookie: ^3.0.1
   peerDependencies:
-    axios: ">=0.20.0"
-    tough-cookie: ">=4.0.0"
-  checksum: e2f678b0a1e03d53dda1ba24fe06baf5929f4e05d5c2eea3922a082bfec7ed4c3036a5cadddda6e1228b8a712351fd1c71435bcf89e657f5a75a6468703e96c1
+    axios: ">=0.16.2"
+  checksum: c7a0b526f39126122b4767d3d21913419feff94499107bb0ccb00484be350f0befe09330e31ed47f95c5c2747ad5c72fbd9bc6a990d5e1c0c2e8e02ffcbac23c
   languageName: node
   linkType: hard
 
@@ -1258,9 +1267,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001400":
-  version: 1.0.30001431
-  resolution: "caniuse-lite@npm:1.0.30001431"
-  checksum: bc8ab55cd194e240152946b54bfaff7456180cc018674fc7ed134f4f502192405f6643f422feaa0a5e7cc02b5bac564cfac7771ac6d29f5d129482fcfe335ba1
+  version: 1.0.30001434
+  resolution: "caniuse-lite@npm:1.0.30001434"
+  checksum: 7c9d2641e8e8f3ddf9af14c4ce47266a9d8fd1fc0243626049ff1b2eca4bf02938ff440813cc3feae3fa8d851ec8d1b9718044340c8d09bb4372d92d4f6b519c
   languageName: node
   linkType: hard
 
@@ -1871,24 +1880,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-cookie-agent@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "http-cookie-agent@npm:4.0.2"
-  dependencies:
-    agent-base: ^6.0.2
-  peerDependencies:
-    deasync: ^0.1.26
-    tough-cookie: ^4.0.0
-    undici: ^5.1.1
-  peerDependenciesMeta:
-    deasync:
-      optional: true
-    undici:
-      optional: true
-  checksum: 864a23c555d9ccaee4b5dbac7e61a05283aae76d1bbce9c809ed79b0e472da7df496200c1129699ec128c67e8dea7b5a663ada1ae8f11e6ec88461c5b21ab3b9
-  languageName: node
-  linkType: hard
-
 "http-proxy-agent@npm:^5.0.0":
   version: 5.0.0
   resolution: "http-proxy-agent@npm:5.0.0"
@@ -1985,6 +1976,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ip-regex@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "ip-regex@npm:2.1.0"
+  checksum: 331d95052aa53ce245745ea0fc3a6a1e2e3c8d6da65fa8ea52bf73768c1b22a9ac50629d1d2b08c04e7b3ac4c21b536693c149ce2c2615ee4796030e5b3e3cba
+  languageName: node
+  linkType: hard
+
 "ip@npm:^2.0.0":
   version: 2.0.0
   resolution: "ip@npm:2.0.0"
@@ -2033,6 +2031,13 @@ __metadata:
   version: 7.0.0
   resolution: "is-number@npm:7.0.0"
   checksum: 456ac6f8e0f3111ed34668a624e45315201dff921e5ac181f8ec24923b99e9f32ca1a194912dc79d539c97d33dba17dc635202ff0b2cf98326f608323276d27a
+  languageName: node
+  linkType: hard
+
+"is-redirect@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "is-redirect@npm:1.0.0"
+  checksum: 25dd3d9943f57ef0f29d28e2d9deda8288e0c7098ddc65abec3364ced9a6491ea06cfaf5110c61fc40ec1fde706b73cee5d171f85278edbf4e409b85725bfea7
   languageName: node
   linkType: hard
 
@@ -2532,7 +2537,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest@npm:29.3.1":
+"jest@npm:^29.3.1":
   version: 29.3.1
   resolution: "jest@npm:29.3.1"
   dependencies:
@@ -3066,6 +3071,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pify@npm:^4.0.0":
+  version: 4.0.1
+  resolution: "pify@npm:4.0.1"
+  checksum: 9c4e34278cb09987685fa5ef81499c82546c033713518f6441778fbec623fc708777fe8ac633097c72d88470d5963094076c7305cafc7ad340aae27cfacd856b
+  languageName: node
+  linkType: hard
+
 "pirates@npm:^4.0.4":
   version: 4.0.5
   resolution: "pirates@npm:4.0.5"
@@ -3127,10 +3139,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"psl@npm:^1.1.33":
+"psl@npm:^1.1.28":
   version: 1.9.0
   resolution: "psl@npm:1.9.0"
   checksum: 20c4277f640c93d393130673f392618e9a8044c6c7bf61c53917a0fddb4952790f5f362c6c730a9c32b124813e173733f9895add8d26f566ed0ea0654b2e711d
+  languageName: node
+  linkType: hard
+
+"punycode@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "punycode@npm:1.4.1"
+  checksum: fa6e698cb53db45e4628559e557ddaf554103d2a96a1d62892c8f4032cd3bc8871796cae9eabc1bc700e2b6677611521ce5bb1d9a27700086039965d0cf34518
   languageName: node
   linkType: hard
 
@@ -3138,13 +3157,6 @@ __metadata:
   version: 2.1.1
   resolution: "punycode@npm:2.1.1"
   checksum: 823bf443c6dd14f669984dea25757b37993f67e8d94698996064035edd43bed8a5a17a9f12e439c2b35df1078c6bec05a6c86e336209eb1061e8025c481168e8
-  languageName: node
-  linkType: hard
-
-"querystringify@npm:^2.1.1":
-  version: 2.2.0
-  resolution: "querystringify@npm:2.2.0"
-  checksum: 5641ea231bad7ef6d64d9998faca95611ed4b11c2591a8cae741e178a974f6a8e0ebde008475259abe1621cb15e692404e6b6626e927f7b849d5c09392604b15
   languageName: node
   linkType: hard
 
@@ -3170,13 +3182,6 @@ __metadata:
   version: 2.1.1
   resolution: "require-directory@npm:2.1.1"
   checksum: fb47e70bf0001fdeabdc0429d431863e9475e7e43ea5f94ad86503d918423c1543361cc5166d713eaa7029dd7a3d34775af04764bebff99ef413111a5af18c80
-  languageName: node
-  linkType: hard
-
-"requires-port@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "requires-port@npm:1.0.0"
-  checksum: eee0e303adffb69be55d1a214e415cf42b7441ae858c76dfc5353148644f6fd6e698926fc4643f510d5c126d12a705e7c8ed7e38061113bdf37547ab356797ff
   languageName: node
   linkType: hard
 
@@ -3537,15 +3542,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tough-cookie@npm:4.1.2":
-  version: 4.1.2
-  resolution: "tough-cookie@npm:4.1.2"
+"tough-cookie@npm:2.3.4":
+  version: 2.3.4
+  resolution: "tough-cookie@npm:2.3.4"
   dependencies:
-    psl: ^1.1.33
+    punycode: ^1.4.1
+  checksum: cbdf41cba6799c0e58c1832247045669ea82157786b22536f59216d06a7f342fab7f17aea65662729afb32cd5f10a843246bd87a0efb30594bbd85a9d9fd9687
+  languageName: node
+  linkType: hard
+
+"tough-cookie@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "tough-cookie@npm:3.0.1"
+  dependencies:
+    ip-regex: ^2.1.0
+    psl: ^1.1.28
     punycode: ^2.1.1
-    universalify: ^0.2.0
-    url-parse: ^1.5.3
-  checksum: a7359e9a3e875121a84d6ba40cc184dec5784af84f67f3a56d1d2ae39b87c0e004e6ba7c7331f9622a7d2c88609032473488b28fe9f59a1fec115674589de39a
+  checksum: 796f6239bce5674a1267b19f41972a2602a2a23715817237b5922b0dc2343512512eea7d41d29210a4ec545f8ef32173bbbf01277dd8ec3ae3841b19cbe69f67
   languageName: node
   linkType: hard
 
@@ -3634,13 +3647,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"universalify@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "universalify@npm:0.2.0"
-  checksum: e86134cb12919d177c2353196a4cc09981524ee87abf621f7bc8d249dbbbebaec5e7d1314b96061497981350df786e4c5128dbf442eba104d6e765bc260678b5
-  languageName: node
-  linkType: hard
-
 "update-browserslist-db@npm:^1.0.9":
   version: 1.0.10
   resolution: "update-browserslist-db@npm:1.0.10"
@@ -3652,16 +3658,6 @@ __metadata:
   bin:
     browserslist-lint: cli.js
   checksum: 12db73b4f63029ac407b153732e7cd69a1ea8206c9100b482b7d12859cd3cd0bc59c602d7ae31e652706189f1acb90d42c53ab24a5ba563ed13aebdddc5561a0
-  languageName: node
-  linkType: hard
-
-"url-parse@npm:^1.5.3":
-  version: 1.5.10
-  resolution: "url-parse@npm:1.5.10"
-  dependencies:
-    querystringify: ^2.1.1
-    requires-port: ^1.0.0
-  checksum: fbdba6b1d83336aca2216bbdc38ba658d9cfb8fc7f665eb8b17852de638ff7d1a162c198a8e4ed66001ddbf6c9888d41e4798912c62b4fd777a31657989f7bdf
   languageName: node
   linkType: hard
 

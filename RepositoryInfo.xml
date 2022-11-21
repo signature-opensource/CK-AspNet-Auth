@@ -2,6 +2,7 @@
   <SimpleGitVersion StartingVersion="16.0.0-alpha">
     <Branches>
       <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
+      <Branch Name="build" CIVersionMode="LastReleaseBased" VersionName="zbuild" />
     </Branches>
   </SimpleGitVersion>
 </RepositoryInfo>

@@ -60,10 +60,9 @@ namespace CodeCake
         {
             if( NpmSolution.UseYarn )
             {
-                GlobalInfo.Cake.Information( $"Running 'yarn install --immutable' in {DirectoryPath.Path}" );
+                GlobalInfo.Cake.Information( $"Running 'yarn install' in {DirectoryPath.Path}" );
                 GlobalInfo.Cake.Yarn().Install( settings =>
                 {
-                    settings.WithArgument( "--immutable" );
                     settings.WorkingDirectory = DirectoryPath.Path;
                 } );
             }
