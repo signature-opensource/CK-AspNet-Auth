@@ -2284,7 +2284,7 @@ __metadata:
     "@angular/platform-browser": ~14.2.11
     "@angular/platform-browser-dynamic": ~14.2.11
     "@angular/router": ~14.2.11
-    "@signature/webfrontauth": "file:../webfrontauth"
+    "@signature/webfrontauth": "portal:../webfrontauth"
     "@types/jasmine": ^4.3.0
     "@types/jasminewd2": ^2.0.10
     "@types/node": ^18.11.9
@@ -2312,14 +2312,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@signature/webfrontauth@file:../webfrontauth::locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A.":
-  version: 0.0.0-0
-  resolution: "@signature/webfrontauth@file:../webfrontauth#../webfrontauth::hash=9380d2&locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
+"@signature/webfrontauth@portal:../webfrontauth::locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@signature/webfrontauth@portal:../webfrontauth::locator=%40signature%2Fwebfrontauth-ngx-demo%40workspace%3A."
   dependencies:
     axios: ^1.1.3
-  checksum: b211ce742b4e8976d18ef0c3337f60dcdb13a57d6083b2f31fd93569e0412d7414c47aae3bf5385cc2cb4c1e8b82aad895f5a6f5aaf47e0c5107091228fbc047
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@socket.io/component-emitter@npm:~3.1.0":
   version: 3.1.0
