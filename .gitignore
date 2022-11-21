@@ -334,13 +334,17 @@ CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
 
-.yarn/
-!.yarn/patches
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
+# Yarn: Zero-Installs
+
+Clients/*/.yarn/*
+!Clients/*/.yarn/cache
+!Clients/*/.yarn/patches
+!Clients/*/.yarn/plugins
+!Clients/*/.yarn/releases
+!Clients/*/.yarn/sdks
+!Clients/*/.yarn/versions
+
+# End Yarn: Zero-Installs
 
 # Using genversion in the package.json build script to generate this file.
 AuthService.version.ts
