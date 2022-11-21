@@ -24,7 +24,7 @@ namespace CodeCake
 
             StandardGlobalInfo globalInfo = CreateStandardGlobalInfo()
                                                 .AddDotnet()
-                                                .AddYarn()
+                                                .AddNPM()
                                                 .SetCIBuildTag();
 
             Task( "Check-Repository" )
@@ -39,7 +39,7 @@ namespace CodeCake
                  {
                      globalInfo.GetDotnetSolution().Clean();
                      Cake.CleanDirectories( globalInfo.ReleasesFolder.ToString() );
-                     globalInfo.GetYarnSolution().Clean();
+                     globalInfo.GetNPMSolution().Clean();
                  } );
 
 
@@ -49,7 +49,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Build();
-                     globalInfo.GetYarnSolution().Build();
+                     globalInfo.GetNPMSolution().Build();
                  } );
 
             Task( "Unit-Testing" )
@@ -62,7 +62,7 @@ namespace CodeCake
                                                             && !p.Path.Segments.Contains( "Integration" ) );
 
                     globalInfo.GetDotnetSolution().Test( testProjects );
-                    globalInfo.GetYarnSolution().Test();
+                    globalInfo.GetNPMSolution().Test();
                 } );
 
             Task( "Create-Packages" )
@@ -71,7 +71,7 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Pack();
-                     globalInfo.GetYarnSolution().RunPack();
+                     globalInfo.GetNPMSolution().RunPack();
                  } );
 
 
