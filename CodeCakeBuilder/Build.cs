@@ -1,12 +1,6 @@
-
-using Cake.Npm.RunScript;
 using Cake.Common.IO;
-using Cake.Common.Tools.DotNetCore;
-using Cake.Common.Tools.DotNetCore.Build;
-using Cake.Common.Tools.NUnit;
 using Cake.Core;
 using Cake.Core.Diagnostics;
-using SimpleGitVersion;
 using System;
 using System.Linq;
 
@@ -15,7 +9,7 @@ namespace CodeCake
     /// <summary>
     /// Standard build "script".
     /// </summary>
-    
+
     public partial class Build : CodeCakeHost
     {
         public Build()
