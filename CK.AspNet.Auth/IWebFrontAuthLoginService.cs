@@ -12,7 +12,11 @@ namespace CK.AspNet.Auth
     /// Interface to the back-end login service.
     /// This is the most important (and required) service that abstracts any persistence layer or gateway that
     /// is able to handle login and authentication.
+    /// <para>
+    /// This service is a endpoint service: it is available only in the global DI context, not from any other endpoints.
+    /// </para>
     /// </summary>
+    [EndpointSingletonService]
     public interface IWebFrontAuthLoginService : ISingletonAutoService
     {
         /// <summary>

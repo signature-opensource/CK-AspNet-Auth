@@ -1,25 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using CK.Auth;
+using CK.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
-using System.Diagnostics;
-using Newtonsoft.Json.Linq;
-using CK.Auth;
-using Microsoft.AspNetCore.Http;
-using CK.Core;
-using System.Linq;
 using Microsoft.Extensions.Primitives;
-using System.Security.Claims;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Authentication;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
-using Microsoft.Extensions.DependencyInjection;
-using System.Xml;
+using System.Linq;
 using System.Reflection;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using ISystemClock = Microsoft.AspNetCore.Authentication.ISystemClock;
-using System.Text.Json;
 
 namespace CK.AspNet.Auth
 {

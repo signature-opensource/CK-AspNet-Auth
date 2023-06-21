@@ -1,7 +1,4 @@
 using CK.Auth;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CK.AspNet.Auth
 {
@@ -46,7 +43,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Immutable setter.
         /// Ensures that <see cref="IAuthenticationInfo.Level"/> is <see cref="AuthLevel.Unsafe"/>.
-        /// The user identifier and name is available (but at the unsafe level), of course, this preserves the device identifier
+        /// The user identifier and name is available (but at the unsafe level). The device identifier
         /// and the <see cref="RememberMe"/> flag are preserved. This is a kind of "soft logout".
         /// </summary>
         /// <returns>The new front authentication info (or this).</returns>

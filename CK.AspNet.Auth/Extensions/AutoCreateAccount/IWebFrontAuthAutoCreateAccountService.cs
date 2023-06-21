@@ -17,6 +17,7 @@ namespace CK.AspNet.Auth
     /// required to actually create the account and log in the user.
     /// Also, not all schemes should be systematically supported, nor all <see cref="IWebFrontAuthAutoCreateAccountContext.LoginMode"/>.
     /// </summary>
+    [EndpointSingletonService]
     public interface IWebFrontAuthAutoCreateAccountService : ISingletonAutoService
     {
         /// <summary>

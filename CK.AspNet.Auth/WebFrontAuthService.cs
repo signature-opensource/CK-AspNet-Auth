@@ -22,8 +22,10 @@ namespace CK.AspNet.Auth
 {
     /// <summary>
     /// Sealed implementation of the actual authentication service.
-    /// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />.
+    /// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />,
+    /// it is not a <see cref="IAutoService"/> and is a endpoint service (available only from the Global DI).
     /// </summary>
+    [EndpointSingletonService]
     public sealed class WebFrontAuthService
     {
         /// <summary>
@@ -42,12 +44,10 @@ namespace CK.AspNet.Auth
         /// </summary>
         public string UnsafeCookieName => AuthCookieName + "LT";
 
-        internal readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly AuthenticationInfoTokenService _tokenService;
         internal readonly IReadOnlyList<string> AllowedReturnUrls;
         readonly IWebFrontAuthLoginService _loginService;
 
-        readonly IDataProtector _genericProtector;
-        readonly FrontAuthenticationInfoSecureDataFormat _tokenFormat;
         readonly FrontAuthenticationInfoSecureDataFormat _cookieFormat;
         readonly ExtraDataSecureDataFormat _extraDataFormat;
         readonly string _cookiePath;
@@ -62,7 +62,7 @@ namespace CK.AspNet.Auth
         /// <summary>
         /// Initializes a new <see cref="WebFrontAuthService"/>.
         /// </summary>
-        /// <param name="typeSystem">A <see cref="IAuthenticationTypeSystem"/>.</param>
+        /// <param name="tokenService">The token service (bound to the <see cref="IAuthenticationTypeSystem"/>).</param>
         /// <param name="loginService">Login service.</param>
         /// <param name="dataProtectionProvider">The data protection provider to use.</param>
         /// <param name="options">Monitored options.</param>
@@ -70,17 +70,16 @@ namespace CK.AspNet.Auth
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
-        public WebFrontAuthService(
-            IAuthenticationTypeSystem typeSystem,
-            IWebFrontAuthLoginService loginService,
-            IDataProtectionProvider dataProtectionProvider,
-            IOptionsMonitor<WebFrontAuthOptions> options,
-            IWebFrontAuthValidateLoginService? validateLoginService = null,
-            IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
-            IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
-            IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
+        public WebFrontAuthService( AuthenticationInfoTokenService tokenService,
+                                    IWebFrontAuthLoginService loginService,
+                                    IDataProtectionProvider dataProtectionProvider,
+                                    IOptionsMonitor<WebFrontAuthOptions> options,
+                                    IWebFrontAuthValidateLoginService? validateLoginService = null,
+                                    IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
+                                    IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
+                                    IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
         {
-            _typeSystem = typeSystem;
+            _tokenService = tokenService;
             _loginService = loginService;
             _options = options;
             _validateLoginService = validateLoginService;
@@ -88,13 +87,9 @@ namespace CK.AspNet.Auth
             _autoBindingAccountService = autoBindingAccountService;
             _dynamicScopeProvider = dynamicScopeProvider;
             WebFrontAuthOptions initialOptions = CurrentOptions;
-            IDataProtector dataProtector = dataProtectionProvider.CreateProtector( typeof( WebFrontAuthHandler ).FullName );
-            var cookieFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Cookie", "v1" ) );
-            var tokenFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, dataProtector.CreateProtector( "Token", "v1" ) );
-            var extraDataFormat = new ExtraDataSecureDataFormat( dataProtector.CreateProtector( "Extra", "v1" ) );
-            _genericProtector = dataProtector;
+            var cookieFormat = new FrontAuthenticationInfoSecureDataFormat( tokenService.TypeSystem, tokenService.BaseDataProtector.CreateProtector( "Cookie", "v1" ) );
+            var extraDataFormat = new ExtraDataSecureDataFormat( tokenService.BaseDataProtector.CreateProtector( "Extra", "v1" ) );
             _cookieFormat = cookieFormat;
-            _tokenFormat = tokenFormat;
             _extraDataFormat = extraDataFormat;
             Debug.Assert( WebFrontAuthHandler._cSegmentPath.ToString() == "/c" );
             _cookiePath = initialOptions.EntryPath + "/c/";
@@ -120,12 +115,11 @@ namespace CK.AspNet.Auth
         /// <param name="c">The HttpContext.</param>
         /// <param name="info">The authentication info for which an authentication token must be obtained.</param>
         /// <returns>The url-safe secured authentication token string.</returns>
+        [Obsolete( "Please use the AuthenticationInfoTokenService.UnsafeCreateAuthenticationToken method instead.", true )]
         public string UnsafeGetAuthenticationToken( HttpContext c, IAuthenticationInfo info )
         {
             if( c == null ) throw new ArgumentNullException( nameof( c ) );
-            if( info == null ) throw new ArgumentNullException( nameof( info ) );
-            info = info.CheckExpiration();
-            return ProtectAuthenticationInfo( new FrontAuthenticationInfo( info, false ) );
+            return _tokenService.UnsafeCreateAuthenticationToken( info );
         }
 
         /// <summary>
@@ -136,11 +130,12 @@ namespace CK.AspNet.Auth
         /// <param name="userName">The user name.</param>
         /// <param name="validity">The validity time span: the shorter the better.</param>
         /// <returns>The url-safe secured authentication token string.</returns>
+        [Obsolete( "Please use the AuthenticationInfoTokenService.UnsafeCreateAuthenticationToken method instead.", true )]
         public string UnsafeGetAuthenticationToken( HttpContext c, int userId, string userName, TimeSpan validity )
         {
             if( userName == null ) throw new ArgumentNullException( nameof( userName ) );
-            var u = _typeSystem.UserInfo.Create( userId, userName );
-            var info = _typeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow.Add( validity ) );
+            var u = _tokenService.TypeSystem.UserInfo.Create( userId, userName );
+            var info = _tokenService.TypeSystem.AuthenticationInfo.Create( u, DateTime.UtcNow.Add( validity ) );
             return UnsafeGetAuthenticationToken( c, info );
         }
 
@@ -164,18 +159,6 @@ namespace CK.AspNet.Auth
             return c.RequestServices.GetService<IActivityMonitor>() ?? new ActivityMonitor( "WebFrontAuthService-Request" );
         }
 
-        internal string ProtectAuthenticationInfo( FrontAuthenticationInfo info )
-        {
-            Debug.Assert( info.Info != null );
-            return _tokenFormat.Protect( info );
-        }
-
-        internal FrontAuthenticationInfo UnprotectAuthenticationInfo( string data )
-        {
-            Debug.Assert( data != null );
-            return _tokenFormat.Unprotect( data )!;
-        }
-
         internal string ProtectExtraData( IDictionary<string, string?> info )
         {
             Debug.Assert( info != null );
@@ -196,7 +179,7 @@ namespace CK.AspNet.Auth
                                   string? returnUrl,
                                   IDictionary<string, string?> userData )
         {
-            p.Items.Add( "WFA2C", ProtectAuthenticationInfo( fAuth ) );
+            p.Items.Add( "WFA2C", _tokenService.ProtectFrontAuthenticationInfo( fAuth ) );
             if( !String.IsNullOrWhiteSpace( initialScheme ) )
             {
                 p.Items.Add( "WFA2S", initialScheme );
@@ -250,13 +233,13 @@ namespace CK.AspNet.Auth
                 if( properties.Items.TryGetValue( "WFA2C", out var currentAuth ) )
                 {
                     Debug.Assert( currentAuth != null );
-                    fAuth = UnprotectAuthenticationInfo( currentAuth );
+                    fAuth = _tokenService.UnprotectFrontAuthenticationInfo( currentAuth );
                 }
                 else
                 {
                     // There should always be the WFA2C key in Authentication properties.
                     // However if it's not here, we return the AuthenticationType.None that has an empty DeviceId.
-                    fAuth = _typeSystem.AuthenticationInfo.None;
+                    fAuth = _tokenService.TypeSystem.AuthenticationInfo.None;
                 }
                 h.Items.Add( typeof( RemoteAuthenticationEventsContextExtensions ), fAuth );
             }
@@ -311,7 +294,7 @@ namespace CK.AspNet.Auth
                 {
                     Debug.Assert( "Bearer ".Length == 7 );
                     string token = authorization.Substring( 7 ).Trim();
-                    fAuth = UnprotectAuthenticationInfo( token );
+                    fAuth = _tokenService.UnprotectFrontAuthenticationInfo( token );
                 }
                 catch( Exception ex )
                 {
@@ -347,9 +330,9 @@ namespace CK.AspNet.Auth
                             IUserInfo? info = null;
                             if( o.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ) )
                             {
-                                info = _typeSystem.UserInfo.FromJObject( o );
+                                info = _tokenService.TypeSystem.UserInfo.FromJObject( o );
                             }
-                            var auth = _typeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
+                            var auth = _tokenService.TypeSystem.AuthenticationInfo.Create( info, deviceId: deviceId );
                             Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
                             // If there is a long term cookie with the user information, then we are "remembering"!
                             // (Checking UserId != 0 here is just to be safe since the anonymous must not "remember").
@@ -372,7 +355,7 @@ namespace CK.AspNet.Auth
                                 && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase )) )
                         {
                             var deviceId = CreateNewDeviceId();
-                            var auth = _typeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
+                            var auth = _tokenService.TypeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
                             fAuth = new FrontAuthenticationInfo( auth, rememberMe: false );
                             Debug.Assert( auth.Level < AuthLevel.Normal, "No expiration is an Unsafe authentication." );
                             // We set the long lived cookie if possible. The device identifier will be de facto persisted.
@@ -380,7 +363,7 @@ namespace CK.AspNet.Auth
                         }
                         else
                         {
-                            fAuth = new FrontAuthenticationInfo( _typeSystem.AuthenticationInfo.None, rememberMe: false );
+                            fAuth = new FrontAuthenticationInfo( _tokenService.TypeSystem.AuthenticationInfo.None, rememberMe: false );
                         }
                     }
                 }
@@ -443,7 +426,7 @@ namespace CK.AspNet.Auth
             if( fAuth.RememberMe && fAuth.Info.UnsafeActualUser.UserId != 0 )
             {
                 // The long term cookie stores the unsafe actual user: we are "remembering" so we don't need to store the RememberMe flag.
-                o = _typeSystem.UserInfo.ToJObject( fAuth.Info.UnsafeActualUser );
+                o = _tokenService.TypeSystem.UserInfo.ToJObject( fAuth.Info.UnsafeActualUser );
             }
             else if( hasDeviceId )
             {
@@ -568,10 +551,10 @@ namespace CK.AspNet.Auth
                         criticalExpires = DateTime.UtcNow + criticalTimeSpan;
                         if( expires < criticalExpires ) expires = criticalExpires.Value;
                     }
-                    authInfo = _typeSystem.AuthenticationInfo.Create( u.UserInfo,
-                                                                      expires,
-                                                                      criticalExpires,
-                                                                      deviceId );
+                    authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( u.UserInfo,
+                                                                                   expires,
+                                                                                   criticalExpires,
+                                                                                   deviceId );
                 }
             }
             else
@@ -581,7 +564,7 @@ namespace CK.AspNet.Auth
                 // On authentication failure, we could have kept the current authentication... But this could be misleading
                 // for clients: a failed login should fall back to the "anonymous".
                 // So we just create a new anonymous authentication (with the same deviceId).
-                authInfo = _typeSystem.AuthenticationInfo.Create( null, deviceId : deviceId );
+                authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( null, deviceId : deviceId );
             }
             var fAuth = new FrontAuthenticationInfo( authInfo, rememberMe );
             c.Items[typeof( FrontAuthenticationInfo )] = fAuth;
@@ -715,8 +698,8 @@ namespace CK.AspNet.Auth
         internal JObject CreateAuthResponse( HttpContext c, bool refreshable, FrontAuthenticationInfo fAuth, UserLoginResult? onLogin = null )
         {
             var j = new JObject(
-                        new JProperty( "info", _typeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
-                        new JProperty( "token", ProtectAuthenticationInfo( fAuth ) ),
+                        new JProperty( "info", _tokenService.TypeSystem.AuthenticationInfo.ToJObject( fAuth.Info ) ),
+                        new JProperty( "token", _tokenService.ProtectFrontAuthenticationInfo( fAuth ) ),
                         new JProperty( "refreshable", refreshable ),
                         new JProperty( "rememberMe", fAuth.RememberMe ) );
             if( onLogin != null && !onLogin.IsSuccess )
@@ -772,7 +755,7 @@ namespace CK.AspNet.Auth
             }
             var wfaSC = new WebFrontAuthLoginContext( context.HttpContext,
                                                       this,
-                                                      _typeSystem,
+                                                      _tokenService.TypeSystem,
                                                       initialScheme != null
                                                           ? WebFrontAuthLoginMode.StartLogin
                                                           : WebFrontAuthLoginMode.None,

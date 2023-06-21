@@ -37,6 +37,7 @@ namespace CK.AspNet.Auth.Tests
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
+                    services.AddSingleton<AuthenticationInfoTokenService>();
                     services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme ).AddWebFrontAuth( options );
                     services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();

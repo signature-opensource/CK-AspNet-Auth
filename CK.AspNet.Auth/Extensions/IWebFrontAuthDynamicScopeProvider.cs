@@ -17,6 +17,7 @@ namespace CK.AspNet.Auth
     /// Others simply returns these informations in the <see cref="TicketReceivedContext"/>.
     /// </para>
     /// </summary>
+    [EndpointSingletonService]
     public interface IWebFrontAuthDynamicScopeProvider : ISingletonAutoService
     {
         /// <summary>

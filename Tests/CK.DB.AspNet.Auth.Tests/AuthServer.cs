@@ -15,9 +15,8 @@ namespace CK.DB.AspNet.Auth.Tests
     {
         IAuthenticationTypeSystem _typeSystem;
 
-        public AuthServer(
-            Action<IServiceCollection> configureServices = null,
-            Action<IApplicationBuilder> configureApplication = null )
+        public AuthServer( Action<IServiceCollection> configureServices = null,
+                           Action<IApplicationBuilder> configureApplication = null )
         {
             var b = CK.AspNet.Tester.WebHostBuilderFactory.Create( null, null,
                 services =>

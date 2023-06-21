@@ -18,11 +18,11 @@ namespace CK.AspNet.Auth
     {
         class Serializer : IDataSerializer<IDictionary<string, string?>>
         {
-            public IDictionary<string, string?> Deserialize(byte[] data)
+            public IDictionary<string, string?> Deserialize( byte[] data )
             {
                 var result = new Dictionary<string, string?>();
-                using (var s = new MemoryStream(data))
-                using (var r = new CKBinaryReader(s))
+                using( var s = Util.RecyclableStreamManager.GetStream( data ) )
+                using( var r = new CKBinaryReader( s ) )
                 {
                     int c = r.ReadNonNegativeSmallInt32();
                     while( --c >= 0 )
@@ -32,10 +32,11 @@ namespace CK.AspNet.Auth
                     return result;
                 }
             }
+
             public byte[] Serialize( IDictionary<string, string?> model )
             {
-                using (var s = new MemoryStream())
-                using (var w = new CKBinaryWriter(s))
+                using( var s = Util.RecyclableStreamManager.GetStream() )
+                using( var w = new CKBinaryWriter( s ) )
                 {
                     w.WriteNonNegativeSmallInt32( model.Count );
                     foreach( var k in model )
