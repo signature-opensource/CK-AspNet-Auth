@@ -198,7 +198,7 @@ namespace CK.AspNet.Auth
             // RememberMe defaults to false.
             if( rememberMe != null )
             {
-                fAuthCurrent.SetRememberMe( rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase ) );
+                fAuthCurrent = fAuthCurrent.SetRememberMe( rememberMe == "1" || rememberMe.Equals( "true", StringComparison.OrdinalIgnoreCase ) );
             }
 
             bool impersonateActualUser = sImpersonateActualUser != null && (sImpersonateActualUser == "1" || sImpersonateActualUser.Equals( "true", StringComparison.OrdinalIgnoreCase ));

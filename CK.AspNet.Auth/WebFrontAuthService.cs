@@ -64,7 +64,6 @@ namespace CK.AspNet.Auth
         /// </summary>
         /// <param name="tokenService">The token service (bound to the <see cref="IAuthenticationTypeSystem"/>).</param>
         /// <param name="loginService">Login service.</param>
-        /// <param name="dataProtectionProvider">The data protection provider to use.</param>
         /// <param name="options">Monitored options.</param>
         /// <param name="validateLoginService">Optional service that validates logins.</param>
         /// <param name="autoCreateAccountService">Optional service that enables account creation.</param>
@@ -72,7 +71,6 @@ namespace CK.AspNet.Auth
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
         public WebFrontAuthService( AuthenticationInfoTokenService tokenService,
                                     IWebFrontAuthLoginService loginService,
-                                    IDataProtectionProvider dataProtectionProvider,
                                     IOptionsMonitor<WebFrontAuthOptions> options,
                                     IWebFrontAuthValidateLoginService? validateLoginService = null,
                                     IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
