@@ -114,7 +114,7 @@ namespace CK.AspNet.Auth
                 monitor ??= GetRequestMonitor( Context );
                 fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, monitor, fAuth.Info, newExpires ) );
             }
-            JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ), monitor );
+            JObject response = await GetRefreshResponseAndSetCookiesAsync( monitor, fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
             return await WriteResponseAsync( response );
         }
 
@@ -122,17 +122,17 @@ namespace CK.AspNet.Auth
         /// Applies the <see cref="WebFrontAuthOptions.SlidingExpirationTime"/> (if not 0), handles the <paramref name="addSchemes"/>
         /// and <paramref name="addVersion"/> and sets the cookies.
         /// </summary>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <param name="fAuth">The authentication.</param>
         /// <param name="addSchemes">Whether authentications schemes must be returned.</param>
         /// <param name="addVersion">Whether this assembly's version should be returned.</param>
-        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>The JSON object.</returns>
         async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync
         (
+            IActivityMonitor? monitor,
             FrontAuthenticationInfo fAuth,
             bool addSchemes,
-            bool addVersion,
-            IActivityMonitor? monitor
+            bool addVersion
         )
         {
             var authInfo = fAuth.Info;
@@ -142,7 +142,7 @@ namespace CK.AspNet.Auth
             (
                 authInfo.Level                >= AuthLevel.Normal
              && Options.SlidingExpirationTime > TimeSpan.Zero
-             && ShouldSlideExpiration( authInfo, monitor )
+             && ShouldSlideExpiration( monitor, authInfo )
             )
             {
                 Debug.Assert( authInfo.Expires != null );
@@ -183,10 +183,10 @@ namespace CK.AspNet.Auth
         /// Determine if the expiration time should be refreshed according to <see cref="WebFrontAuthOptions.SlidingExpirationTime"/>
         /// and <see cref="WebFrontAuthOptions.SlidingExpirationRefreshLimit"/>.
         /// </summary>
-        /// <param name="authInfo">The authentication info.</param>
         /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
+        /// <param name="authInfo">The authentication info.</param>
         /// <returns>True if the expiration time should be refreshed.</returns>
-        private bool ShouldSlideExpiration( IAuthenticationInfo authInfo, IActivityMonitor? monitor )
+        private bool ShouldSlideExpiration( IActivityMonitor? monitor, IAuthenticationInfo authInfo )
         {
             Debug.Assert( authInfo.Expires != null );
 
@@ -499,7 +499,7 @@ namespace CK.AspNet.Auth
                     }
                     if( Response.StatusCode == StatusCodes.Status200OK )
                     {
-                        await Response.WriteAsync( await GetRefreshResponseAndSetCookiesAsync( fAuth, addSchemes: false, addVersion: false, monitor ) );
+                        await Response.WriteAsync( await GetRefreshResponseAndSetCookiesAsync( monitor, fAuth, addSchemes: false, addVersion: false ) );
                     }
                 }
             }
