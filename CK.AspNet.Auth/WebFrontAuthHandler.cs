@@ -114,7 +114,7 @@ namespace CK.AspNet.Auth
                 monitor ??= GetRequestMonitor( Context );
                 fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, monitor, fAuth.Info, newExpires ) );
             }
-            JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
+            JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ), monitor );
             return await WriteResponseAsync( response );
         }
 
@@ -125,14 +125,28 @@ namespace CK.AspNet.Auth
         /// <param name="fAuth">The authentication.</param>
         /// <param name="addSchemes">Whether authentications schemes must be returned.</param>
         /// <param name="addVersion">Whether this assembly's version should be returned.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
         /// <returns>The JSON object.</returns>
-        async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
+        async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync
+        (
+            FrontAuthenticationInfo fAuth,
+            bool addSchemes,
+            bool addVersion,
+            IActivityMonitor? monitor
+        )
         {
             var authInfo = fAuth.Info;
             bool refreshable = false;
-            if( authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero )
+
+            if
+            (
+                authInfo.Level                >= AuthLevel.Normal
+             && Options.SlidingExpirationTime > TimeSpan.Zero
+             && ShouldSlideExpiration( authInfo, monitor )
+            )
             {
                 Debug.Assert( authInfo.Expires != null );
+
                 refreshable = true;
                 DateTime newExp = DateTime.UtcNow + Options.SlidingExpirationTime;
                 if( newExp > authInfo.Expires.Value )
@@ -140,7 +154,9 @@ namespace CK.AspNet.Auth
                     fAuth = fAuth.SetInfo( authInfo.SetExpires( newExp ) );
                 }
             }
+
             JObject response = _authService.CreateAuthResponse( Context, refreshable, fAuth );
+
             if( addSchemes )
             {
                 IEnumerable<string>? list = Options.AvailableSchemes;
@@ -156,9 +172,44 @@ namespace CK.AspNet.Auth
                 }
                 response.Add( "schemes", new JArray( list ) );
             }
+
             if( addVersion ) response.Add( "version", _version.ToString() );
             _authService.SetCookies( Context, fAuth );
+
             return response;
+        }
+
+        /// <summary>
+        /// Determine if the expiration time should be refreshed according to <see cref="WebFrontAuthOptions.SlidingExpirationTime"/>
+        /// and <see cref="WebFrontAuthOptions.SlidingExpirationRefreshLimit"/>.
+        /// </summary>
+        /// <param name="authInfo">The authentication info.</param>
+        /// <param name="monitor">The request monitor if it's available. Will be obtained if required.</param>
+        /// <returns>True if the expiration time should be refreshed.</returns>
+        private bool ShouldSlideExpiration( IAuthenticationInfo authInfo, IActivityMonitor? monitor )
+        {
+            Debug.Assert( authInfo.Expires != null );
+
+            if( !Options.SlidingExpirationRefreshLimit ) return true;
+
+            if( Options.SlidingExpirationTime != Options.ExpireTimeSpan )
+            {
+                monitor ??= GetRequestMonitor( Context );
+                monitor.Warn
+                (
+                    $"{nameof( Options.SlidingExpirationTime )} should be equal to {nameof( Options.ExpireTimeSpan )}. "
+                  + $"Ignoring {nameof( Options.SlidingExpirationRefreshLimit )}."
+                );
+
+                return true;
+            }
+
+            var halvedExpirationTime = Options.ExpireTimeSpan / 2;
+            var currentUtc = Clock.UtcNow;
+            var expiresUtc = authInfo.Expires.Value;
+            var expiresIn = expiresUtc.Subtract( currentUtc.DateTime );
+
+            return expiresIn < halvedExpirationTime;
         }
 
         async Task<bool> HandleLogoutAsync()
@@ -204,7 +255,7 @@ namespace CK.AspNet.Auth
             bool impersonateActualUser = sImpersonateActualUser != null && (sImpersonateActualUser == "1" || sImpersonateActualUser.Equals( "true", StringComparison.OrdinalIgnoreCase ));
 
             var startContext = new WebFrontAuthStartLoginContext( Context, _authService, scheme, fAuthCurrent, impersonateActualUser, returnUrl, callerOrigin );
-            
+
             startContext.ValidateStartLoginRequest( monitor, userData );
             if( !startContext.HasError )
             {
@@ -303,11 +354,11 @@ namespace CK.AspNet.Auth
 
                 //}
                 // By using our poor StringMatcher here, we parse the JSON
-                // to basic List<KeyValuePair<string, object>> because 
+                // to basic List<KeyValuePair<string, object>> because
                 // JObject are IEnumerable<KeyValuePair<string, JToken>> and
-                // KeyValuePair is not covariant. Moreover JToken is not easily 
+                // KeyValuePair is not covariant. Moreover JToken is not easily
                 // convertible (to basic types) without using the JToken type.
-                // A dependency on NewtonSoft.Json may not be suitable for some 
+                // A dependency on NewtonSoft.Json may not be suitable for some
                 // providers.
 
 
@@ -448,7 +499,7 @@ namespace CK.AspNet.Auth
                     }
                     if( Response.StatusCode == StatusCodes.Status200OK )
                     {
-                        await Response.WriteAsync( await GetRefreshResponseAndSetCookiesAsync( fAuth, addSchemes: false, addVersion: false ) );
+                        await Response.WriteAsync( await GetRefreshResponseAndSetCookiesAsync( fAuth, addSchemes: false, addVersion: false, monitor ) );
                     }
                 }
             }
@@ -502,7 +553,7 @@ namespace CK.AspNet.Auth
             if( fAuth.Info == null )
             {
                 return Task.FromResult( AuthenticateResult.Fail( "No current Authentication." ) );
-            }           
+            }
             var principal = new ClaimsPrincipal();
             principal.AddIdentity( _typeSystem.AuthenticationInfo.ToClaimsIdentity( fAuth.Info, userInfoOnly: !Options.UseFullClaimsPrincipalOnAuthenticate ) );
             var ticket = new AuthenticationTicket( principal, new AuthenticationProperties(), Scheme.Name );

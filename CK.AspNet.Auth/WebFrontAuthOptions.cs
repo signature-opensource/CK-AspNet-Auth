@@ -143,6 +143,15 @@ namespace CK.AspNet.Auth
         public TimeSpan SlidingExpirationTime { get; set; }
 
         /// <summary>
+        /// When set to true and <see cref="SlidingExpirationTime"/> set to other than <see cref="TimeSpan.Zero"/>,
+        /// prevent the expiration time to be renew before the current expiration is halved. This prevent a behavior
+        /// where the cookie would be modified on each refresh call. It can be mandatory when working with
+        /// AntiForgeryToken.
+        /// You should set the same <see cref="SlidingExpirationTime"/> and <see cref="ExpireTimeSpan"/>.
+        /// </summary>
+        public bool SlidingExpirationRefreshLimit { get; set; }
+
+        /// <summary>
         /// Gets or sets the http header name. Defaults to "Authorization".
         /// This cannot be changed dynamically.
         /// </summary>
