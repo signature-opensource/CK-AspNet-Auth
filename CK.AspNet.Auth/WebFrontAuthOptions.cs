@@ -148,6 +148,7 @@ namespace CK.AspNet.Auth
         /// where the cookie would be modified on each refresh call. It can be mandatory when working with
         /// AntiForgeryToken.
         /// You should set the same <see cref="SlidingExpirationTime"/> and <see cref="ExpireTimeSpan"/>.
+        /// This behavior mimic CookieAuthenticationOptions.SlidingExpiration : https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.cookies.cookieauthenticationoptions.slidingexpiration?view=aspnetcore-6.0.
         /// </summary>
         public bool SlidingExpirationRefreshLimit { get; set; }
 
