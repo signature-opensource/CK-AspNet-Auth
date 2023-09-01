@@ -23,7 +23,7 @@ namespace CK.AspNet.Auth.Tests
         const string unsafeDirectLoginUri = "/.webfront/c/unsafeDirectLogin";
         const string refreshUri = "/.webfront/c/refresh";
         const string logoutUri = "/.webfront/c/logout";
-        const string tokenExplainUri = "/.webfront/token";
+        private const string _tokenExplainUri = "/.webfront/token";
 
         [Test]
         public async Task a_successful_basic_login_returns_valid_info_and_token_Async()
@@ -153,7 +153,7 @@ namespace CK.AspNet.Auth.Tests
                 var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
                 string originalToken = firstLogin.Token;
-                // Logout 
+                // Logout
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.GetAsync( logoutUri );
                 logout.EnsureSuccessStatusCode();
@@ -192,14 +192,14 @@ namespace CK.AspNet.Auth.Tests
                 {
                     // With token: it always works.
                     s.Client.Token = c.Token;
-                    HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
+                    HttpResponseMessage req = await s.Client.GetAsync( _tokenExplainUri );
                     var tokenClear = await req.Content.ReadAsStringAsync();
                     tokenClear.Should().Contain( "Albert" );
                 }
                 {
                     // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
                     s.Client.Token = null;
-                    HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
+                    HttpResponseMessage req = await s.Client.GetAsync( _tokenExplainUri );
                     var tokenClear = await req.Content.ReadAsStringAsync();
                     if( rootCookiePath )
                     {
@@ -250,32 +250,185 @@ namespace CK.AspNet.Auth.Tests
         [Test]
         public async Task SlidingExpiration_works_as_expected_in_rooted_Cookie_mode_where_any_request_can_do_the_job_Async()
         {
-            using( var s = new AuthServer( opt =>
-            {
-                opt.CookieMode = AuthenticationCookieMode.RootPath;
-                opt.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
-                opt.SlidingExpirationTime = TimeSpan.FromSeconds( 10 );
-            } ) )
+            using( var s = new AuthServer
+                  (
+                      opt =>
+                      {
+                          opt.CookieMode = AuthenticationCookieMode.RootPath;
+                          opt.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
+                          opt.SlidingExpirationTime = TimeSpan.FromSeconds( 10 );
+                      }
+                  ) )
             {
                 // This test is far from perfect but does the job without clock injection.
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync();
-                DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
+                DateTime expCookie1 = s.Client.Cookies.GetCookies
+                ( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
                 expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
 
                 // Calling token endpoint (like any other endpoint that sollicitates authentication) is enough.
-                HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
+                HttpResponseMessage req = await s.Client.GetAsync( _tokenExplainUri );
                 var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
 
                 ((bool)response["rememberMe"]).Should().BeTrue();
                 IAuthenticationInfo refresh = s.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
 
-                refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
+                refresh.Expires.Value.Should().BeAfter
+                ( auth.Info.Expires.Value, "Token life time has been increased." );
 
-                DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
+                DateTime expCookie2 = s.Client.Cookies.GetCookies
+                ( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
                 expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
             }
+        }
+
+        [Test]
+        public async Task SlidingExpiration_with_SlidingExpirationRefreshLimit_should_refresh_when_cookie_lifetime_is_on_its_second_half_Async()
+        {
+            using var authServer = new AuthServer
+            (
+                options =>
+                {
+                    options.CookieMode = AuthenticationCookieMode.RootPath;
+                    options.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
+                    options.SlidingExpirationTime = TimeSpan.FromSeconds( 2.0 );
+                    options.SlidingExpirationRefreshLimit = true;
+                }
+            );
+
+            var auth = await authServer.LoginAlbertViaBasicProviderAsync();
+
+            var expirationCookie1 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+            Debug.Assert( auth.Info         != null, "auth.Info != null" );
+            Debug.Assert( auth.Info.Expires != null, "auth.Info.Expires != null" );
+
+            expirationCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+
+            // The lifetime of the cookie is 2s. Here we wait until the cookie still has 0.9s lifetime.
+            // It means after the wait, the cookie is on its second halve of life.
+            var next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 0.9 );
+            while( next > DateTime.UtcNow ) { }
+
+            // Calling token endpoint (like any other endpoint that requests authentication) is enough.
+            var req = await authServer.Client.GetAsync( _tokenExplainUri );
+            var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
+            ((bool)response["rememberMe"]).Should().BeTrue();
+
+            var refresh = authServer.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
+            Debug.Assert( refresh         != null, nameof( refresh ) + " != null" );
+            Debug.Assert( refresh.Expires != null, "refresh.Expires != null" );
+
+            // Since we requested a refresh on the second half on the cookie lifetime, the lifetime is expanded.
+            refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
+
+            var expirationCookie2 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+
+            expirationCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+        }
+
+        [Test]
+        public async Task SlidingExpiration_with_SlidingExpirationRefreshLimit_should_not_refresh_when_cookie_lifetime_is_on_its_first_half_Async()
+        {
+            using var authServer = new AuthServer
+            (
+                options =>
+                {
+                    options.CookieMode = AuthenticationCookieMode.RootPath;
+                    options.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
+                    options.SlidingExpirationTime = TimeSpan.FromSeconds( 2.0 );
+                    options.SlidingExpirationRefreshLimit = true;
+                }
+            );
+
+            var auth = await authServer.LoginAlbertViaBasicProviderAsync();
+
+            var expirationCookie1 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+            Debug.Assert( auth.Info         != null, "auth.Info != null" );
+            Debug.Assert( auth.Info.Expires != null, "auth.Info.Expires != null" );
+
+            expirationCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+
+            // The lifetime of the cookie is 2s. Here we wait until the cookie still has 1.1s lifetime.
+            // It means after the wait, the cookie is on its first halve of life.
+            var next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.1 );
+            while( next > DateTime.UtcNow ) { }
+
+            // Calling token endpoint (like any other endpoint that requests authentication) is enough.
+            var req = await authServer.Client.GetAsync( _tokenExplainUri );
+            var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
+            ((bool)response["rememberMe"]).Should().BeTrue();
+
+            var refresh = authServer.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
+            Debug.Assert( refresh         != null, nameof( refresh ) + " != null" );
+            Debug.Assert( refresh.Expires != null, "refresh.Expires != null" );
+
+            // Since we requested a refresh on the first half on the cookie lifetime, the lifetime is not expanded.
+            refresh.Expires.Value.Should().BeCloseTo( auth.Info.Expires.Value, TimeSpan.FromSeconds( 1 ) );
+
+            var expirationCookie2 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+
+            expirationCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+        }
+
+        [Test]
+        public async Task SlidingExpiration_with_SlidingExpirationRefreshLimit_should_refresh_when_cookie_lifetime_is_on_its_first_half_but_ExpireTimeSpan_and_SlidingExpirationTime_are_different_Async()
+        {
+            using var authServer = new AuthServer
+            (
+                options =>
+                {
+                    options.CookieMode = AuthenticationCookieMode.RootPath;
+                    options.ExpireTimeSpan = TimeSpan.FromSeconds( 2.0 );
+                    options.SlidingExpirationTime = TimeSpan.FromSeconds( 3.0 );
+                    options.SlidingExpirationRefreshLimit = true;
+                }
+            );
+
+            var auth = await authServer.LoginAlbertViaBasicProviderAsync();
+
+            var expirationCookie1 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+            Debug.Assert( auth.Info         != null, "auth.Info != null" );
+            Debug.Assert( auth.Info.Expires != null, "auth.Info.Expires != null" );
+
+            expirationCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+
+            // The lifetime of the cookie is 2s. Here we wait until the cookie still has 1.1s lifetime.
+            // It means after the wait, the cookie is on its first halve of life.
+            var next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.1 );
+            while( next > DateTime.UtcNow ) { }
+
+            // Calling token endpoint (like any other endpoint that requests authentication) is enough.
+            var req = await authServer.Client.GetAsync( _tokenExplainUri );
+            var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
+            ((bool)response["rememberMe"]).Should().BeTrue();
+
+            var refresh = authServer.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
+            Debug.Assert( refresh         != null, nameof( refresh ) + " != null" );
+            Debug.Assert( refresh.Expires != null, "refresh.Expires != null" );
+
+            // Since we requested a refresh on the first half on the cookie lifetime, the lifetime should not be expanded BUT,
+            // AuthServer is configured with different values for ExpireTimeSpan and SlidingExpireTime,
+            // then the behavior of SlidingExpirationRefreshLimit is ignored.
+            // Hence, the refresh happen and the life time is expanded.
+            refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
+
+            var expirationCookie2 = authServer.Client.Cookies
+                                              .GetCookies( authServer.Server.BaseAddress )[".webFront"]!
+                                              .Expires.ToUniversalTime();
+
+            expirationCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
         }
 
         [Test]
