@@ -5,8 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="4.0.1--0024-develop" />
-    <PackageReference Include="CK.StObj.Model" Version="23.0.1--0136-develop" />
-    <PackageReference Include="CK.AspNet" Version="11.0.1--0033-develop" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="4.0.1--0026-develop" />
+    <PackageReference Include="CK.StObj.Model" Version="23.0.1--0138-develop" />
+    <PackageReference Include="CK.AspNet" Version="11.0.1--0035-develop" />
   </ItemGroup>
 </Project>
