@@ -72,7 +72,7 @@ namespace CK.AspNet.Auth
         /// from <see cref="IWebFrontAuthAutoBindingAccountService.BindAccountAsync"/> method.
         /// </summary>
         /// <param name="errorId">Error identifier (a dotted identifier string). Must not be null or empty.</param>
-        /// <param name="errorText">The optional error message in clear text (typically in english).</param>
+        /// <param name="errorText">The optional error message in clear text (typically in English).</param>
         /// <returns>Always null.</returns>
         UserLoginResult? SetError( string errorId, string? errorText = null );
 

@@ -1,8 +1,8 @@
 using CK.Auth;
+using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -10,7 +10,7 @@ using System.Text;
 namespace CK.AspNet.Auth
 {
     /// <summary>
-    /// Secure <see cref="IAuthenticationInfo"/> data, using a binary serialization 
+    /// Secure <see cref="FrontAuthenticationInfo"/> data, using a binary serialization 
     /// thanks to <see cref="IAuthenticationTypeSystem"/>.
     /// </summary>
     class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
@@ -26,7 +26,7 @@ namespace CK.AspNet.Auth
 
             public FrontAuthenticationInfo Deserialize( byte[] data )
             {
-                using( var s = new MemoryStream( data ) )
+                using( var s = Util.RecyclableStreamManager.GetStream( data ) )
                 using( var r = new BinaryReader( s ) )
                 {
                     return new FrontAuthenticationInfo( _t.Read( r )!, r.ReadBoolean() );
@@ -35,7 +35,7 @@ namespace CK.AspNet.Auth
 
             public byte[] Serialize( FrontAuthenticationInfo model )
             {
-                using( var s = new MemoryStream() )
+                using( var s = Util.RecyclableStreamManager.GetStream() )
                 using( var w = new BinaryWriter( s ) )
                 {
                     _t.Write( w, model.Info );

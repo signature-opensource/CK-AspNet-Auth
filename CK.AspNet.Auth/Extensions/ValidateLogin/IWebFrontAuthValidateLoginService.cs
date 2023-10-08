@@ -26,6 +26,7 @@ namespace CK.AspNet.Auth
     ///  </item>
     /// </list>
     /// </summary>
+    [EndpointSingletonService]
     public interface IWebFrontAuthValidateLoginService : ISingletonAutoService
     {
         /// <summary>
