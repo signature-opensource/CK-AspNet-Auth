@@ -90,7 +90,7 @@ namespace CK.AspNet.Auth.Tests
                 // Request with token: the authentication is based on the token.
                 {
                     s.Client.Token = originalToken;
-                    HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
+                    using HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -101,7 +101,7 @@ namespace CK.AspNet.Auth.Tests
                 // Token less request: the authentication is restored from the cookie.
                 {
                     s.Client.Token = null;
-                    HttpResponseMessage tokenLessRefresh = await s.Client.GetAsync( refreshUri );
+                    using HttpResponseMessage tokenLessRefresh = await s.Client.GetAsync( refreshUri );
                     tokenLessRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenLessRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -112,7 +112,7 @@ namespace CK.AspNet.Auth.Tests
                 // Request with token and ?schemes query parametrers: we receive the providers.
                 {
                     s.Client.Token = originalToken;
-                    HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri + "?schemes" );
+                    using HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri + "?schemes" );
                     tokenRefresh.EnsureSuccessStatusCode();
                     var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
                     Debug.Assert( c.Info != null );
@@ -156,6 +156,31 @@ namespace CK.AspNet.Auth.Tests
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.GetAsync( logoutUri );
+                logout.EnsureSuccessStatusCode();
+                // Refresh: no authentication.
+                s.Client.Token = null;
+                HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
+                tokenRefresh.EnsureSuccessStatusCode();
+                var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
+                c.Info.Level.Should().Be( AuthLevel.None );
+            }
+        }
+
+        [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
+        [TestCase( AuthenticationCookieMode.RootPath, true )]
+        [TestCase( AuthenticationCookieMode.WebFrontPath, false )]
+        [TestCase( AuthenticationCookieMode.RootPath, false )]
+        public async Task LogoutCommand_removes_both_cookies_Async( AuthenticationCookieMode mode, bool logoutWithToken )
+        {
+            using( var s = new AuthServer( opt => opt.CookieMode = mode ) )
+            {
+                // Login: the 2 cookies are set.
+                var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
+                DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
+                string originalToken = firstLogin.Token;
+                // Logout 
+                if( logoutWithToken ) s.Client.Token = originalToken;
+                HttpResponseMessage logout = await s.Client.GetAsync( "ComingFromCris/LogoutCommand" );
                 logout.EnsureSuccessStatusCode();
                 // Refresh: no authentication.
                 s.Client.Token = null;
@@ -236,6 +261,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 // This test is far from perfect but does the job without clock injection.
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
+
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
 

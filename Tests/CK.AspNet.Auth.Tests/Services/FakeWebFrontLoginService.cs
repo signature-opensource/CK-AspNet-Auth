@@ -18,12 +18,14 @@ namespace CK.AspNet.Auth.Tests
         public FakeWebFrontLoginService( IAuthenticationTypeSystem typeSystem )
         {
             _typeSystem = typeSystem;
-            _users = new List<IUserInfo>();
-            // Albert and Alice are registered in Basic.
-            _users.Add( typeSystem.UserInfo.Create( 1, "System" ) );
-            _users.Add( typeSystem.UserInfo.Create( 2, "Albert", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } ) );
-            _users.Add( typeSystem.UserInfo.Create( 3, "Robert" ) );
-            _users.Add( typeSystem.UserInfo.Create( 4, "Alice", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } ) );
+            _users = new List<IUserInfo>
+            {
+                // Albert and Alice are registered in Basic.
+                typeSystem.UserInfo.Create( 1, "System" ),
+                typeSystem.UserInfo.Create( 2, "Albert", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } ),
+                typeSystem.UserInfo.Create( 3, "Robert" ),
+                typeSystem.UserInfo.Create( 4, "Alice", new[] { new StdUserSchemeInfo( "Basic", DateTime.MinValue ) } )
+            };
         }
 
         public IReadOnlyList<IUserInfo> AllUsers => _users;

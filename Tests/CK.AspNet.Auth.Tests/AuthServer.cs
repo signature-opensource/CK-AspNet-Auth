@@ -1,8 +1,10 @@
 using CK.AspNet.Tester;
 using CK.Auth;
+using CK.Core;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,9 +14,9 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using System.Web;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -34,13 +36,16 @@ namespace CK.AspNet.Auth.Tests
                            Action<IServiceCollection>? configureServices = null,
                            Action<IApplicationBuilder>? configureApplication = null )
         {
+            // This enable the RootLogPath to be initialized before the GrandOutput.
+            TestHelper.Monitor.Info( "AuthServer initialisation." );
             var b = Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
                 {
                     services.AddSingleton<AuthenticationInfoTokenService>();
                     services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
                     services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme ).AddWebFrontAuth( options );
-                    services.AddSingleton<IWebFrontAuthLoginService, FakeWebFrontLoginService>();
+                    services.AddSingleton<FakeWebFrontLoginService>();
+                    services.AddSingleton<IWebFrontAuthLoginService>( sp => sp.GetRequiredService<FakeWebFrontLoginService>() );
                     configureServices?.Invoke( services );
                 },
                 app =>
@@ -65,7 +70,7 @@ namespace CK.AspNet.Auth.Tests
                                 }
                                 if( ctx.Request.Query.ContainsKey( "userName" ) )
                                 {
-                                    var authInfo = Microsoft.AspNetCore.Http.CKAspNetAuthHttpContextExtensions.GetAuthenticationInfo( ctx );
+                                    var authInfo = CKAspNetAuthHttpContextExtensions.GetAuthenticationInfo( ctx );
                                     echo += $" (UserName: '{authInfo.User.UserName}')";
                                 }
                                 await ctx.Response.Body.WriteAsync( System.Text.Encoding.UTF8.GetBytes( echo ) );
@@ -73,6 +78,23 @@ namespace CK.AspNet.Auth.Tests
                             else if( ctx.Request.Path.StartsWithSegments( "/CallChallengeAsync", out _ ) )
                             {
                                 await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.ChallengeAsync( ctx );
+                            }
+                            else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LogoutCommand", out _ ) )
+                            {
+                                var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                                await s.LogoutCommandAsync( new ActivityMonitor(), ctx );
+                                ctx.Response.StatusCode = 200;
+                            }
+                            else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LoginCommand", out _ ) )
+                            {
+                                var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                                var r = await s.BasicLoginCommandAsync( new ActivityMonitor(),
+                                                                        ctx,
+                                                                        ctx.Request.Query["userName"],
+                                                                        "success",
+                                                                        impersonateActualUser: ctx.Request.Query["impersonateActualUser"] == "True" );
+                                ctx.Response.StatusCode = 200;
+                                await ctx.Response.WriteAsync( r.Token );
                             }
                             else
                             {
@@ -98,6 +120,17 @@ namespace CK.AspNet.Auth.Tests
         public TestServer Server { get; }
 
         public TestServerClient Client { get; }
+
+        public async Task<RefreshResponse> LoginViaBasicLoginCommandAsync( string userName,
+                                                                           bool impersonateActualUser = false )
+        {
+            using HttpResponseMessage getResponse = await Client.GetAsync( $"/ComingFromCris/LoginCommand?userName={userName}&impersonateActualUser={impersonateActualUser}" );
+            var token = await getResponse.Content.ReadAsStringAsync();
+            Client.Token = token;
+            var r = await CallRefreshEndPointAsync();
+            return r;
+        }
+
 
         public Task<RefreshResponse> LoginAlbertViaBasicProviderAsync( bool useGenericWrapper = false, bool rememberMe = true, bool impersonateActualUser = false )
             => LoginViaBasicProviderAsync( "Albert", useGenericWrapper, rememberMe, impersonateActualUser );
@@ -167,12 +200,17 @@ namespace CK.AspNet.Auth.Tests
                 body += $@", ""userData"": {jsonUserData}";
             }
             body += "}";
-            HttpResponseMessage response = await Client.PostJSONAsync( uri, body );
+            using HttpResponseMessage response = await Client.PostJSONAsync( uri, body );
+            return await HandleLoginResponseAsync( response, userName, rememberMe );
+        }
+
+        async Task<RefreshResponse> HandleLoginResponseAsync( HttpResponseMessage response, string userName, bool rememberMe )
+        {
             response.EnsureSuccessStatusCode();
 
             var c = RefreshResponse.Parse( TypeSystem, await response.Content.ReadAsStringAsync() );
             c.Info.Level.Should().Be( AuthLevel.Normal );
-            c.Info.User.UserName.Should().Be( userName );
+            c.Info.ActualUser.UserName.Should().Be( userName );
 
             var cookieName = Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName;
             var ltCookieName = cookieName + "LT";
@@ -277,7 +315,6 @@ namespace CK.AspNet.Auth.Tests
             tokenRefresh.EnsureSuccessStatusCode();
             return RefreshResponse.Parse( TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
         }
-
 
         public void Dispose() => Server?.Dispose();
 
