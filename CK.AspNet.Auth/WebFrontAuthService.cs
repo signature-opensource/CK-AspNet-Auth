@@ -45,7 +45,8 @@ namespace CK.AspNet.Auth
         public string UnsafeCookieName => AuthCookieName + "LT";
 
         internal readonly AuthenticationInfoTokenService _tokenService;
-        internal readonly IReadOnlyList<string> AllowedReturnUrls;
+        readonly IAuthenticationTypeSystem _typeSystem;
+        internal readonly IReadOnlyList<string> _allowedReturnUrls;
         readonly IWebFrontAuthLoginService _loginService;
 
         readonly FrontAuthenticationInfoSecureDataFormat _cookieFormat;
@@ -53,10 +54,14 @@ namespace CK.AspNet.Auth
         readonly string _cookiePath;
         readonly string _bearerHeaderName;
         readonly CookieSecurePolicy _cookiePolicy;
+        /// <summary>
+        /// Don't use this directly! Use CurrentOptions property.
+        /// </summary>
         readonly IOptionsMonitor<WebFrontAuthOptions> _options;
         readonly IWebFrontAuthValidateLoginService? _validateLoginService;
         readonly IWebFrontAuthAutoCreateAccountService? _autoCreateAccountService;
         readonly IWebFrontAuthAutoBindingAccountService? _autoBindingAccountService;
+        readonly IWebFrontAuthImpersonationService? _impersonationService;
         readonly IWebFrontAuthDynamicScopeProvider? _dynamicScopeProvider;
 
         /// <summary>
@@ -70,19 +75,23 @@ namespace CK.AspNet.Auth
         /// <param name="autoBindingAccountService">Optional service that enables account binding.</param>
         /// <param name="dynamicScopeProvider">Optional service to support scope augmentation.</param>
         public WebFrontAuthService( AuthenticationInfoTokenService tokenService,
+                                    IAuthenticationTypeSystem typeSystem,
                                     IWebFrontAuthLoginService loginService,
                                     IOptionsMonitor<WebFrontAuthOptions> options,
                                     IWebFrontAuthValidateLoginService? validateLoginService = null,
                                     IWebFrontAuthAutoCreateAccountService? autoCreateAccountService = null,
                                     IWebFrontAuthAutoBindingAccountService? autoBindingAccountService = null,
+                                    IWebFrontAuthImpersonationService? impersonationService = null,
                                     IWebFrontAuthDynamicScopeProvider? dynamicScopeProvider = null )
         {
             _tokenService = tokenService;
+            _typeSystem = typeSystem;
             _loginService = loginService;
             _options = options;
             _validateLoginService = validateLoginService;
             _autoCreateAccountService = autoCreateAccountService;
             _autoBindingAccountService = autoBindingAccountService;
+            _impersonationService = impersonationService;
             _dynamicScopeProvider = dynamicScopeProvider;
             WebFrontAuthOptions initialOptions = CurrentOptions;
             var cookieFormat = new FrontAuthenticationInfoSecureDataFormat( tokenService.TypeSystem, tokenService.BaseDataProtector.CreateProtector( "Cookie", "v1" ) );
@@ -95,7 +104,7 @@ namespace CK.AspNet.Auth
             CookieMode = initialOptions.CookieMode;
             _cookiePolicy = initialOptions.CookieSecurePolicy;
             AuthCookieName = initialOptions.AuthCookieName;
-            AllowedReturnUrls = initialOptions.AllowedReturnUrls.ToArray();
+            _allowedReturnUrls = initialOptions.AllowedReturnUrls.ToArray();
         }
 
         /// <summary>
@@ -103,6 +112,183 @@ namespace CK.AspNet.Auth
         /// captured when this service has been instantiated. 
         /// </summary>
         public AuthenticationCookieMode CookieMode { get; }
+
+        /// <summary>
+        /// Result for the <see cref="BasicLoginCommandAsync(IActivityMonitor, HttpContext, string, string, TimeSpan?, TimeSpan?, bool)"/>.
+        /// </summary>
+        public sealed class BasicLoginCommandResult
+        {
+            internal BasicLoginCommandResult( IAuthenticationInfo? info, string? token, string? errorId, string? errorText )
+            {
+                Throw.DebugAssert( (info == null) == (token == null) );
+                Throw.DebugAssert( (info == null) != (errorId == null) );
+                Throw.DebugAssert( "errorText => errorId", errorText == null || errorId != null );
+                Info = info;
+                Token = token;
+                ErrorId = errorId;
+                if( errorId != null && errorText == null ) errorText = string.Empty; 
+                ErrorText = errorText;
+            }
+
+            /// <summary>
+            /// Gets whether the login succeeded.
+            /// </summary>
+            [MemberNotNullWhen( true, nameof( Info ), nameof( Token ) )]
+            [MemberNotNullWhen( false, nameof( ErrorId ), nameof( ErrorText ) )]
+            public bool Success => Info != null;
+
+            /// <summary>
+            /// Gets the non null authentication info on success.
+            /// </summary>
+            public IAuthenticationInfo? Info { get; }
+
+            /// <summary>
+            /// Gets the non null token on success.
+            /// </summary>
+            public string? Token { get; }
+
+            /// <summary>
+            /// Gets a non null error identifier if <see cref="Success"/> is false.
+            /// </summary>
+            public string? ErrorId { get; }
+
+            /// <summary>
+            /// Gets a non null error text (possibly empty) if <see cref="Success"/> is false.
+            /// </summary>
+            public string? ErrorText { get; }
+        }
+
+        /// <summary>
+        /// Attempts to login a user by its name/password.
+        /// <see cref="IWebFrontAuthLoginService.HasBasicLogin"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="httpContext">The current http context.</param>
+        /// <param name="userName">The user name.</param>
+        /// <param name="password">The password.</param>
+        /// <param name="impersonateActualUser">Wether the </param>
+        /// <param name="duration"></param>
+        /// <param name="criticalDuration"></param>
+        /// <returns>The login result.</returns>
+        public async Task<BasicLoginCommandResult> BasicLoginCommandAsync( IActivityMonitor monitor,
+                                                                           HttpContext httpContext,
+                                                                           string userName,
+                                                                           string password,
+                                                                           TimeSpan? duration = null,
+                                                                           TimeSpan? criticalDuration = null,
+                                                                           bool impersonateActualUser = false )
+        {
+            Throw.CheckState( _loginService.HasBasicLogin );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( httpContext );
+            Throw.CheckNotNullArgument( userName );
+            Throw.CheckNotNullArgument( password );
+
+            var current = EnsureAuthenticationInfo( httpContext, ref monitor );
+            var ctx = new WebFrontAuthLoginContext( httpContext,
+                                                    this,
+                                                    _typeSystem,
+                                                    WebFrontAuthLoginMode.BasicLogin,
+                                                    "Basic",
+                                                    Tuple.Create( userName, password ),
+                                                    authProps: null,
+                                                    initialScheme: "Basic",
+                                                    current,
+                                                    impersonateActualUser,
+                                                    returnUrl: null,
+                                                    callerOrigin: null,
+                                                    new Dictionary<string, string?>() );
+
+            if( CheckLoginWhileImpersonation( monitor, current.Info, impersonateActualUser, ctx ) )
+            {
+                await DoUnifiedLoginAsync( monitor, ctx, actualLogin =>
+                {
+                    return _loginService.BasicLoginAsync( httpContext, monitor, userName, password, actualLogin );
+                } );
+            }
+            if( ctx.HasError )
+            {
+                return new BasicLoginCommandResult( null, null, ctx._errorId, ctx._errorText );
+            }
+            Throw.DebugAssert( ctx._successfulLogin != null );
+            var fAuth = await HandleLoginCoreAsync( httpContext,
+                                                    monitor,
+                                                    ctx._successfulLogin,
+                                                    "Basic",
+                                                    initial: current.Info,
+                                                    false,
+                                                    impersonateActualUser,
+                                                    duration,
+                                                    criticalDuration );
+            var token = _tokenService.UnsafeCreateAuthenticationToken( fAuth.Info );
+            return new BasicLoginCommandResult( fAuth.Info, token, null, null );
+        }
+
+        /// <summary>
+        /// Log out by clearing the cookies.
+        /// </summary>
+        /// <param name="ctx">The current Http context.</param>
+        /// <returns>The awaitable.</returns>
+        public Task LogoutCommandAsync( IActivityMonitor monitor, HttpContext ctx )
+        {
+            FrontAuthenticationInfo fAuth = EnsureAuthenticationInfo( ctx, ref monitor );
+            if( fAuth.Info.Level != AuthLevel.None )
+            {
+                monitor.Info( WebFrontAuthMonitorTag, $"User '{fAuth.Info.ActualUser.UserName} ({fAuth.Info.ActualUser.UserId})' logged out." );
+            }
+            ClearCookie( ctx, AuthCookieName );
+            ClearCookie( ctx, UnsafeCookieName );
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Refreshes the current authentication
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="httpContext">The current http context.</param>
+        /// <param name="callBackend">Whether the <see cref="IWebFrontAuthLoginService.RefreshAuthenticationInfoAsync"/> must be called.</param>
+        /// <returns>The authentication info and the token.</returns>
+        public async Task<(IAuthenticationInfo Info, string Token)> RefreshCommandAsync( IActivityMonitor monitor,
+                                                                                         HttpContext httpContext,
+                                                                                         bool callBackend = false )
+        {
+            (var fAuth, _) = await RefreshInfoAsync( httpContext, monitor, callBackend );
+            ApplySlidingExpirationAndSetCookies( httpContext, ref fAuth );
+            return (fAuth.Info, _tokenService.UnsafeCreateAuthenticationToken( fAuth.Info ));
+        }
+
+        internal async Task<(FrontAuthenticationInfo,IActivityMonitor?)> RefreshInfoAsync( HttpContext ctx, IActivityMonitor? monitor, bool callBackend )
+        {
+            FrontAuthenticationInfo fAuth = EnsureAuthenticationInfo( ctx, ref monitor );
+            Debug.Assert( fAuth != null );
+            if( CurrentOptions.AlwaysCallBackendOnRefresh || callBackend )
+            {
+                var newExpires = DateTime.UtcNow + CurrentOptions.ExpireTimeSpan;
+                monitor ??= GetRequestMonitor( ctx );
+                fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( ctx, monitor, fAuth.Info, newExpires ) );
+            }
+            return (fAuth,monitor);
+        }
+
+        internal bool ApplySlidingExpirationAndSetCookies( HttpContext httpContext, ref FrontAuthenticationInfo fAuth )
+        {
+            var authInfo = fAuth.Info;
+            bool refreshable = false;
+            TimeSpan slidingExpirationTime = CurrentOptions.SlidingExpirationTime;
+            if( authInfo.Level >= AuthLevel.Normal && slidingExpirationTime > TimeSpan.Zero )
+            {
+                Debug.Assert( authInfo.Expires != null );
+                refreshable = true;
+                DateTime newExp = DateTime.UtcNow + slidingExpirationTime;
+                if( newExp > authInfo.Expires.Value )
+                {
+                    fAuth = fAuth.SetInfo( authInfo.SetExpires( newExp ) );
+                }
+            }
+            SetCookies( httpContext, fAuth );
+            return refreshable;
+        }
+
 
         /// <summary>
         /// Direct generation of an authentication token from any <see cref="IAuthenticationInfo"/>.
@@ -259,7 +445,7 @@ namespace CK.AspNet.Auth
             FrontAuthenticationInfo? authInfo;
             if( c.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out object? o ) )
             {
-                authInfo = (FrontAuthenticationInfo)o;
+                authInfo = (FrontAuthenticationInfo)o!;
             }
             else
             {
@@ -391,12 +577,6 @@ namespace CK.AspNet.Auth
 
         #region Cookie management
 
-        internal void Logout( HttpContext ctx )
-        {
-            ClearCookie( ctx, AuthCookieName );
-            ClearCookie( ctx, UnsafeCookieName );
-        }
-
         internal void SetCookies( HttpContext ctx, FrontAuthenticationInfo fAuth )
         {
             JObject? longTermCookie = CurrentOptions.UseLongTermCookie ? CreateLongTermCookiePayload( fAuth ) : null;
@@ -513,33 +693,41 @@ namespace CK.AspNet.Auth
         /// <param name="initial">The <see cref="WebFrontAuthLoginContext.InitialAuthentication"/>.</param>
         /// <param name="impersonateActualUser">True to impersonate the current actor.</param>
         /// <returns>A login result with the JSON response and authentication info.</returns>
-        internal LoginResult HandleLogin( HttpContext c,
-                                          UserLoginResult u,
-                                          string callingScheme,
-                                          IAuthenticationInfo initial,
-                                          bool rememberMe,
-                                          bool impersonateActualUser )
+        internal async ValueTask<LoginResult> HandleLoginAsync( HttpContext c,
+                                                                IActivityMonitor monitor,
+                                                                UserLoginResult u,
+                                                                string callingScheme,
+                                                                IAuthenticationInfo initial,
+                                                                bool rememberMe,
+                                                                bool impersonateActualUser )
+        {
+            FrontAuthenticationInfo fAuth = await HandleLoginCoreAsync( c, monitor, u, callingScheme, initial, rememberMe, impersonateActualUser );
+            JObject response = CreateAuthResponse( c, refreshable: fAuth.Info.Level >= AuthLevel.Normal && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero,
+                                                      fAuth,
+                                                      onLogin: u );
+            return new LoginResult( response, fAuth.Info );
+        }
+
+        async ValueTask<FrontAuthenticationInfo> HandleLoginCoreAsync( HttpContext c,
+                                                                       IActivityMonitor monitor,
+                                                                       UserLoginResult u,
+                                                                       string callingScheme,
+                                                                       IAuthenticationInfo initial,
+                                                                       bool rememberMe,
+                                                                       bool impersonateActualUser,
+                                                                       TimeSpan? expiresTimeSpan = null,
+                                                                       TimeSpan? criticalExpiresTimeSpan = null )
         {
             string deviceId = initial.DeviceId;
             if( deviceId.Length == 0 ) deviceId = CreateNewDeviceId();
             IAuthenticationInfo authInfo;
             if( u.IsSuccess )
             {
-                DateTime expires = DateTime.UtcNow + CurrentOptions.ExpireTimeSpan;
-                if( impersonateActualUser
-                    && initial.ActualUser.UserId != 0
-                    && initial.ActualUser.UserId != u.UserInfo.UserId )
-                {
-                    // This is where the future IActualAuthentication will clearly be better:
-                    // We will be able to CriticalLevel the User (depending on the CurrentOptions.SchemesCriticalTimeSpan),
-                    // but NOT the ActualUser!
-                    // Since we currently have only one Level, we ignore this for the moment, we just update
-                    // the expiration time.
-                    authInfo = initial.Impersonate( u.UserInfo ).SetExpires( expires );
-                }
+                DateTime expires = DateTime.UtcNow + (expiresTimeSpan ?? CurrentOptions.ExpireTimeSpan);
+                DateTime? criticalExpires = null;
+                if( criticalExpiresTimeSpan.HasValue ) criticalExpires = DateTime.UtcNow + criticalExpiresTimeSpan.Value;
                 else
                 {
-                    DateTime? criticalExpires = null;
                     // Handling Critical level configured for this scheme.
                     IDictionary<string, TimeSpan>? scts = CurrentOptions.SchemesCriticalTimeSpan;
                     if( scts != null
@@ -549,10 +737,37 @@ namespace CK.AspNet.Auth
                         criticalExpires = DateTime.UtcNow + criticalTimeSpan;
                         if( expires < criticalExpires ) expires = criticalExpires.Value;
                     }
-                    authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( u.UserInfo,
-                                                                                   expires,
-                                                                                   criticalExpires,
-                                                                                   deviceId );
+                }
+                authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( u.UserInfo,
+                                                                                expires,
+                                                                                criticalExpires,
+                                                                                deviceId );
+                // If there is no _impersonationService or if the user impersonates hiself, we do nothing:
+                // this de facto resets any impersonation.
+                if( impersonateActualUser
+                    && _impersonationService != null
+                    && initial.ActualUser.UserId != 0
+                    && initial.ActualUser.UserId != u.UserInfo.UserId )
+                {
+                    IUserInfo? target = null;
+                    try
+                    {
+                        target = await _impersonationService.ImpersonateAsync( c, monitor, authInfo, initial.ActualUser.UserId );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( WebFrontAuthMonitorTag, $"Error while calling 'IWebFrontAuthImpersonationService.ImpersonateAsync()'.", ex );
+                    }
+                    if( target != null )
+                    {
+                        authInfo = authInfo.Impersonate( target );
+                        monitor.Info( WebFrontAuthMonitorTag, $"User '{authInfo.ActualUser.UserName} ({authInfo.ActualUser.UserId})' logged in and is impersonating '{target.UserName} ({target.UserId})'." );
+                    }
+                    else
+                    {
+                        monitor.Warn( WebFrontAuthMonitorTag, $"Rejected impersonation for newly logged in '{authInfo.ActualUser.UserName} ({authInfo.ActualUser.UserId})' " +
+                            $"into '{initial.ActualUser.UserName} ({initial.ActualUser.UserId})'." );
+                    }
                 }
             }
             else
@@ -562,15 +777,12 @@ namespace CK.AspNet.Auth
                 // On authentication failure, we could have kept the current authentication... But this could be misleading
                 // for clients: a failed login should fall back to the "anonymous".
                 // So we just create a new anonymous authentication (with the same deviceId).
-                authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( null, deviceId : deviceId );
+                authInfo = _tokenService.TypeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
             }
             var fAuth = new FrontAuthenticationInfo( authInfo, rememberMe );
             c.Items[typeof( FrontAuthenticationInfo )] = fAuth;
-            JObject response = CreateAuthResponse( c, refreshable: authInfo.Level >= AuthLevel.Normal && CurrentOptions.SlidingExpirationTime > TimeSpan.Zero,
-                                                      fAuth,
-                                                      onLogin: u );
             SetCookies( c, fAuth );
-            return new LoginResult( response, authInfo );
+            return fAuth;
         }
 
         /// <summary>
@@ -793,21 +1005,31 @@ namespace CK.AspNet.Auth
                     return;
                 }
             }
-            // Login is always forbidden whenever the user is impersonated unless we must impersonate the actual user.
-            // This check will also be done by WebFrontAuthService.UnifiedLogin.
+            if( !CheckLoginWhileImpersonation( monitor, current, impersonateActualUser, ctx ) )
+            {
+                return;
+            }
+            if( returnUrl != null
+                && !_allowedReturnUrls.Any( p => returnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
+            {
+                ctx.SetError( "DisallowedReturnUrl", $"The returnUrl='{returnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
+                monitor.Error( WebFrontAuthMonitorTag, $"ReturnUrl '{returnUrl}' doesn't match: '{_allowedReturnUrls.Concatenate("', '")}'." );
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Login is always forbidden whenever the user is impersonated unless we must impersonate the actual user.
+        /// </summary>
+        static bool CheckLoginWhileImpersonation( IActivityMonitor monitor, IAuthenticationInfo current, bool impersonateActualUser, IErrorContext ctx )
+        {
             if( current.IsImpersonated && !impersonateActualUser )
             {
                 ctx.SetError( "LoginWhileImpersonation", "Login is not allowed while impersonation is active." );
                 monitor.Error( WebFrontAuthMonitorTag, $"Login is not allowed while impersonation is active. UserId: {current.User.UserId}, ActualUserId: {current.ActualUser.UserId}." );
-                return;
+                return false;
             }
-            if( returnUrl != null
-                && !AllowedReturnUrls.Any( p => returnUrl.StartsWith( p, StringComparison.Ordinal ) ) )
-            {
-                ctx.SetError( "DisallowedReturnUrl", $"The returnUrl='{returnUrl}' doesn't start with any of configured AllowedReturnUrls prefixes." );
-                monitor.Error( WebFrontAuthMonitorTag, $"ReturnUrl '{returnUrl}' doesn't match: '{AllowedReturnUrls.Concatenate("', '")}'." );
-                return;
-            }
+            return true;
         }
 
         internal async Task UnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool,Task<UserLoginResult>> logger )
@@ -816,6 +1038,12 @@ namespace CK.AspNet.Auth
             // If here the check fails, it means that the AuthenticationProperties have been tampered!
             // This is highly unlikely.
             ValidateCoreParameters( monitor, ctx.LoginMode, ctx.ReturnUrl, ctx.CallerOrigin, ctx.InitialAuthentication, ctx.ImpersonateActualUser, ctx );
+            await DoUnifiedLoginAsync( monitor, ctx, logger );
+            await ctx.SendResponseAsync( monitor );
+        }
+
+        async Task DoUnifiedLoginAsync( IActivityMonitor monitor, WebFrontAuthLoginContext ctx, Func<bool, Task<UserLoginResult>> logger )
+        {
             UserLoginResult? u = null;
             if( !ctx.HasError )
             {
@@ -836,7 +1064,7 @@ namespace CK.AspNet.Auth
                         ctx.SetError( u );
                         monitor.Error( WebFrontAuthMonitorTag, $"User.LoginError: Login with ImpersonateActualUser (current is {currentlyLoggedIn}) tried '{ctx.CallingScheme}' scheme and failed." );
                     }
-                    else 
+                    else
                     {
                         if( u.IsUnregisteredUser )
                         {
@@ -921,7 +1149,6 @@ namespace CK.AspNet.Auth
                     monitor.Info( WebFrontAuthMonitorTag, $"Logged in user {u.UserInfo.UserId} via '{ctx.CallingScheme}'." );
                 }
             }
-            await ctx.SendResponseAsync();
         }
 
         /// <summary>

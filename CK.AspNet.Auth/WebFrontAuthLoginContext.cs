@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Globalization;
+using CK.Core;
 
 namespace CK.AspNet.Auth
 {
@@ -28,13 +29,13 @@ namespace CK.AspNet.Auth
                                               IErrorContext
     {
         readonly WebFrontAuthService _authenticationService;
-        UserLoginResult? _successfulLogin;
         UserLoginResult? _failedLogin;
-        string? _errorId;
-        string? _errorText;
+        internal UserLoginResult? _successfulLogin;
+        internal string? _errorId;
+        internal string? _errorText;
         // This contains the initial authentication but with the
         // requested "RememberMe" flag.
-        FrontAuthenticationInfo _initialAuth;
+        readonly FrontAuthenticationInfo _initialAuth;
         // Used for Direct login (post return code).
         int _httpErrorCode;
 
@@ -172,7 +173,7 @@ namespace CK.AspNet.Auth
         /// <param name="errorText">The optional error message in clear text (typically in english).</param>
         public void SetError( string errorId, string? errorText = null )
         {
-            if( string.IsNullOrWhiteSpace( errorId ) ) throw new ArgumentNullException( nameof( errorId ) );
+            Throw.CheckNotNullOrWhiteSpaceArgument( errorId );
             _errorId = errorId;
             _errorText = errorText;
             _failedLogin = null;
@@ -199,8 +200,8 @@ namespace CK.AspNet.Auth
         /// <param name="ex">The exception.</param>
         public void SetError( Exception ex )
         {
-            if( ex == null ) throw new ArgumentNullException( nameof( ex ) );
-            _errorId = ex.GetType().FullName;
+            Throw.CheckNotNullArgument( ex );
+            _errorId = ex.GetType().ToCSharpName();
             _errorText = ex.Message ?? "Exception has null message!";
             if( ex is ArgumentException ) _httpErrorCode = StatusCodes.Status400BadRequest;
             else _httpErrorCode = 0;
@@ -229,7 +230,7 @@ namespace CK.AspNet.Auth
         /// <param name="loginFailed">Must be not null and <see cref="UserLoginResult.IsSuccess"/> must be false.</param>
         public void SetError( UserLoginResult loginFailed )
         {
-            if( loginFailed == null || loginFailed.IsSuccess ) throw new ArgumentException();
+            Throw.CheckArgument( loginFailed != null && !loginFailed.IsSuccess );
             _errorId = "User.LoginFailure";
             _errorText = loginFailed.LoginFailureReason;
             _failedLogin = loginFailed;
@@ -249,7 +250,7 @@ namespace CK.AspNet.Auth
             _successfulLogin = successResult;
         }
 
-        internal Task SendResponseAsync()
+        internal async Task SendResponseAsync( IActivityMonitor monitor )
         {
             if( !IsHandled ) throw new InvalidOperationException( "SetError or SetSuccessfulLogin must have been called." );
             if( _errorId != null )
@@ -257,24 +258,28 @@ namespace CK.AspNet.Auth
                 if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                     || LoginMode == WebFrontAuthLoginMode.BasicLogin )
                 {
-                    return SendDirectAuthenticationErrorAsync();
+                    await SendDirectAuthenticationErrorAsync();
+                    return;
                 }
-                return SendRemoteAuthenticationErrorAsync();
+                await SendRemoteAuthenticationErrorAsync();
+                return;
             }
             Debug.Assert( _successfulLogin != null );
-            WebFrontAuthService.LoginResult r = _authenticationService.HandleLogin( HttpContext,
-                                                                                    _successfulLogin,
-                                                                                    CallingScheme,
-                                                                                    InitialAuthentication,
-                                                                                    RememberMe,
-                                                                                    ImpersonateActualUser );
+            WebFrontAuthService.LoginResult r = await _authenticationService.HandleLoginAsync( HttpContext,
+                                                                                               monitor,
+                                                                                               _successfulLogin,
+                                                                                               CallingScheme,
+                                                                                               InitialAuthentication,
+                                                                                               RememberMe,
+                                                                                               ImpersonateActualUser );
 
             if( LoginMode == WebFrontAuthLoginMode.UnsafeDirectLogin
                 || LoginMode == WebFrontAuthLoginMode.BasicLogin )
             {
-                return SendDirectAuthenticationSuccessAsync( r );
+                await SendDirectAuthenticationSuccessAsync( r );
+                return;
             }
-            return SendRemoteAuthenticationSuccessAsync( r );
+            await SendRemoteAuthenticationSuccessAsync( r );
         }
 
         Task SendDirectAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )

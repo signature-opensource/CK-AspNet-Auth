@@ -59,7 +59,7 @@ namespace CK.AspNet.Auth
         /// Extracts a <see cref="FrontAuthenticationInfo"/> from a token previously created with <see cref="ProtectFrontAuthenticationInfo(FrontAuthenticationInfo)"/>.
         /// <para>
         /// By default, the expiration is checked based on <see cref="DateTime.UtcNow"/>.
-        /// If expiration check must be checked, use <see cref="Util.UtcMaxValue"/> as the expiration date.
+        /// If expiration check must be skipped, use <see cref="Util.UtcMaxValue"/> as the expiration date.
         /// </para>
         /// </summary>
         /// <param name="data">The token.</param>
@@ -78,7 +78,7 @@ namespace CK.AspNet.Auth
         /// <see cref="IAuthenticationInfo.CheckExpiration(DateTime)"/> is called with <see cref="DateTime.UtcNow"/>.
         /// <para>
         /// By default, the expiration is checked based on <see cref="DateTime.UtcNow"/>.
-        /// If expiration check must be checked, use <see cref="Util.UtcMaxValue"/> as the expiration date.
+        /// If expiration check must be skipped, use <see cref="Util.UtcMaxValue"/> as the expiration date.
         /// </para>
         /// <para>
         /// This is to be used with caution: the authentication token should never be sent to any client and should be

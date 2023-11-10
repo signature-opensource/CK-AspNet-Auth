@@ -105,15 +105,7 @@ namespace CK.AspNet.Auth
 
         async Task<bool> HandleRefreshAsync()
         {
-            IActivityMonitor? monitor = null;
-            FrontAuthenticationInfo fAuth = _authService.EnsureAuthenticationInfo( Context, ref monitor );
-            Debug.Assert( fAuth != null );
-            if( _authService.CurrentOptions.AlwaysCallBackendOnRefresh || Request.Query.Keys.Contains( "callBackend" ) )
-            {
-                var newExpires = DateTime.UtcNow + _authService.CurrentOptions.ExpireTimeSpan;
-                monitor ??= GetRequestMonitor( Context );
-                fAuth = fAuth.SetInfo( await _loginService.RefreshAuthenticationInfoAsync( Context, monitor, fAuth.Info, newExpires ) );
-            }
+            var (fAuth, monitor) = await _authService.RefreshInfoAsync( Context, null, Request.Query.Keys.Contains( "callBackend" ) );
             JObject response = await GetRefreshResponseAndSetCookiesAsync( fAuth, Request.Query.Keys.Contains( "schemes" ), Request.Query.Keys.Contains( "version" ) );
             return await WriteResponseAsync( response );
         }
@@ -128,25 +120,14 @@ namespace CK.AspNet.Auth
         /// <returns>The JSON object.</returns>
         async ValueTask<JObject> GetRefreshResponseAndSetCookiesAsync( FrontAuthenticationInfo fAuth, bool addSchemes, bool addVersion )
         {
-            var authInfo = fAuth.Info;
-            bool refreshable = false;
-            if( authInfo.Level >= AuthLevel.Normal && Options.SlidingExpirationTime > TimeSpan.Zero )
-            {
-                Debug.Assert( authInfo.Expires != null );
-                refreshable = true;
-                DateTime newExp = DateTime.UtcNow + Options.SlidingExpirationTime;
-                if( newExp > authInfo.Expires.Value )
-                {
-                    fAuth = fAuth.SetInfo( authInfo.SetExpires( newExp ) );
-                }
-            }
+            bool refreshable = _authService.ApplySlidingExpirationAndSetCookies( Context, ref fAuth );
             JObject response = _authService.CreateAuthResponse( Context, refreshable, fAuth );
             if( addSchemes )
             {
                 IEnumerable<string>? list = Options.AvailableSchemes;
                 if( list == null || !list.Any() )
                 {
-                    list = (await _schemeProvider.GetAllSchemesAsync().ConfigureAwait(false))
+                    list = (await _schemeProvider.GetAllSchemesAsync().ConfigureAwait( false ))
                             .Select( s => s.Name )
                             .Where( n => n != WebFrontAuthOptions.OnlyAuthenticationScheme );
                     if( _loginService.HasBasicLogin )
@@ -157,13 +138,12 @@ namespace CK.AspNet.Auth
                 response.Add( "schemes", new JArray( list ) );
             }
             if( addVersion ) response.Add( "version", _version.ToString() );
-            _authService.SetCookies( Context, fAuth );
             return response;
         }
 
         async Task<bool> HandleLogoutAsync()
         {
-            _authService.Logout( Context );
+            await _authService.LogoutCommandAsync( GetRequestMonitor( Context ), Context );
             await Context.Response.WriteAsync( null, StatusCodes.Status200OK );
             return true;
         }
@@ -179,9 +159,9 @@ namespace CK.AspNet.Auth
             IEnumerable<KeyValuePair<string, StringValues>> userData;
             if( HttpMethods.IsPost( Request.Method ) )
             {
-                if( callerOrigin == null ) callerOrigin = Request.Form["callerOrigin"];
-                if( rememberMe == null ) rememberMe = Request.Form["rememberMe"];
-                if( sImpersonateActualUser == null ) sImpersonateActualUser = Request.Form["impersonateActualUser"];
+                callerOrigin ??= Request.Form["callerOrigin"];
+                rememberMe ??= Request.Form["rememberMe"];
+                sImpersonateActualUser ??= Request.Form["impersonateActualUser"];
                 userData = Request.Form;
             }
             else userData = Request.Query;
