@@ -1,7 +1,7 @@
 version: build{build}
 image: Visual Studio 2022
 install:
-  - ps: Install-Product node 20.6.1 x64
+  - ps: Install-Product node 18.17.0 x64
 services:
   - mssql2017
 clone_folder: C:\CKli-World\CK-AspNet-Projects\CK-AspNet-Auth
