@@ -43,9 +43,9 @@ namespace CK.AspNet.Auth.Tests
                 {
                     services.AddSingleton<AuthenticationInfoTokenService>();
                     services.AddSingleton<IAuthenticationTypeSystem, StdAuthenticationTypeSystem>();
-                    services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme ).AddWebFrontAuth( options );
                     services.AddSingleton<FakeWebFrontLoginService>();
                     services.AddSingleton<IWebFrontAuthLoginService>( sp => sp.GetRequiredService<FakeWebFrontLoginService>() );
+                    services.AddAuthentication( WebFrontAuthOptions.OnlyAuthenticationScheme ).AddWebFrontAuth( options );
                     configureServices?.Invoke( services );
                 },
                 app =>

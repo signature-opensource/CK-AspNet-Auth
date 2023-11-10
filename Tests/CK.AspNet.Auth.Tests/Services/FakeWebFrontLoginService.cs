@@ -10,6 +10,10 @@ using CK.Core;
 
 namespace CK.AspNet.Auth.Tests
 {
+    /// <summary>
+    /// Contains 'System (1)', 'Albert (2)', 'Robert (3)' and 'Alice (4)'.
+    /// Only Albert and Alice are registered in Basic scheme and can be used by tests. 
+    /// </summary>
     class FakeWebFrontLoginService : IWebFrontAuthLoginService
     {
         readonly IAuthenticationTypeSystem _typeSystem;
