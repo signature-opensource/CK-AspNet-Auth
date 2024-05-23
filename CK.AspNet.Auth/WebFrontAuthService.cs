@@ -25,7 +25,7 @@ namespace CK.AspNet.Auth
     /// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />,
     /// it is not a <see cref="IAutoService"/> and is a endpoint service (available only from the Global DI).
     /// </summary>
-    [EndpointSingletonService]
+    [ContainerConfiguredSingletonService]
     public sealed class WebFrontAuthService
     {
         /// <summary>
@@ -387,7 +387,7 @@ namespace CK.AspNet.Auth
         }
 
         internal void GetWFAData( HttpContext h,
-                                  AuthenticationProperties properties,
+                                  AuthenticationProperties? properties,
                                   out FrontAuthenticationInfo fAuth,
                                   out bool impersonateActualUser,
                                   out string? initialScheme,
@@ -396,27 +396,34 @@ namespace CK.AspNet.Auth
                                   out IDictionary<string, string?> userData )
         {
             fAuth = GetFrontAuthenticationInfo( h, properties );
-            properties.Items.TryGetValue( "WFA2S", out initialScheme );
-            properties.Items.TryGetValue( "WFA2O", out callerOrigin );
-            properties.Items.TryGetValue( "WFA2R", out returnUrl );
-            if( properties.Items.TryGetValue( "WFA2D", out var sUData ) && sUData != null )
+            userData = null!;
+            if( properties != null )
             {
-                userData = UnprotectExtraData( sUData );
+                properties.Items.TryGetValue( "WFA2S", out initialScheme );
+                properties.Items.TryGetValue( "WFA2O", out callerOrigin );
+                properties.Items.TryGetValue( "WFA2R", out returnUrl );
+                if( properties.Items.TryGetValue( "WFA2D", out var sUData ) && sUData != null )
+                {
+                    userData = UnprotectExtraData( sUData );
+                }
+                impersonateActualUser = properties.Items.ContainsKey( "WFA2I" );
             }
             else
             {
-                userData = new Dictionary<string, string?>();
+                initialScheme = callerOrigin = returnUrl = null;
+                impersonateActualUser = false;
             }
-            impersonateActualUser = properties.Items.ContainsKey( "WFA2I" );
+            userData ??= new Dictionary<string, string?>();
         }
 
-        internal FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext h, AuthenticationProperties properties )
+        internal FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext h, AuthenticationProperties? properties )
         {
             if( !h.Items.TryGetValue( typeof( RemoteAuthenticationEventsContextExtensions ), out var fAuth ) )
             {
-                if( properties.Items.TryGetValue( "WFA2C", out var currentAuth ) )
+                if( properties != null
+                    && properties.Items.TryGetValue( "WFA2C", out var currentAuth )
+                    && currentAuth != null )
                 {
-                    Debug.Assert( currentAuth != null );
                     fAuth = _tokenService.UnprotectFrontAuthenticationInfo( currentAuth );
                 }
                 else
@@ -489,7 +496,7 @@ namespace CK.AspNet.Auth
             if( fAuth == null )
             {
                 // Best case is when we have the authentication cookie, otherwise use the long term cookie.
-                if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string cookie ) )
+                if( CookieMode != AuthenticationCookieMode.None && c.Request.Cookies.TryGetValue( AuthCookieName, out string? cookie ) )
                 {
                     try
                     {
@@ -503,7 +510,9 @@ namespace CK.AspNet.Auth
                 }
                 if( fAuth == null )
                 {
-                    if( CurrentOptions.UseLongTermCookie && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie ) )
+                    if( CurrentOptions.UseLongTermCookie
+                        && c.Request.Cookies.TryGetValue( UnsafeCookieName, out cookie )
+                        && cookie != null )
                     {
                         try
                         {
@@ -536,7 +545,7 @@ namespace CK.AspNet.Auth
                         // - If we are outside of the cookie context, we do nothing (otherwise we'll reset the current authentication).
                         if( CookieMode == AuthenticationCookieMode.RootPath
                             || (CookieMode == AuthenticationCookieMode.WebFrontPath
-                                && c.Request.Path.Value.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase )) )
+                                && (c.Request.Path.Value?.StartsWith( _cookiePath, StringComparison.OrdinalIgnoreCase ) ?? false)) )
                         {
                             var deviceId = CreateNewDeviceId();
                             var auth = _tokenService.TypeSystem.AuthenticationInfo.Create( null, deviceId: deviceId );
@@ -947,11 +956,18 @@ namespace CK.AspNet.Auth
         /// <returns>The awaitable.</returns>
         public Task HandleRemoteAuthenticationAsync<T>( TicketReceivedContext context, Action<T> payloadConfigurator )
         {
-            if( context == null ) throw new ArgumentNullException( nameof( context ) );
-            if( payloadConfigurator == null ) throw new ArgumentNullException( nameof( payloadConfigurator ) );
+            Throw.CheckNotNullArgument( context );
+            Throw.CheckNotNullArgument( payloadConfigurator );
             var monitor = GetRequestMonitor( context.HttpContext );
 
-            GetWFAData( context.HttpContext, context.Properties, out var fAuth, out var impersonateActualUser, out var initialScheme, out var callerOrigin, out var returnUrl, out var userData );
+            GetWFAData( context.HttpContext,
+                        context.Properties,
+                        out var fAuth,
+                        out var impersonateActualUser,
+                        out var initialScheme,
+                        out var callerOrigin,
+                        out var returnUrl,
+                        out var userData );
 
             string callingScheme = context.Scheme.Name;
             object payload = _loginService.CreatePayload( context.HttpContext, monitor, callingScheme );

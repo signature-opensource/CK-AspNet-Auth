@@ -45,7 +45,7 @@ namespace CK.AspNet.Auth.Tests
 
         public Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin )
         {
-            IUserInfo u = null;
+            IUserInfo? u = null;
             if( password == "success" )
             {
                 u = _users.FirstOrDefault( i => i.UserName == userName );

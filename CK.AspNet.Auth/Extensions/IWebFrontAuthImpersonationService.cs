@@ -12,7 +12,7 @@ namespace CK.AspNet.Auth
     /// Optional service that controls user impersonation either by user identifier or user name.
     /// Impersonation is not an actual login, it must have no visible impact on the impersonated user data.
     /// </summary>
-    [EndpointSingletonService]
+    [ContainerConfiguredSingletonService]
     public interface IWebFrontAuthImpersonationService : ISingletonAutoService
     {
         /// <summary>

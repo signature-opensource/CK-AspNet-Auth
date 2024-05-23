@@ -4,6 +4,7 @@ using System.Text;
 using CK.Auth;
 using CK.DB.Auth;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.DB.Auth
 {
@@ -19,7 +20,8 @@ namespace CK.DB.Auth
         /// <param name="this">This UserInfoType.</param>
         /// <param name="o">The user information handled by the database implementation.</param>
         /// <returns>The user info or null if o is null.</returns>
-        public static IUserInfo FromUserAuthInfo( this IUserInfoType @this, IUserAuthInfo o )
+        [return: NotNullIfNotNull(nameof(o))]
+        public static IUserInfo? FromUserAuthInfo( this IUserInfoType @this, IUserAuthInfo? o )
         {
             return o != null 
                     ? @this.Create(

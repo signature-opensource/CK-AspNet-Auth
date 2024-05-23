@@ -151,8 +151,9 @@ namespace CK.AspNet.Auth.Tests
             {
                 // Login: the 2 cookies are set.
                 var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
+                Throw.DebugAssert( firstLogin.Info != null );
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-                string originalToken = firstLogin.Token;
+                string? originalToken = firstLogin.Token;
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.GetAsync( logoutUri );
@@ -162,6 +163,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.None );
             }
         }
@@ -176,8 +178,9 @@ namespace CK.AspNet.Auth.Tests
             {
                 // Login: the 2 cookies are set.
                 var firstLogin = await s.LoginAlbertViaBasicProviderAsync();
+                Throw.DebugAssert( firstLogin.Info != null );
                 DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-                string originalToken = firstLogin.Token;
+                string? originalToken = firstLogin.Token;
                 // Logout 
                 if( logoutWithToken ) s.Client.Token = originalToken;
                 HttpResponseMessage logout = await s.Client.GetAsync( "ComingFromCris/LogoutCommand" );
@@ -187,6 +190,7 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage tokenRefresh = await s.Client.GetAsync( refreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await tokenRefresh.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.None );
             }
         }
@@ -261,12 +265,14 @@ namespace CK.AspNet.Auth.Tests
             {
                 // This test is far from perfect but does the job without clock injection.
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
+                Throw.DebugAssert( auth.Info!.Expires != null );
 
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
 
                 s.Client.Token = auth.Token;
                 RefreshResponse refresh = await s.CallRefreshEndPointAsync();
+                Throw.DebugAssert( refresh.Info!.Expires != null );
                 refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Refresh increased the expiration time." );
 
                 refresh.RememberMe.Should().BeFalse( "In CookieMode None, RememberMe is always false, no matter what." );
@@ -285,7 +291,9 @@ namespace CK.AspNet.Auth.Tests
             {
                 // This test is far from perfect but does the job without clock injection.
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync();
-                DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
+                Throw.DebugAssert( auth.Info!.Expires != null );
+
+                DateTime expCookie1 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();
                 expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
                 DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
                 while( next > DateTime.UtcNow ) ;
@@ -294,12 +302,14 @@ namespace CK.AspNet.Auth.Tests
                 HttpResponseMessage req = await s.Client.GetAsync( tokenExplainUri );
                 var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
 
-                ((bool)response["rememberMe"]).Should().BeTrue();
-                IAuthenticationInfo refresh = s.TypeSystem.AuthenticationInfo.FromJObject( (JObject)response["info"] );
+                ((bool?)response["rememberMe"]).Should().BeTrue();
+                IAuthenticationInfo? refresh = s.TypeSystem.AuthenticationInfo.FromJObject( (JObject?)response["info"] );
+                Throw.DebugAssert( refresh!.Expires != null );
 
                 refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
+                Throw.DebugAssert( refresh.Expires != null );
 
-                DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"].Expires.ToUniversalTime();
+                DateTime expCookie2 = s.Client.Cookies.GetCookies( s.Server.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();
                 expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
             }
         }

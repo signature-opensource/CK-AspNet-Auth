@@ -1,7 +1,6 @@
 using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Diagnostics;
 
@@ -10,7 +9,7 @@ namespace CK.AspNet.Auth
     /// <summary>
     /// Simple singleton service that offers tokens creation and restoration functionalities.
     /// <para>
-    /// This is not a endpoint service, it is available from all endpoints.
+    /// This is not specific to the global DI container, it is available from all containers.
     /// </para>
     /// </summary>
     public sealed class AuthenticationInfoTokenService : ISingletonAutoService

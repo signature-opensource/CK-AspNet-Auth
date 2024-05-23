@@ -1,3 +1,4 @@
+using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -71,6 +72,7 @@ namespace CK.AspNet.Auth.Tests
                 if( callRefreshFirst )
                 {
                     var refreshResponse = await s.CallRefreshEndPointAsync();
+                    Throw.DebugAssert( refreshResponse.Info != null );
                     refreshResponse.Info.Level.Should().Be( CK.Auth.AuthLevel.None );
                     var cookies = s.ReadClientCookies();
                     cookies.AuthCookie.Should().BeNull();
@@ -98,6 +100,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 {
                     var refreshResponse = await s.CallRefreshEndPointAsync();
+                    Throw.DebugAssert( refreshResponse.Info != null );
                     refreshResponse.Info.User.UserName.Should().Be( "Albert" );
                     var cookies = s.ReadClientCookies();
                     cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
@@ -116,6 +119,7 @@ namespace CK.AspNet.Auth.Tests
                 string? token = null;
                 {
                     var refreshResponse = await s.CallRefreshEndPointAsync();
+                    Throw.DebugAssert( refreshResponse.Info != null );
                     refreshResponse.Info.User.UserName.Should().Be( "Albert" );
                     token = refreshResponse.Token;
                     var cookies = s.ReadClientCookies();
@@ -135,6 +139,7 @@ namespace CK.AspNet.Auth.Tests
                 }
                 {
                     var refreshResponse = await s.CallRefreshEndPointAsync();
+                    Throw.DebugAssert( refreshResponse.Info != null );
                     refreshResponse.Info.User.UserName.Should().Be( "Albert" );
                     var cookies = s.ReadClientCookies();
                     cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();

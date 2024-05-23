@@ -24,13 +24,13 @@ namespace CK.DB.AspNet.Auth.Tests
             _db = db;
         }
 
-        public async Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
+        public async Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
         {
-            IUserAuthInfo dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetService<ISqlCallContext>(), 1, userId );
+            IUserAuthInfo? dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetRequiredService<ISqlCallContext>(), 1, userId );
             return _typeSystem.UserInfo.FromUserAuthInfo( dbUser );
         }
 
-        public Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
+        public Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
         {
             throw new NotImplementedException( "Not tested." );
         }

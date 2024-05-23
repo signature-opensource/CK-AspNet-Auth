@@ -31,7 +31,7 @@ namespace Microsoft.AspNetCore.Http
         static public IAuthenticationInfo GetAuthenticationInfo( this HttpContext @this )
         {
             IAuthenticationInfo? authInfo;
-            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out var o ) )
+            if( @this.Items.TryGetValue( typeof( FrontAuthenticationInfo ), out var o ) && o != null )
             {
                 authInfo = ((FrontAuthenticationInfo)o).Info;
             }

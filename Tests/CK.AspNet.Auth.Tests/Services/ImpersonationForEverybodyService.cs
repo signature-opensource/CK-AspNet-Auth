@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,12 +18,12 @@ namespace CK.AspNet.Auth.Tests
             _loginService = (FakeWebFrontLoginService)loginService;
         }
 
-        public Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
+        public Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
         {
             return Task.FromResult( _loginService.AllUsers.FirstOrDefault( u => u.UserId == userId ) );
         }
 
-        public Task<IUserInfo> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
+        public Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
         {
             return Task.FromResult( _loginService.AllUsers.FirstOrDefault( u => u.UserName == userName ) );
         }

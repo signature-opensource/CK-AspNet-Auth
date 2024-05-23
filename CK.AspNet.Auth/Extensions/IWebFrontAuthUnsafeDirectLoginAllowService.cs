@@ -9,7 +9,7 @@ namespace CK.AspNet.Auth
     /// Enabling calls to to this endpoint must be explicit: by default "403 - Forbidden"
     /// is always returned.
     /// </summary>
-    [EndpointSingletonService]
+    [ContainerConfiguredSingletonService]
     public interface IWebFrontAuthUnsafeDirectLoginAllowService : ISingletonAutoService
     {
         /// <summary>

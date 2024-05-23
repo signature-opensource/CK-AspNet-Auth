@@ -33,7 +33,8 @@ namespace CK.DB.AspNet.Auth
         /// <param name="typeSystem">The authentication type system to use.</param>
         public SqlWebFrontAuthLoginService( IAuthenticationDatabaseService authPackage, IAuthenticationTypeSystem typeSystem )
         {
-            if( authPackage == null ) throw new ArgumentNullException( nameof( authPackage ) );
+            Throw.CheckNotNullArgument( authPackage );
+            Throw.CheckNotNullArgument( typeSystem );
             _authPackage = authPackage;
             _typeSystem = typeSystem;
             _providers = _authPackage.AllProviders.Select( p => p.ProviderName ).ToArray();
@@ -64,6 +65,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>The <see cref="IUserInfo"/> or null.</returns>
         public virtual async Task<UserLoginResult> BasicLoginAsync( HttpContext ctx, IActivityMonitor monitor, string userName, string password, bool actualLogin = true )
         {
+            Throw.CheckState( _authPackage.BasicProvider != null );
             var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             Debug.Assert( c.Monitor == monitor );
             LoginResult r = await _authPackage.BasicProvider.LoginUserAsync( c, userName, password, actualLogin );
@@ -117,13 +119,15 @@ namespace CK.DB.AspNet.Auth
         public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
         {
             if( current == null ) return _typeSystem.AuthenticationInfo.None;
-            var c = ctx.RequestServices.GetService<ISqlCallContext>();
+            var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
             IUserAuthInfo? dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
+            Throw.DebugAssert( dbActual != null );
             IUserInfo? actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
             IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires, current.DeviceId );
             if( refreshed.Level != AuthLevel.None && current.IsImpersonated )
             {
                 IUserAuthInfo? dbUser = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeUser.UserId, current.UnsafeUser.UserId );
+                Throw.DebugAssert( dbUser != null );
                 IUserInfo user = _typeSystem.UserInfo.FromUserAuthInfo( dbUser ) ?? _typeSystem.UserInfo.Anonymous;
                 refreshed = refreshed.Impersonate( user );
             }
