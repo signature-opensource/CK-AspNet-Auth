@@ -50,7 +50,8 @@ namespace CK.AspNet.Auth.Tests
         [Test]
         public async Task basic_login_is_404NotFound_when_no_BasicAuthenticationProvider_exists_Async()
         {
-            using( var s = new AuthServer(configureServices: services => services.Replace<IWebFrontAuthLoginService, NoAuthWebFrontLoginService>() ) )
+            // This replaces the IWebFrontAuthLoginService (the last added one wins).
+            using( var s = new AuthServer(configureServices: services => services.AddSingleton<IWebFrontAuthLoginService, NoAuthWebFrontLoginService>() ) )
             {
                 HttpResponseMessage response = await s.Client.PostJSONAsync( basicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 response.StatusCode.Should().Be( HttpStatusCode.NotFound );
