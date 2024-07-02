@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Implements concrete SqlWebFrontAuthService on CK.DB.Auth.</Description>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.DB.Auth" Version="20.0.1--0060-develop" />
