@@ -56,7 +56,7 @@ namespace CK.AspNet.Auth
         /// <returns>The awaitable.</returns>
         public static Task WebFrontAuthOnRemoteFailureAsync( this RemoteFailureContext f, bool setUnsafeLevel = false, string errorId = "RemoteFailure", string? errorText = null )
         {
-            return OnErrorAsync( f, f.Properties, setUnsafeLevel, errorId, errorText ?? f.Failure.Message );
+            return OnErrorAsync( f, f.Properties, setUnsafeLevel, errorId, errorText ?? f.Failure?.Message ?? "RemoteFailure" );
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace CK.AspNet.Auth
         }
 
         static Task OnErrorAsync( HandleRequestContext<RemoteAuthenticationOptions> h,
-                                  AuthenticationProperties properties,
+                                  AuthenticationProperties? properties,
                                   bool setUnsafeLevel,
                                   string errorId,
                                   string errorText )
@@ -120,7 +120,7 @@ namespace CK.AspNet.Auth
         /// <returns>The initial authentication.</returns>
         public static IAuthenticationInfo GetTicketAuthenticationInfo( this AccessDeniedContext d ) => GetFrontAuthenticationInfo( d.HttpContext, d.Properties ).Info;
 
-        static FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext httpContext, AuthenticationProperties properties )
+        static FrontAuthenticationInfo GetFrontAuthenticationInfo( HttpContext httpContext, AuthenticationProperties? properties )
         {
             return httpContext.RequestServices.GetRequiredService<WebFrontAuthService>().GetFrontAuthenticationInfo( httpContext, properties );
         }

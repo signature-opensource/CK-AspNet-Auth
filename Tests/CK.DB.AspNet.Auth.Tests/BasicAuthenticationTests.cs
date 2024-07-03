@@ -33,7 +33,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             var user = TestHelper.AutomaticServices.GetRequiredService<UserTable>();
             var auth = TestHelper.AutomaticServices.GetRequiredService<IAuthenticationDatabaseService>();
-            var basic = auth.FindProvider( "Basic" );
+            var basic = auth.FindRequiredProvider( "Basic", mustHavePayload: false );
 
             using( DirectLoginAllower.Allow( allowed ? DirectLoginAllower.What.BasicOnly : DirectLoginAllower.What.None ) )
             using( var ctx = new SqlStandardCallContext() )
@@ -52,11 +52,13 @@ namespace CK.DB.AspNet.Auth.Tests
                     {
                         authBasic.EnsureSuccessStatusCode();
                         var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                        Throw.DebugAssert( c.Info != null );
                         c.Info.Level.Should().Be( AuthLevel.Normal );
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
                         c.Token.Should().NotBeNullOrWhiteSpace();
                         deviceId = c.Info.DeviceId;
+                        Throw.DebugAssert( deviceId != null );
                     }
                     else
                     {
@@ -70,7 +72,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     HttpResponseMessage authFailed = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
                     var c = AuthResponse.Parse( server.TypeSystem, await authFailed.Content.ReadAsStringAsync() );
-                    ShouldBeUnsafeUser( c, idUser, deviceId );
+                    ShouldBeUnsafeUser( c, idUser, deviceId! );
                 }
             }
         }
@@ -81,6 +83,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
             {
@@ -95,6 +98,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                         new JProperty( "password", password ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    Throw.DebugAssert( c.Info != null );
                     deviceId = c.Info.DeviceId;
                     deviceId.Should().NotBeNullOrWhiteSpace();
                     c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -116,6 +120,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         static void ShouldBeUnsafeUser( AuthResponse c, int idUser, string deviceId )
         {
+            Throw.DebugAssert( c.Info != null );
             c.Info.Level.Should().Be( AuthLevel.Unsafe );
             c.Info.User.UserId.Should().Be( 0 );
             c.Info.ActualUser.UserId.Should().Be( 0 );
@@ -155,7 +160,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 // Totally invalid payload.
                 {
                     var param = new JObject( new JProperty( "provider", "Basic" ),
-                                             new JProperty( "payload", null ) );
+                                             new JProperty( "payload", null! ) );
                     HttpResponseMessage m = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                     AuthResponse r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
@@ -171,6 +176,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            Throw.DebugAssert( user != null && basic != null );
             using( DirectLoginAllower.Allow( DirectLoginAllower.What.All ) )
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
@@ -191,6 +197,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSONAsync( unsafeDirectLoginUri, param.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                    Throw.DebugAssert( c.Info != null );
                     deviceId = c.Info.DeviceId;
                     deviceId.Should().NotBeNullOrWhiteSpace();
                     c.Info.Level.Should().Be( AuthLevel.Normal );
@@ -212,6 +219,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil )
                     {
+                        Throw.DebugAssert( c.Info != null );
                         c.Info.Level.Should().Be( AuthLevel.Normal );
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
@@ -237,6 +245,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
             {
@@ -255,6 +264,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                                 new JProperty( "zone", "good" ) ) ) );
                     HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
                     var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+                        Throw.DebugAssert( c.Info != null );
                     deviceId = c.Info.DeviceId;
                     c.Info.Level.Should().Be( AuthLevel.Normal );
                     c.Info.User.UserId.Should().Be( idUser );
@@ -274,6 +284,7 @@ namespace CK.DB.AspNet.Auth.Tests
                     var c = AuthResponse.Parse( server.TypeSystem, await auth.Content.ReadAsStringAsync() );
                     if( okInEvil ) // When userName is "Albert".
                     {
+                        Throw.DebugAssert( c.Info != null );
                         c.Info.Level.Should().Be( AuthLevel.Normal );
                         c.Info.User.UserId.Should().Be( idUser );
                         c.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );

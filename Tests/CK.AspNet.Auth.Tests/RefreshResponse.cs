@@ -19,7 +19,7 @@ namespace CK.AspNet.Auth.Tests
 
         public bool Refreshable { get; set; }
 
-        public string[]? Schemes { get; set; }
+        public string?[]? Schemes { get; set; }
 
         public string? Version { get; set; }
 

@@ -7,16 +7,18 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using static CK.Testing.DBSetupTestHelper;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
     class AuthServer : IDisposable
     {
+        [AllowNull]
         IAuthenticationTypeSystem _typeSystem;
 
-        public AuthServer( Action<IServiceCollection> configureServices = null,
-                           Action<IApplicationBuilder> configureApplication = null )
+        public AuthServer( Action<IServiceCollection>? configureServices = null,
+                           Action<IApplicationBuilder>? configureApplication = null )
         {
             var b = CK.AspNet.Tester.WebHostBuilderFactory.Create( null, null,
                 services =>
@@ -28,7 +30,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 app =>
                 {
                     app.UseGuardRequestMonitor();
-                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
+                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetRequiredService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     app.Use( prev =>
                     {

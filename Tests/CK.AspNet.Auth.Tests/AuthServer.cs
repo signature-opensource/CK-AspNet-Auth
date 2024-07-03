@@ -51,7 +51,7 @@ namespace CK.AspNet.Auth.Tests
                 app =>
                 {
                     app.UseGuardRequestMonitor();
-                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetService( typeof( IAuthenticationTypeSystem ) );
+                    _typeSystem = (IAuthenticationTypeSystem)app.ApplicationServices.GetRequiredService( typeof( IAuthenticationTypeSystem ) );
                     app.UseAuthentication();
                     Options = app.ApplicationServices.GetRequiredService<IOptionsMonitor<WebFrontAuthOptions>>();
                     app.Use( prev =>
@@ -94,6 +94,7 @@ namespace CK.AspNet.Auth.Tests
                                                                         "success",
                                                                         impersonateActualUser: ctx.Request.Query["impersonateActualUser"] == "True" );
                                 ctx.Response.StatusCode = 200;
+                                Throw.DebugAssert( r.Token != null );
                                 await ctx.Response.WriteAsync( r.Token );
                             }
                             else
@@ -209,6 +210,7 @@ namespace CK.AspNet.Auth.Tests
             response.EnsureSuccessStatusCode();
 
             var c = RefreshResponse.Parse( TypeSystem, await response.Content.ReadAsStringAsync() );
+            Throw.DebugAssert( c.Info != null );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.ActualUser.UserName.Should().Be( userName );
 
@@ -251,7 +253,7 @@ namespace CK.AspNet.Auth.Tests
                 var cookie = all.Single( c => c.Name == cookieName ).Value;
                 cookie = HttpUtility.UrlDecode( cookie );
                 var longTerm = JObject.Parse( cookie );
-                ((string)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeEmpty( "There is always a non empty 'device' member." );
+                ((string?)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeNullOrEmpty( "There is always a non empty 'device' member." );
                 longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).Should().Be( rememberMe, "The user is here only when remember is true." );
             }
 
@@ -284,7 +286,7 @@ namespace CK.AspNet.Auth.Tests
             }
 
             string? authCookie = all?.SingleOrDefault( c => c.Name == Options.Get( WebFrontAuthOptions.OnlyAuthenticationScheme ).AuthCookieName )?.Value;
-            JObject ltCookie = null;
+            JObject? ltCookie = null;
             string? ltDeviceId = null;
             string? ltUserId = null;
             string? ltUserName = null;
@@ -294,9 +296,9 @@ namespace CK.AspNet.Auth.Tests
             {
                 ltCookieStr = HttpUtility.UrlDecode( ltCookieStr );
                 ltCookie = JObject.Parse( ltCookieStr );
-                ltDeviceId = (string)ltCookie[StdAuthenticationTypeSystem.DeviceIdKeyType];
-                ltUserId = (string)ltCookie[StdAuthenticationTypeSystem.UserIdKeyType];
-                ltUserName = (string)ltCookie[StdAuthenticationTypeSystem.UserNameKeyType];
+                ltDeviceId = (string?)ltCookie[StdAuthenticationTypeSystem.DeviceIdKeyType];
+                ltUserId = (string?)ltCookie[StdAuthenticationTypeSystem.UserIdKeyType];
+                ltUserName = (string?)ltCookie[StdAuthenticationTypeSystem.UserNameKeyType];
             }
             return (authCookie, ltCookie, ltDeviceId, ltUserId, ltUserName );
         }

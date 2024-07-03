@@ -30,6 +30,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
             var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthImpersonationService,ImpersonationForEverybodyService>() ) )
             {
@@ -45,12 +46,14 @@ namespace CK.DB.AspNet.Auth.Tests
 
                 server.Client.Token = authResponse.Token;
                 refreshResponse = await RefreshSuccessAsync( server, true, AuthLevel.Normal );
+                Throw.DebugAssert( refreshResponse.Info != null );
 
                 refreshResponse.Info.User.UserId.Should().Be( idAlbert );
                 refreshResponse.Info.User.UserName.Should().Be( newAlbertName );
 
                 server.Client.Token = refreshResponse.Token;
                 authResponse = await ImpersonateAsync( server, idPaula, true );
+                Throw.DebugAssert( authResponse.Info != null );
                 authResponse.Info.User.UserName.Should().Be( "Paula" );
                 authResponse.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
@@ -64,24 +67,28 @@ namespace CK.DB.AspNet.Auth.Tests
                 await user.UserNameSetAsync( ctx, 1, idAlbert, newAlbertName );
                 await user.UserNameSetAsync( ctx, 1, idPaula, newPaulaName );
                 refreshResponse = await RefreshSuccessAsync( server, true, AuthLevel.Normal );
+                Throw.DebugAssert( refreshResponse.Info != null );
                 refreshResponse.Info.User.UserName.Should().Be( newPaulaName );
                 refreshResponse.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
                 server.Client.Token = refreshResponse.Token;
                 await user.UserNameSetAsync( ctx, 1, idPaula, "Paula" );
                 refreshResponse = await RefreshSuccessAsync( server, true, AuthLevel.Normal );
+                Throw.DebugAssert( refreshResponse.Info != null );
                 refreshResponse.Info.User.UserName.Should().Be( "Paula" );
                 refreshResponse.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
                 server.Client.Token = refreshResponse.Token;
                 await user.UserNameSetAsync( ctx, 1, idAlbert, "Albert" );
                 authResponse = await ImpersonateAsync( server, idAlbert, false );
+                Throw.DebugAssert( authResponse.Info != null );
                 authResponse.Info.User.UserId.Should().Be( idAlbert );
                 authResponse.Info.User.UserName.Should().Be( newAlbertName,
                     "Impersonation in the ImpersonationForEverybodyService does not refresh the actual user." );
 
                 server.Client.Token = authResponse.Token;
                 refreshResponse = await RefreshSuccessAsync( server, true, AuthLevel.Normal );
+                Throw.DebugAssert( refreshResponse.Info != null );
                 refreshResponse.Info.ActualUser.UserName.Should().Be( "Albert" );
             }
         }
@@ -90,6 +97,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             HttpResponseMessage m = await server.Client.PostJSONAsync( impersonateUri, $@"{{ ""userId"": ""{idTarget}"" }}" );
             var r = AuthResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+            Throw.DebugAssert( r.Info != null );
             r.Info.IsImpersonated.Should().Be( expectedImpersonated );
             return r;
         }
@@ -98,6 +106,7 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             HttpResponseMessage m = await server.Client.GetAsync( callBackend ? refreshUri + "?callBackend" : refreshUri );
             var r = RefreshResponse.Parse( server.TypeSystem, await m.Content.ReadAsStringAsync() );
+            Throw.DebugAssert( r.Info != null );
             r.Info.Level.Should().Be( expectedLevel );
             return r;
         }
@@ -109,6 +118,7 @@ namespace CK.DB.AspNet.Auth.Tests
                                 new JProperty( "password", password ) );
             HttpResponseMessage authBasic = await server.Client.PostJSONAsync( basicLoginUri, payload.ToString() );
             var c = AuthResponse.Parse( server.TypeSystem, await authBasic.Content.ReadAsStringAsync() );
+            Throw.DebugAssert( c.Info != null );
             c.Info.Level.Should().Be( AuthLevel.Normal );
             c.Info.User.UserId.Should().Be( idAlbert );
             c.Token.Should().NotBeNullOrWhiteSpace();

@@ -48,7 +48,7 @@ namespace CK.DB.AspNet.Auth
         /// <returns>
         /// The login result where the <see cref="IUserInfo.Schemes"/> contains the new scheme.
         /// </returns>
-        public async Task<UserLoginResult> BindAccountAsync( IActivityMonitor monitor, IWebFrontAuthAutoBindingAccountContext context )
+        public async Task<UserLoginResult?> BindAccountAsync( IActivityMonitor monitor, IWebFrontAuthAutoBindingAccountContext context )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( context == null ) throw new ArgumentNullException( nameof( context ) );

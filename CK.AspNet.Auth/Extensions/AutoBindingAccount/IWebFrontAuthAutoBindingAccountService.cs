@@ -12,7 +12,7 @@ namespace CK.AspNet.Auth
     /// Implementation may consider that when current authentication is <see cref="AuthLevel.Critical"/> it is safe
     /// to bind the account.
     /// </summary>
-    [EndpointSingletonService]
+    [ContainerConfiguredSingletonService]
     public interface IWebFrontAuthAutoBindingAccountService : ISingletonAutoService
     {
         /// <summary>

@@ -382,7 +382,12 @@ namespace CK.AspNet.Auth
             try
             {
                 var r = JsonConvert.DeserializeObject<BasicLoginRequest>( body );
-                if( !string.IsNullOrWhiteSpace( r.UserName ) && !string.IsNullOrWhiteSpace( r.Password ) ) req = r;
+                if( r != null
+                    && !string.IsNullOrWhiteSpace( r.UserName )
+                    && !string.IsNullOrWhiteSpace( r.Password ) )
+                {
+                    req = r;
+                }
             }
             catch( Exception ex )
             {

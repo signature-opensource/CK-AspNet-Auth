@@ -180,11 +180,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private setCriticialExpirationTimeout(): void {
+    private setCriticalExpirationTimeout(): void {
         const timeDifference = this._authenticationInfo.criticalExpires!.getTime() - Date.now();
 
         if ( timeDifference > this.maxTimeout ) {
-            this._cexpTimer = setTimeout( this.setCriticialExpirationTimeout, this.maxTimeout );
+            this._cexpTimer = setTimeout( this.setCriticalExpirationTimeout, this.maxTimeout );
         } else {
             this._cexpTimer = setTimeout( () => {
                 if ( this._refreshable ) {
@@ -412,7 +412,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private onNewAuthenticationInfo() {
         if ( this._authenticationInfo.expires ) {
             this.setExpirationTimeout();
-            if ( this._authenticationInfo.criticalExpires ) { this.setCriticialExpirationTimeout(); }
+            if ( this._authenticationInfo.criticalExpires ) { this.setCriticalExpirationTimeout(); }
         }
         if ( this._configuration.localStorage ) {
             this._typeSystem.authenticationInfo.saveToLocalStorage(

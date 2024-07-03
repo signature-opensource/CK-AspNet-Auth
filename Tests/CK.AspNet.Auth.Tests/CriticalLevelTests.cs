@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CK.Auth;
+using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -18,6 +19,7 @@ namespace CK.AspNet.Auth.Tests
                 var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
@@ -40,6 +42,7 @@ namespace CK.AspNet.Auth.Tests
                 var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
@@ -61,6 +64,7 @@ namespace CK.AspNet.Auth.Tests
                 var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
@@ -83,6 +87,7 @@ namespace CK.AspNet.Auth.Tests
                 var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.HasValue.Should().BeFalse();
@@ -105,6 +110,7 @@ namespace CK.AspNet.Auth.Tests
                 var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
                 r.EnsureSuccessStatusCode();
                 var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
+                Throw.DebugAssert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Critical );
                 c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
                 c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );

@@ -1,3 +1,4 @@
+using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -39,6 +40,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeFalse();
                 r.Info.User.UserName.Should().Be( "Albert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -61,6 +63,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -72,6 +75,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 content = await m.Content.ReadAsStringAsync();
                 r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -83,6 +87,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 content = await m.Content.ReadAsStringAsync();
                 r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeFalse();
                 r.Info.User.UserName.Should().Be( "Albert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -105,6 +110,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -124,6 +130,7 @@ namespace CK.AspNet.Auth.Tests
                 m.EnsureSuccessStatusCode();
                 string content = await m.Content.ReadAsStringAsync();
                 RefreshResponse r = RefreshResponse.Parse( s.TypeSystem, content );
+                Throw.DebugAssert( r.Info != null );
                 r.Info.IsImpersonated.Should().BeTrue();
                 r.Info.User.UserName.Should().Be( "Robert" );
                 r.Info.ActualUser.UserName.Should().Be( "Albert" );

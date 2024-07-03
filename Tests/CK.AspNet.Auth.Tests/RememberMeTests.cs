@@ -1,3 +1,4 @@
+using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -31,6 +32,7 @@ namespace CK.AspNet.Auth.Tests
             {
                 var options = new WebFrontAuthOptions();
                 RefreshResponse auth = await s.LoginAlbertViaBasicProviderAsync( useGenericWrapper, rememberMe );
+                Throw.DebugAssert( auth.Info != null );
                 auth.Info.User.UserName.Should().Be( "Albert" );
                 auth.RememberMe.Should().Be( rememberMe );
                 var cookies = s.Client.Cookies.GetCookies( new Uri( s.Server.BaseAddress, "/.webfront/c/" ) );
