@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Auth.Abstractions" Version="6.0.1--0014-develop" />
-    <PackageReference Include="CK.StObj.Model" Version="25.0.1--0222-develop" />
+    <PackageReference Include="CK.StObj.Model" Version="25.0.1--0223-develop" />
     <PackageReference Include="CK.AspNet" Version="13.0.1--0023-develop" />
   </ItemGroup>
 </Project>
