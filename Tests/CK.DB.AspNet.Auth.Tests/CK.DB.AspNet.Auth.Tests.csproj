@@ -9,8 +9,8 @@
   <ItemGroup>
     <PackageReference Include="CK.AspNet.Tester" Version="4.0.4" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="0.0.0--04ytpj0-develop" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="0.0.0--04ytpj6-develop" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="0.0.0--04ytpj1-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="0.0.0--04ytpq6-develop" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="0.0.0--04ytpq5-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
