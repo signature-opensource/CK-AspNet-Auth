@@ -1,8 +1,6 @@
 using Cake.Common.IO;
 using Cake.Core;
 using Cake.Core.Diagnostics;
-using System;
-using System.Linq;
 
 namespace CodeCake
 {
@@ -18,7 +16,6 @@ namespace CodeCake
 
             StandardGlobalInfo globalInfo = CreateStandardGlobalInfo()
                                                 .AddDotnet()
-                                                .AddYarn()
                                                 .SetCIBuildTag();
 
             Task( "Check-Repository" )
@@ -33,7 +30,6 @@ namespace CodeCake
                  {
                      globalInfo.GetDotnetSolution().Clean();
                      Cake.CleanDirectories( globalInfo.ReleasesFolder.ToString() );
-                     globalInfo.GetYarnSolution().Clean();
                  } );
 
 
@@ -43,7 +39,6 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Build();
-                     globalInfo.GetYarnSolution().Build();
                  } );
 
             Task( "Unit-Testing" )
@@ -52,11 +47,7 @@ namespace CodeCake
                                      || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
                .Does( () =>
                 {
-                    var testProjects = globalInfo.GetDotnetSolution().Projects.Where( p => p.Name.EndsWith( ".Tests" )
-                                                            && !p.Path.Segments.Contains( "Integration" ) );
-
-                    globalInfo.GetDotnetSolution().Test( testProjects );
-                    globalInfo.GetYarnSolution().Test();
+                    globalInfo.GetDotnetSolution().SolutionTest();
                 } );
 
             Task( "Create-Packages" )
@@ -65,7 +56,6 @@ namespace CodeCake
                 .Does( () =>
                  {
                      globalInfo.GetDotnetSolution().Pack();
-                     globalInfo.GetYarnSolution().RunPack();
                  } );
 
 

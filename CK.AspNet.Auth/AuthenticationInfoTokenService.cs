@@ -22,7 +22,7 @@ namespace CK.AspNet.Auth
         public AuthenticationInfoTokenService( IAuthenticationTypeSystem typeSystem, IDataProtectionProvider dataProtectionProvider )
         {
             _typeSystem = typeSystem;
-            Debug.Assert( typeof( WebFrontAuthHandler ).FullName == "CK.AspNet.Auth.WebFrontAuthHandler" );
+            Throw.DebugAssert( typeof( WebFrontAuthHandler ).FullName == "CK.AspNet.Auth.WebFrontAuthHandler" );
             _baseDataProtector = dataProtectionProvider.CreateProtector( "CK.AspNet.Auth.WebFrontAuthHandler" );
             _tokenDataProtector = _baseDataProtector.CreateProtector( "Token", "v1" );
             _frontTokenFormat = new FrontAuthenticationInfoSecureDataFormat( _typeSystem, _tokenDataProtector );

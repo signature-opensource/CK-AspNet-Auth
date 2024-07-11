@@ -36,7 +36,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var basic = auth.FindRequiredProvider( "Basic", mustHavePayload: false );
 
             using( DirectLoginAllower.Allow( allowed ? DirectLoginAllower.What.BasicOnly : DirectLoginAllower.What.None ) )
-            using( var ctx = new SqlStandardCallContext() )
+            using( var ctx = new SqlStandardCallContext( TestHelper.Monitor ) )
             using( var server = new AuthServer() )
             {
                 string userName = Guid.NewGuid().ToString();
@@ -84,7 +84,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var user = SharedEngine.Map.StObjs.Obtain<UserTable>();
             var basic = SharedEngine.Map.StObjs.Obtain<IBasicAuthenticationProvider>();
             Throw.DebugAssert( user != null && basic != null );
-            using( var ctx = new SqlStandardCallContext() )
+            using( var ctx = new SqlStandardCallContext( TestHelper.Monitor ) )
             using( var server = new AuthServer() )
             {
                 int idUser = await user.CreateUserAsync( ctx, 1, userName );

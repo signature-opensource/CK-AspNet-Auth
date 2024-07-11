@@ -19,7 +19,7 @@ namespace CK.AspNet.Auth
         /// <param name="c">This ticket received context.</param>
         /// <param name="payloadConfigurator">Action that must configure the payload.</param>
         /// <returns>The awaitable.</returns>
-        [Obsolete( "Use WebFrontAuthOnTicketReceivedAsync (renaming).", error: false )]
+        [Obsolete( "Use WebFrontAuthOnTicketReceivedAsync (renaming).", error: true )]
         public static Task WebFrontAuthRemoteAuthenticateAsync<TPayload>( this TicketReceivedContext c, Action<TPayload> payloadConfigurator )
             => WebFrontAuthOnTicketReceivedAsync( c, payloadConfigurator );
 
@@ -100,7 +100,7 @@ namespace CK.AspNet.Auth
         }
 
         /// <summary>
-        /// Extracts the initial authentication from this context (from the "WFA-C" key of <see cref="RemoteFailureContext.Properties"/>).
+        /// Extracts the initial authentication from this context (from the "WFA-C" key of <see cref="TicketReceivedContext.Properties"/>).
         /// </summary>
         /// <param name="this">This ticket received context.</param>
         /// <returns>The initial authentication.</returns>
@@ -114,7 +114,7 @@ namespace CK.AspNet.Auth
         public static IAuthenticationInfo GetTicketAuthenticationInfo( this RemoteFailureContext @this ) => GetFrontAuthenticationInfo( @this.HttpContext, @this.Properties ).Info;
 
         /// <summary>
-        /// Extracts the initial authentication from this context (from the "WFA-C" key of <see cref="RemoteFailureContext.Properties"/>).
+        /// Extracts the initial authentication from this context (from the "WFA-C" key of <see cref="AccessDeniedContext.Properties"/>).
         /// </summary>
         /// <param name="this">This failure context.</param>
         /// <returns>The initial authentication.</returns>
