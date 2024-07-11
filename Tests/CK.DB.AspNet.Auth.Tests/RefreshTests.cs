@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static CK.Testing.DBSetupTestHelper;
+using static CK.Testing.MonitorTestHelper;
 using CK.SqlServer;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
@@ -28,8 +28,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [Test]
         public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes_Async()
         {
-            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            var user = SharedEngine.Map.StObjs.Obtain<UserTable>();
+            var basic = SharedEngine.Map.StObjs.Obtain<IBasicAuthenticationProvider>();
             Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer( s => s.AddSingleton<IWebFrontAuthImpersonationService,ImpersonationForEverybodyService>() ) )

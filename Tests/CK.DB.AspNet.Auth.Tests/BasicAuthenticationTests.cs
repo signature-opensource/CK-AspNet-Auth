@@ -14,7 +14,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static CK.Testing.DBSetupTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
@@ -81,8 +81,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass" )]
         public async Task basic_authentication_on_user_Async( string userName, string password )
         {
-            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            var user = SharedEngine.Map.StObjs.Obtain<UserTable>();
+            var basic = SharedEngine.Map.StObjs.Obtain<IBasicAuthenticationProvider>();
             Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )
@@ -174,8 +174,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_unsafe_direct_login_Async( string userName, string password, bool okInEvil )
         {
-            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            var user = SharedEngine.Map.StObjs.Obtain<UserTable>();
+            var basic = SharedEngine.Map.StObjs.Obtain<IBasicAuthenticationProvider>();
             Throw.DebugAssert( user != null && basic != null );
             using( DirectLoginAllower.Allow( DirectLoginAllower.What.All ) )
             using( var ctx = new SqlStandardCallContext() )
@@ -243,8 +243,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login_Async( string userName, string password, bool okInEvil )
         {
-            var user = TestHelper.StObjMap.StObjs.Obtain<UserTable>();
-            var basic = TestHelper.StObjMap.StObjs.Obtain<IBasicAuthenticationProvider>();
+            var user = SharedEngine.Map.StObjs.Obtain<UserTable>();
+            var basic = SharedEngine.Map.StObjs.Obtain<IBasicAuthenticationProvider>();
             Throw.DebugAssert( user != null && basic != null );
             using( var ctx = new SqlStandardCallContext() )
             using( var server = new AuthServer() )

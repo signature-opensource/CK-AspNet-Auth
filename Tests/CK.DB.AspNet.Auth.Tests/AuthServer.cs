@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Diagnostics.CodeAnalysis;
-using static CK.Testing.DBSetupTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
@@ -24,7 +24,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 services =>
                 {
                     services.AddAuthentication().AddWebFrontAuth();
-                    services.AddCKDatabase( TestHelper.Monitor, TestHelper.StObjMap );
+                    services.AddCKDatabase( TestHelper.Monitor, SharedEngine.Map );
                     configureServices?.Invoke( services );
                 },
                 app =>
