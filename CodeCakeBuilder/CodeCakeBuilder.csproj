@@ -5,6 +5,7 @@
     <IsPackable>false</IsPackable>
     <SignAssembly>false</SignAssembly>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Core" Version="20.0.0" />
