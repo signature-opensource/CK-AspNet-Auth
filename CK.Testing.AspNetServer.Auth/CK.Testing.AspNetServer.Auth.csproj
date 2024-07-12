@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer" Version="0.0.0--04yzvhw-develop" />
+    <PackageReference Include="CK.Testing.AspNetServer" Version="0.0.0--04z1nq7-develop" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />
   </ItemGroup>
