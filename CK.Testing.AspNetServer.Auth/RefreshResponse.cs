@@ -1,5 +1,4 @@
 using CK.Auth;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -7,12 +6,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.AspNet.Auth.Tests
+namespace CK.Testing
 {
-    class RefreshResponse
+    /// <summary>
+    /// Models the response of the authentication server.
+    /// </summary>
+    public sealed class RefreshResponse
     {
+        /// <summary>
+        /// Gets the authentication info.
+        /// </summary>
         public IAuthenticationInfo? Info { get; set; }
 
+        /// <summary>
+        /// Gets the token.
+        /// </summary>
         public string? Token { get; set; }
 
         public bool RememberMe { get; set; }
@@ -25,6 +33,12 @@ namespace CK.AspNet.Auth.Tests
 
         public Dictionary<string, string?>? UserData { get; set; }
 
+        /// <summary>
+        /// Parse a server response.
+        /// </summary>
+        /// <param name="t">The type system.</param>
+        /// <param name="json">The json string.</param>
+        /// <returns>The server response.</returns>
         public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
         {
             JObject o = JObject.Parse( json );
@@ -52,5 +66,4 @@ namespace CK.AspNet.Auth.Tests
             return r;
         }
     }
-
 }

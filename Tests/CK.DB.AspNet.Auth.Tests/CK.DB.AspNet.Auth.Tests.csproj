@@ -9,7 +9,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Tester" Version="4.0.4" />
     <PackageReference Include="CK.DB.Tests.NUnit" Version="0.0.0--04yzfa7-develop" />
     <PackageReference Include="CK.DB.User.UserPassword" Version="0.0.0--04yznbl-develop" />
     <PackageReference Include="CK.DB.User.UserGoogle" Version="0.0.0--04yzfbn-develop" />

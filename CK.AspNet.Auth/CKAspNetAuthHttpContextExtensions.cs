@@ -14,14 +14,6 @@ namespace Microsoft.AspNetCore.Http
     static public class CKAspNetAuthHttpContextExtensions
     {
         /// <summary>
-        /// Obsolete.
-        /// </summary>
-        /// <param name="this">This context.</param>
-        /// <returns>Never null, can be <see cref="IAuthenticationInfoType.None"/>.</returns>
-        [Obsolete( "Use the simpler GetAuthenticationInfo() method instead.", error: false )]
-        static public IAuthenticationInfo WebFrontAuthenticate( this HttpContext @this ) => GetAuthenticationInfo( @this );
-
-        /// <summary>
         /// Obtains the current <see cref="IAuthenticationInfo"/>, either because it is already 
         /// in <see cref="HttpContext.Items"/> or by extracting authentication from request.
         /// It is never null, but can be <see cref="IAuthenticationInfoType.None"/>.

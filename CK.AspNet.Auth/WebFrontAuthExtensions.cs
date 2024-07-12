@@ -14,26 +14,14 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class WebFrontAuthExtensions
     {
         /// <summary>
-        /// Adds the WebFrontAuth authentication services without options configuration.
-        /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency.
-        /// That relies on the <see cref="CK.AspNet.ScopedHttpContext"/> that MUST be registered.
-        /// </summary>
-        /// <param name="this">This Authentication builder.</param>
-        /// <returns>Authentication builder to enable fluent syntax.</returns>
-        public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this )
-        {
-            return @this.AddWebFrontAuth( null ); 
-        }
-
-        /// <summary>
         /// Adds the WebFrontAuth authentication services with options configuration.
         /// This registers <see cref="IAuthenticationInfo"/> as a scoped dependency.
         /// That relies on the <see cref="CK.AspNet.ScopedHttpContext"/> that MUST be registered.
         /// </summary>
         /// <param name="this">This Authentication builder.</param>
-        /// <param name="configure">Configuration action.</param>
-        /// <returns>Authentication builder to enable fluent syntax.</returns>
-        public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this, Action<WebFrontAuthOptions>? configure )
+        /// <param name="configure">Optional configuration action.</param>
+        /// <returns>This authentication builder to enable fluent syntax.</returns>
+        public static AuthenticationBuilder AddWebFrontAuth( this AuthenticationBuilder @this, Action<WebFrontAuthOptions>? configure = null )
         {
             @this.Services.AddSingleton<WebFrontAuthService>();
             @this.AddScheme<WebFrontAuthOptions, WebFrontAuthHandler>( WebFrontAuthOptions.OnlyAuthenticationScheme, "Web Front Authentication", configure );

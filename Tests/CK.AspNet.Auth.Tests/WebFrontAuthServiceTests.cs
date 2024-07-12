@@ -1,18 +1,7 @@
-using CK.AspNet.Tester;
-using CK.Auth;
-using FluentAssertions;
-using Newtonsoft.Json.Linq;
+using CK.Testing;
 using NUnit.Framework;
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using CK.Core;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests
 {
@@ -20,19 +9,18 @@ namespace CK.AspNet.Auth.Tests
     public class WebFrontAuthServiceTests
     {
         /// <summary>
-        /// Calling ChallengeAsync leads to WebFrontAuthService.HanddleAutheticate that sets HttpContext.User principal
-        /// from the current IAutheticationInfo.
+        /// Calling ChallengeAsync leads to WebFrontAuthService.HandleAuthenticate that sets HttpContext.User principal
+        /// from the current IAuthenticationInfo: the actual test is in LocalTestHelper inline middleware.
         /// </summary>
         [Test]
         public async Task calling_challenge_Async()
         {
-            using( var s = new AuthServer() )
-            {
-                // Login: the 2 cookies are set on .webFront/c/ path.
-                var login = await s.LoginAlbertViaBasicProviderAsync();
-                Debug.Assert( login.Info != null );
-                await s.Client.GetAsync( "/CallChallengeAsync" );
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync();
+
+            // Login: the 2 cookies are set on .webFront/c/ path.
+            var login = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Debug.Assert( login.Info != null );
+            await runningServer.Client.GetAsync( "/CallChallengeAsync" );
         }
     }
 }

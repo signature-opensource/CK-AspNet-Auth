@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CK.Auth;
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -14,21 +15,19 @@ namespace CK.AspNet.Auth.Tests
         [Test]
         public async Task when_no_dictionary_is_set_returns_normal_Async()
         {
-            using( var s = new AuthServer( options => options.ExpireTimeSpan = TimeSpan.FromHours( 1 ) ) )
-            {
-                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-                r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
-                Throw.DebugAssert( c.Info != null );
-                c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-                c.Info.CriticalExpires.HasValue.Should().BeFalse();
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: options => options.ExpireTimeSpan = TimeSpan.FromHours( 1 ) );
+
+            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Throw.DebugAssert( response.Info != null );
+            response.Info.Level.Should().Be( AuthLevel.Normal );
+            response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+            response.Info.CriticalExpires.HasValue.Should().BeFalse();
         }
 
         [Test]
         public async Task when_dictionary_has_no_matching_key_returns_normal_Async()
         {
+            // Ignored (hopefully).
             var scts = new Dictionary<string, TimeSpan> { { "SomeScheme", TimeSpan.FromHours( 1 ) } };
 
             void SetOptions( WebFrontAuthOptions options )
@@ -37,38 +36,35 @@ namespace CK.AspNet.Auth.Tests
                 options.SchemesCriticalTimeSpan = scts;
             }
 
-            using( var s = new AuthServer( SetOptions ) )
-            {
-                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-                r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
-                Throw.DebugAssert( c.Info != null );
-                c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-                c.Info.CriticalExpires.HasValue.Should().BeFalse();
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
+
+            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Throw.DebugAssert( response.Info != null );
+            response.Info.Level.Should().Be( AuthLevel.Normal );
+            response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+            response.Info.CriticalExpires.HasValue.Should().BeFalse();
+
         }
 
         [Test]
         public async Task when_dictionary_has_matching_key_with_valid_value_returns_critical_Async()
         {
             var scts = new Dictionary<string, TimeSpan> { { "Basic", TimeSpan.FromHours( 1 ) } };
+
             void SetOptions( WebFrontAuthOptions options )
             {
                 options.ExpireTimeSpan = TimeSpan.FromHours( 2 );
                 options.SchemesCriticalTimeSpan = scts;
             }
 
-            using( var s = new AuthServer( SetOptions ) )
-            {
-                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-                r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
-                Throw.DebugAssert( c.Info != null );
-                c.Info.Level.Should().Be( AuthLevel.Critical );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
-                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
+
+            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Throw.DebugAssert( response.Info != null );
+            response.Info.Level.Should().Be( AuthLevel.Critical );
+            response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
+            response.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+
         }
 
         [Test]
@@ -82,16 +78,13 @@ namespace CK.AspNet.Auth.Tests
                 options.SchemesCriticalTimeSpan = scts;
             }
 
-            using( var s = new AuthServer( SetOptions ) )
-            {
-                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-                r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
-                Throw.DebugAssert( c.Info != null );
-                c.Info.Level.Should().Be( AuthLevel.Normal );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-                c.Info.CriticalExpires.HasValue.Should().BeFalse();
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
+
+            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Throw.DebugAssert( response.Info != null );
+            response.Info.Level.Should().Be( AuthLevel.Normal );
+            response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+            response.Info.CriticalExpires.HasValue.Should().BeFalse();
         }
 
         [Test]
@@ -105,16 +98,13 @@ namespace CK.AspNet.Auth.Tests
                 options.SchemesCriticalTimeSpan = scts;
             }
 
-            using( var s = new AuthServer( SetOptions ) )
-            {
-                var r = await s.Client.PostJSONAsync( AuthServer.BasicLoginUri, "{\"userName\":\"Albert\",\"password\":\"success\"}" );
-                r.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( s.TypeSystem, await r.Content.ReadAsStringAsync() );
-                Throw.DebugAssert( c.Info != null );
-                c.Info.Level.Should().Be( AuthLevel.Critical );
-                c.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
-                c.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
-            }
+            await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
+
+            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            Throw.DebugAssert( response.Info != null );
+            response.Info.Level.Should().Be( AuthLevel.Critical );
+            response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
+            response.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
         }
     }
 }

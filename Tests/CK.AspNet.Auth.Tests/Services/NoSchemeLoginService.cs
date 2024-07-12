@@ -9,9 +9,9 @@ using CK.Core;
 
 namespace CK.AspNet.Auth.Tests
 {
-    class NoAuthWebFrontLoginService : IWebFrontAuthLoginService
+    class NoSchemeLoginService : IWebFrontAuthLoginService
     {
-        public NoAuthWebFrontLoginService( IAuthenticationTypeSystem typeSystem )
+        public NoSchemeLoginService( IAuthenticationTypeSystem typeSystem )
         {
         }
 
