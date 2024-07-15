@@ -116,7 +116,7 @@ namespace CK.AspNet.Auth.Tests
             r.Info.IsImpersonated.Should().BeTrue();
 
             r.Info.User.UserId.Should().Be( 3712 );
-            r.Info.User.UserName.Should().Be( "Robert" );
+            r.Info.User.UserName.Should().Be( "Albert" );
 
             r.Info.ActualUser.UserId.Should().Be( 3711 );
             r.Info.ActualUser.UserName.Should().Be( "Alice" );

@@ -31,9 +31,9 @@ namespace CK.AspNet.Auth.Tests
 
             HttpResponseMessage response = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.BasicLoginUri, """{"userName":"Albert","password":"success"}""" );
             response.EnsureSuccessStatusCode();
-            var r = RefreshResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await response.Content.ReadAsStringAsync() );
+            var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await response.Content.ReadAsStringAsync() );
             Debug.Assert( r.Info != null );
-            r.Info.User.UserId.Should().Be( 2 );
+            r.Info.User.UserId.Should().Be( 3712 );
             r.Info.User.UserName.Should().Be( "Albert" );
             r.Info.User.Schemes.Should().HaveCount( 1 );
             r.Info.User.Schemes[0].Name.Should().Be( "Basic" );
@@ -90,7 +90,7 @@ namespace CK.AspNet.Auth.Tests
                 runningServer.Client.Token = originalToken;
                 using HttpResponseMessage tokenRefresh = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.RefreshUri );
                 tokenRefresh.EnsureSuccessStatusCode();
-                var c = RefreshResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await tokenRefresh.Content.ReadAsStringAsync() );
+                var c = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await tokenRefresh.Content.ReadAsStringAsync() );
                 Debug.Assert( c.Info != null );
                 c.Info.Level.Should().Be( AuthLevel.Normal );
                 c.Info.User.UserName.Should().Be( "Albert" );
@@ -127,7 +127,7 @@ namespace CK.AspNet.Auth.Tests
 
             string badToken = firstLogin.Token + 'B';
             runningServer.Client.Token = badToken;
-            RefreshResponse c = await runningServer.Client.AuthenticationRefreshAsync();
+            AuthServerResponse c = await runningServer.Client.AuthenticationRefreshAsync();
             c.Info.Should().BeEquivalentTo( firstLogin.Info, "Authentication has been restored from cookies." );
             c.Token.Should().NotBe( badToken );
         }
@@ -253,14 +253,14 @@ namespace CK.AspNet.Auth.Tests
                 } );
 
             // This test is far from perfect but does the job without clock injection.
-            RefreshResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper, rememberMe );
+            AuthServerResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper, rememberMe );
             Throw.DebugAssert( auth.Info!.Expires != null );
 
             DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
             while( next > DateTime.UtcNow ) ;
 
             runningServer.Client.Token = auth.Token;
-            RefreshResponse refresh = await runningServer.Client.AuthenticationRefreshAsync();
+            AuthServerResponse refresh = await runningServer.Client.AuthenticationRefreshAsync();
             Throw.DebugAssert( refresh.Info!.Expires != null );
             refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value.AddSeconds( 1 ), "Refresh increased the expiration time." );
 
@@ -278,7 +278,7 @@ namespace CK.AspNet.Auth.Tests
             } );
 
             // This test is far from perfect but does the job without clock injection.
-            RefreshResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            AuthServerResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
             Throw.DebugAssert( auth.Info!.Expires != null );
 
             DateTime expCookie1 = runningServer.Client.CookieContainer.GetCookies( runningServer.Client.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();
@@ -317,12 +317,14 @@ namespace CK.AspNet.Auth.Tests
                 (await m.Content.ReadAsStringAsync()).Should()
                     .Be( """{"errorId":"DisallowedReturnUrl","errorText":"The returnUrl='https://no.no' doesn't start with any of configured AllowedReturnUrls prefixes."}""" );
 
-                // Currently invalid schemes throws (error 500 in real host).
-                await FluentActions.Awaiting( () => runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) ) )
-                    .Should().ThrowAsync<Exception>();
+                // Invalid schemes triggers an error 500 in AspNet ChallengeAsync.
+                // The exception is "No authentication handler is registered for the scheme 'NONE'. The registered schemes are: WebFrontAuth. Did you forget to call AddAuthentication().Add[SomeAuthHandler]("NONE",...)?"
+                // TODO: since our scheme is provided by the front, we SHOULD test the available schemes and return a 400 instead of a 500.
+                using var m2 = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) );
+                m2.StatusCode.Should().Be( HttpStatusCode.InternalServerError );
 
-                await FluentActions.Awaiting( () => runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) ) )
-                    .Should().ThrowAsync<Exception>();
+                using var m3 = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) );
+                m3.StatusCode.Should().Be( HttpStatusCode.InternalServerError );
             }
         }
 

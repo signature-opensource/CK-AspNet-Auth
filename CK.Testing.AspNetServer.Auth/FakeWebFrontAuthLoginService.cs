@@ -52,7 +52,7 @@ namespace CK.Testing
 
         /// <inheritdoc />
         /// <remarks>
-        /// This default implementation expect only the "Basic" <paramref name="scheme"/> and returns a <c>List&lt;KeyValuePair&lt;string, object&gt;&gt;</c>
+        /// This default implementation expect only the "Basic" <paramref name="scheme"/> and returns a <c>List&lt;(string, object?)&gt;</c>
         /// that should be filled with a "userName" and "password" key-value pairs before calling <see cref="LoginAsync(HttpContext, IActivityMonitor, string, object, bool)"/>.
         /// <para>
         /// Any other scheme throws a <see cref="ArgumentException"/>.
@@ -62,7 +62,7 @@ namespace CK.Testing
         {
             if( scheme == "Basic" )
             {
-                return new List<KeyValuePair<string, string>>();
+                return new List<(string, object?)>();
             }
             throw new ArgumentException( $"Unknown scheme '{scheme}'." );
         }
@@ -96,10 +96,13 @@ namespace CK.Testing
         /// </remarks>
         public virtual Task<UserLoginResult> LoginAsync( HttpContext ctx, IActivityMonitor monitor, string providerName, object payload, bool actualLogin )
         {
-            if( providerName != "Basic" ) throw new ArgumentException( "Unknown provider.", nameof( providerName ) );
-            var o = payload as List<KeyValuePair<string, object>>;
-            if( o == null ) throw new ArgumentException( "Invalid payload." );
-            return BasicLoginAsync( ctx, monitor, (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value, (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value, actualLogin );
+            Throw.CheckArgument( "Only Basic is supported.", providerName == "Basic" );
+            if( payload is not List<(string Key, object Value)> o ) throw new ArgumentException( "Invalid payload (expected list of (string,object)).", nameof( payload ) );
+            return BasicLoginAsync( ctx,
+                                    monitor,
+                                    (string)o.FirstOrDefault( kv => kv.Key == "userName" ).Value,
+                                    (string)o.FirstOrDefault( kv => kv.Key == "password" ).Value,
+                                    actualLogin );
         }
 
         /// <inheritdoc />

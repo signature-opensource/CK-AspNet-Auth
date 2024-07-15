@@ -110,6 +110,7 @@ namespace CK.AspNet.Auth.Tests
             }
             {
                 // Calling without Token: the call is "Anonymous" but nothing must have changed.
+                runningServer.Client.Token = null;
                 using var message = await runningServer.Client.GetAsync( "echo/plop?userName" );
                 var textMessage = await message.Content.ReadAsStringAsync();
                 textMessage.Should().Be( "/plop => ?userName (UserName: '')" );

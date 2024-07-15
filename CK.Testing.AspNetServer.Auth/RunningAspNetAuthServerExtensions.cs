@@ -78,7 +78,7 @@ namespace CK.Testing
         /// <param name="withVersion">True to return the version.</param>
         /// <param name="withSchemes">True to return the available authentication schemes.</param>
         /// <returns>The server response.</returns>
-        public static async Task<RefreshResponse> AuthenticationRefreshAsync( this RunningAspNetServer.RunningClient client, bool withVersion = false, bool withSchemes = false )
+        public static async Task<AuthServerResponse> AuthenticationRefreshAsync( this RunningAspNetServer.RunningClient client, bool withVersion = false, bool withSchemes = false )
         {
             var url = RefreshUri;
             if( withVersion && withSchemes )
@@ -92,9 +92,9 @@ namespace CK.Testing
             return await HandleResponseAsync( client, tokenRefresh );
         }
 
-        static async Task<RefreshResponse> HandleResponseAsync( RunningAspNetServer.RunningClient client, HttpResponseMessage m )
+        static async Task<AuthServerResponse> HandleResponseAsync( RunningAspNetServer.RunningClient client, HttpResponseMessage m )
         {
-            var r = RefreshResponse.Parse( client.Server.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
+            var r = AuthServerResponse.Parse( client.Server.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
             client.Token = r.Token;
             return r;
         }
@@ -116,7 +116,7 @@ namespace CK.Testing
         /// <param name="client">This client.</param>
         /// <param name="userName">The user name to impersonate.</param>
         /// <returns>The server response or null if impersonation failed.</returns>
-        public static async Task<RefreshResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, string userName )
+        public static async Task<AuthServerResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, string userName )
         {
             using HttpResponseMessage tokenRefresh = await client.PostJsonAsync( ImpersonateUri, $$"""{"userName":"{{userName}}"}""" );
             return tokenRefresh.StatusCode == System.Net.HttpStatusCode.OK
@@ -130,7 +130,7 @@ namespace CK.Testing
         /// <param name="client">This client.</param>
         /// <param name="userId">The user identifier to impersonate.</param>
         /// <returns>The server response or null if impersonation failed.</returns>
-        public static async Task<RefreshResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, int userId )
+        public static async Task<AuthServerResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, int userId )
         {
             using HttpResponseMessage tokenRefresh = await client.PostJsonAsync( ImpersonateUri, $$"""{"userId":{{userId}}}""" );
             return tokenRefresh.StatusCode == System.Net.HttpStatusCode.OK
@@ -148,10 +148,10 @@ namespace CK.Testing
         /// <param name="useGenericWrapper">True to use the <see cref="UnsafeDirectLoginUri"/> on Basic scheme.</param>
         /// <param name="rememberMe">False to not remember the authentication.</param>
         /// <param name="impersonateActualUser">True to impersonate the current user.</param>
-        /// <param name="jsonUserData">Optional user data (will be in <see cref="RefreshResponse.UserData"/>.</param>
+        /// <param name="jsonUserData">Optional user data (will be in <see cref="AuthServerResponse.UserData"/>.</param>
         /// <param name="password">Password to use.</param>
         /// <returns>The server response.</returns>
-        public static async Task<RefreshResponse> LoginViaBasicProviderAsync( this RunningAspNetServer.RunningClient client,
+        public static async Task<AuthServerResponse> LoginViaBasicProviderAsync( this RunningAspNetServer.RunningClient client,
                                                                               string userName,
                                                                               bool expectSuccess,
                                                                               bool useGenericWrapper = false,
@@ -216,7 +216,7 @@ namespace CK.Testing
             }
             if( jsonUserData != null )
             {
-                body += $$""", ""userData"": {{jsonUserData}}""";
+                body += $$""", "userData": {{jsonUserData}}""";
             }
             body += "}";
             using HttpResponseMessage responseMessage = await client.PostJsonAsync( uri, body );
@@ -237,7 +237,7 @@ namespace CK.Testing
             }
             return response;
 
-            static void CheckClientCookies( RunningAspNetServer.RunningClient client, RefreshResponse response, bool expectedRememberMe )
+            static void CheckClientCookies( RunningAspNetServer.RunningClient client, AuthServerResponse response, bool expectedRememberMe )
             {
                 var options = client.Server.GetAuthenticationOptions();
                 var cookieName = options.AuthCookieName;
@@ -281,7 +281,7 @@ namespace CK.Testing
                     longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).Should().Be( rememberMe, "The user is here only when remember is true." );
                 }
 
-                static void CookieIsNotTheSameAsToken( System.Net.CookieCollection all, string cookieName, RefreshResponse r )
+                static void CookieIsNotTheSameAsToken( System.Net.CookieCollection all, string cookieName, AuthServerResponse r )
                 {
                     var cookie = all.Single( c => c.Name == cookieName ).Value;
                     cookie = HttpUtility.UrlDecode( cookie );

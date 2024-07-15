@@ -83,10 +83,10 @@ namespace CK.AspNet.Auth.Tests
                     } );
                     configureApplication?.Invoke( app );
                 },
-                webFrontAuthOptions: webFrontAuthOptions );
+                authOptions: webFrontAuthOptions );
         }
 
-        public static async Task<RefreshResponse> LoginViaLocalCommandAsync( this RunningAspNetServer.RunningClient client,
+        public static async Task<AuthServerResponse> LoginViaLocalCommandAsync( this RunningAspNetServer.RunningClient client,
                                                                              string userName,
                                                                              bool impersonateActualUser = false )
         {

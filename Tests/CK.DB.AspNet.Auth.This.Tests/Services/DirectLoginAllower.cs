@@ -17,7 +17,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
         public static What Allowed { get; private set; }
 
-        public static IDisposable Allow( What a )
+        public static IDisposable SetAllow( What a )
         {
             Allowed = a;
             return Util.CreateDisposableAction( () => Allowed = What.None );

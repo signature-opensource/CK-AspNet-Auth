@@ -34,20 +34,20 @@ namespace CK.AspNet.Auth.Tests
                 }
             } );
 
-            var expectation = new Dictionary<string, string?>();
+            var expectation = new List<(string, string?)>();
             {
-                expectation.Add( "d", "a" );
+                expectation.Add( ("d", "a") );
                 var r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a""}" );
                 r.UserData.Should().BeEquivalentTo( expectation );
             }
             {
-                expectation.Add( "e", "b" );
+                expectation.Add( ("e", "b") );
                 var r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a"",""e"":""b""}" );
                 r.UserData.Should().BeEquivalentTo( expectation );
             }
             {
-                expectation.Add( "f", null );
-                expectation.Add( "g", String.Empty );
+                expectation.Add( ("f", null) );
+                expectation.Add( ("g", String.Empty) );
                 var r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, jsonUserData: @"{""d"":""a"",""e"":""b"",""f"":null,""g"":""""}" );
                 r.UserData.Should().BeEquivalentTo( expectation );
             }

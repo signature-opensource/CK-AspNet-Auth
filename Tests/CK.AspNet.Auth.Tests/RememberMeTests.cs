@@ -32,7 +32,7 @@ namespace CK.AspNet.Auth.Tests
             } );
 
             var options = new WebFrontAuthOptions();
-            RefreshResponse r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, rememberMe: rememberMe );
+            AuthServerResponse r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, rememberMe: rememberMe );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserName.Should().Be( "Albert" );
             r.RememberMe.Should().Be( rememberMe );

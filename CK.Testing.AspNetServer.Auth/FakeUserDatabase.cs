@@ -8,7 +8,7 @@ using System;
 namespace CK.Testing
 {
     /// <summary>
-    /// Fake user database that contains "System" (1), "Alice" (3171), "Albert" (3172), "Robert" (3713) and "Hubert" (3714).
+    /// Fake user database that contains "System" (1), "Alice" (3711), "Albert" (3712), "Robert" (3713) and "Hubert" (3714).
     /// "Alice", "Albert" and "Hubert" have the "Basic" provider.
     /// "Hubert" has the "Google" provider.
     /// <para>
@@ -22,14 +22,14 @@ namespace CK.Testing
 
         public FakeUserDatabase( IAuthenticationTypeSystem typeSystem )
         {
-            _users = new List<IUserInfo>
-            {
+            _users =
+            [
                 typeSystem.UserInfo.Create( 1, "System" ),
                 typeSystem.UserInfo.Create( 3711, "Alice", [new StdUserSchemeInfo( "Basic", DateTime.MinValue )] ),
                 typeSystem.UserInfo.Create( 3712, "Albert", [new StdUserSchemeInfo( "Basic", DateTime.MinValue )] ),
                 typeSystem.UserInfo.Create( 3713, "Robert" ),
                 typeSystem.UserInfo.Create( 3714, "Hubert", [new StdUserSchemeInfo( "Basic", DateTime.MinValue ), new StdUserSchemeInfo( "Google", DateTime.MinValue )] )
-            };
+            ];
             _typeSystem = typeSystem;
         }
 

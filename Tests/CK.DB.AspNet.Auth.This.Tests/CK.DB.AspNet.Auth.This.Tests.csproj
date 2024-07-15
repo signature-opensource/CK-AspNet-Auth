@@ -18,6 +18,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
+    <ProjectReference Include="..\..\CK.Testing.AspNetServer.Auth\CK.Testing.AspNetServer.Auth.csproj" />
   </ItemGroup>
 
 </Project>

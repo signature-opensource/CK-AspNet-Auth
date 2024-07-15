@@ -26,12 +26,10 @@ namespace CK.AspNet.Auth.Tests
 
         class ImpersonationAllowAliceToAlbert : IWebFrontAuthImpersonationService
         {
-            readonly IAuthenticationTypeSystem _typeSystem;
             readonly FakeWebFrontAuthLoginService _loginService;
 
-            public ImpersonationAllowAliceToAlbert( IAuthenticationTypeSystem typeSystem, FakeWebFrontAuthLoginService loginService )
+            public ImpersonationAllowAliceToAlbert( FakeWebFrontAuthLoginService loginService )
             {
-                _typeSystem = typeSystem;
                 _loginService = loginService;
             }
 
@@ -90,7 +88,7 @@ namespace CK.AspNet.Auth.Tests
             r2.Info.IsImpersonated.Should().BeTrue();
 
             // Impersonate to Alice: this clears the impersonation.
-            RefreshResponse? r = await runningServer.Client.ImpersonateAsync( "Alice" );
+            AuthServerResponse? r = await runningServer.Client.ImpersonateAsync( "Alice" );
             Throw.DebugAssert( r?.Info != null );
             r.Info.User.UserName.Should().Be( "Alice" );
             r.Info.ActualUser.UserName.Should().Be( "Alice" );

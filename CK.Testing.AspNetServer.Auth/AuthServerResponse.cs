@@ -11,7 +11,7 @@ namespace CK.Testing
     /// <summary>
     /// Models the response of the authentication server.
     /// </summary>
-    public sealed class RefreshResponse
+    public sealed class AuthServerResponse
     {
         /// <summary>
         /// Gets the authentication info.
@@ -27,11 +27,15 @@ namespace CK.Testing
 
         public bool Refreshable { get; set; }
 
+        public string? ErrorId { get; set; }
+
+        public string? ErrorText { get; set; }
+
         public string?[]? Schemes { get; set; }
 
         public string? Version { get; set; }
 
-        public Dictionary<string, string?>? UserData { get; set; }
+        public IList<(string, string?)> UserData { get; } = new List<(string, string?)>();
 
         /// <summary>
         /// Parse a server response.
@@ -39,10 +43,10 @@ namespace CK.Testing
         /// <param name="t">The type system.</param>
         /// <param name="json">The json string.</param>
         /// <returns>The server response.</returns>
-        public static RefreshResponse Parse( IAuthenticationTypeSystem t, string json )
+        public static AuthServerResponse Parse( IAuthenticationTypeSystem t, string json )
         {
             JObject o = JObject.Parse( json );
-            var r = new RefreshResponse();
+            var r = new AuthServerResponse();
             if( o["info"]?.Type == JTokenType.Object )
             {
                 r.Info = t.AuthenticationInfo.FromJObject( (JObject)o["info"]! );
@@ -52,17 +56,16 @@ namespace CK.Testing
             r.RememberMe = (bool?)o["rememberMe"] ?? false;
             r.Schemes = o["schemes"]?.Values<string>().ToArray();
             r.Version = (string?)o["version"];
-            var d = o["userData"];
-            if( d != null )
+            var userData = (JObject?)o["userData"];
+            if( userData != null )
             {
-                var values = new Dictionary<string, string?>();
-                var uD = (JObject)d;
-                foreach( var kv in uD )
+                foreach( var kv in userData )
                 {
-                    values.Add( kv.Key, (string?)kv.Value );
+                    r.UserData.Add( (kv.Key, (string?)kv.Value) );
                 }
-                r.UserData = values;
             }
+            r.ErrorId = (string?)o["errorId"];
+            r.ErrorText = (string?)o["errorText"];
             return r;
         }
     }

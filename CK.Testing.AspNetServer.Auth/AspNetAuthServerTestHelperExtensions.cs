@@ -37,13 +37,13 @@ namespace CK.Testing
         /// <param name="configureServices">Application services configurator must at least provide a <see cref="WebFrontAuthService"/> implementation.</param>
         /// <param name="configureAuth">Optional authentication configurator.</param>
         /// <param name="configureApplication">Optional application configurator.</param>
-        /// <param name="webFrontAuthOptions">Optional authentication options configurator.</param>
+        /// <param name="authOptions">Optional authentication options configurator.</param>
         /// <returns>A running Asp.NET server with authentication support.</returns>
         public static Task<RunningAspNetServer> CreateAspNetAuthServerAsync( this IMonitorTestHelper helper,
                                                                              Action<IServiceCollection> configureServices,
                                                                              Action<AuthenticationBuilder>? configureAuth = null,
                                                                              Action<IApplicationBuilder>? configureApplication = null,
-                                                                             Action<WebFrontAuthOptions>? webFrontAuthOptions = null )
+                                                                             Action<WebFrontAuthOptions>? authOptions = null )
         {
             Throw.CheckNotNullArgument( configureServices );
 
@@ -66,7 +66,7 @@ namespace CK.Testing
                 configureApplication?.Invoke( app );
             }
 
-            return helper.CreateMinimalAspNetServerAsync( configureServices: services => ConfigureServices( services, configureServices, configureAuth, webFrontAuthOptions ),
+            return helper.CreateMinimalAspNetServerAsync( configureServices: services => ConfigureServices( services, configureServices, configureAuth, authOptions ),
                                                           configureApplication: app => ConfigureApplication( app, configureApplication ) );
         }
 
@@ -82,7 +82,7 @@ namespace CK.Testing
         /// <param name="configureServices">Optional application services configurator.</param>
         /// <param name="configureAuth">Optional authentication configurator.</param>
         /// <param name="configureApplication">Optional application configurator.</param>
-        /// <param name="webFrontAuthOptions">
+        /// <param name="authOptions">
         /// Optional authentication options configurator.
         /// By default <see cref="WebFrontAuthOptions.SlidingExpirationTime"/> is set to 10 minutes.
         /// </param>
@@ -91,7 +91,7 @@ namespace CK.Testing
                                                                              Action<IServiceCollection>? configureServices = null,
                                                                              Action<AuthenticationBuilder>? configureAuth = null,
                                                                              Action<IApplicationBuilder>? configureApplication = null,
-                                                                             Action<WebFrontAuthOptions>? webFrontAuthOptions = null )
+                                                                             Action<WebFrontAuthOptions>? authOptions = null )
         {
             static void ConfigureServices( IServiceCollection services,
                                            IStObjMap map,
@@ -132,7 +132,7 @@ namespace CK.Testing
                 configureServices: services => ConfigureServices( services, map, configureServices ),
                 configureAuth: configureAuth,
                 configureApplication: configureApplication,
-                webFrontAuthOptions: webFrontAuthOptions );
+                authOptions: authOptions );
 
         }
 
