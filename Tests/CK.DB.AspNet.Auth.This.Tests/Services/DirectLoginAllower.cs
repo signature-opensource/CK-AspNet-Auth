@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
+    [ExcludeCKType]
     public class DirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
     {
         public enum What

@@ -8,6 +8,7 @@ using CK.Testing;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
@@ -30,7 +31,9 @@ namespace CK.DB.AspNet.Auth.Tests
             using var allowConfigure = DirectLoginAllower.SetAllow( allowed ? DirectLoginAllower.What.BasicOnly : DirectLoginAllower.What.None );
 
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            builder.Services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, DirectLoginAllower>();
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var auth = runningServer.Services.GetRequiredService<IAuthenticationDatabaseService>();
@@ -44,8 +47,10 @@ namespace CK.DB.AspNet.Auth.Tests
 
             string? deviceId = null;
             {
-                var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "pass" ) );
-                var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
+                var param = new JObject( new JProperty( "provider", "Basic" ),
+                                            new JProperty( "payload", new JObject(
+                                                                        new JProperty( "userName", userName ),
+                                                                        new JProperty( "password", "pass" ) ) ) );
                 using HttpResponseMessage authBasic = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
                 if( allowed )
                 {
@@ -80,7 +85,8 @@ namespace CK.DB.AspNet.Auth.Tests
         public async Task basic_authentication_on_user_Async( string userName, string password )
         {
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -99,7 +105,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 deviceId.Should().NotBeNullOrWhiteSpace();
             }
             {
-                var rFailed = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: "failed" + password );
+                var rFailed = await runningServer.Client.AuthenticationBasicLoginAsync( userName, false, password: "failed" + password );
                 ShouldBeUnsafeUser( rFailed, idUser, deviceId );
             }
         }
@@ -121,7 +127,9 @@ namespace CK.DB.AspNet.Auth.Tests
             using var allowConfigure = DirectLoginAllower.SetAllow( DirectLoginAllower.What.All );
 
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            builder.Services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, DirectLoginAllower>();
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             // Missing userName or userId.
             {
@@ -132,7 +140,7 @@ namespace CK.DB.AspNet.Auth.Tests
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
                 r.ErrorId.Should().Be( "System.ArgumentException" );
-                r.ErrorText.Should().Be( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string" );
+                r.ErrorText.Should().Be( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string entry. (Parameter 'payload')" );
             }
             // Missing password.
             {
@@ -143,18 +151,17 @@ namespace CK.DB.AspNet.Auth.Tests
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
                 r.ErrorId.Should().Be( "System.ArgumentException" );
-                r.ErrorText.Should().Be( "Invalid payload. Invalid payload. Missing 'Password' -> string entry." );
+                r.ErrorText.Should().Be( "Invalid payload. Missing 'Password' -> string entry. (Parameter 'payload')" );
             }
             // Totally invalid payload.
             {
                 var param = new JObject( new JProperty( "provider", "Basic" ),
-                                            new JProperty( "payload",
-                                                new JObject( new JProperty( "userId", "3712" ) ) ) );
+                                            new JProperty( "payload", "Nimp" ) );
                 using HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
                 m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
                 var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
                 r.ErrorId.Should().Be( "System.ArgumentException" );
-                r.ErrorText.Should().Be( "Invalid payload. It must be either a Tuple or ValueTuple (int,string) or (string,string) or a IDictionary<string,object?> or IEnumerable<KeyValuePair<string,object?>> or IEnumerable<(string,object?)> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries." );
+                r.ErrorText.Should().Be( "Invalid payload. It must be either a Tuple or ValueTuple (int,string) or (string,string) or a IDictionary<string,object?> or IEnumerable<KeyValuePair<string,object?>> or IEnumerable<(string,object?)> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries. (Parameter 'payload')" );
             }
         }
 
@@ -165,7 +172,10 @@ namespace CK.DB.AspNet.Auth.Tests
             using var allowConfigure = DirectLoginAllower.SetAllow( DirectLoginAllower.What.All );
 
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            builder.Services.AddSingleton<IWebFrontAuthUnsafeDirectLoginAllowService, DirectLoginAllower>();
+            builder.Services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula> ();
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -187,7 +197,7 @@ namespace CK.DB.AspNet.Auth.Tests
             }
 
             {
-                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, okInEvil, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
                 Throw.DebugAssert( r.Info != null );
                 if( okInEvil )
                 {
@@ -213,7 +223,9 @@ namespace CK.DB.AspNet.Auth.Tests
         public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login_Async( string userName, string password, bool okInEvil )
         {
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            builder.Services.AddSingleton<IWebFrontAuthValidateLoginService, NoEvilZoneForPaula>();
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -239,7 +251,7 @@ namespace CK.DB.AspNet.Auth.Tests
             }
             {
                 // Zone is "<&>vil".
-                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, okInEvil, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
                 if( okInEvil ) // When userName is "Albert".
                 {
                     Throw.DebugAssert( r.Info != null );

@@ -1,3 +1,4 @@
+using CK.AspNet.Auth;
 using CK.Core;
 using CK.DB.Actor;
 using CK.DB.Auth;
@@ -21,8 +22,9 @@ namespace CK.DB.AspNet.Auth.Tests
         public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes_Async()
         {
             var builder = WebApplication.CreateSlimBuilder();
+            builder.Services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationForEverybodyService>();
             builder.AddApplicationIdentityServiceConfiguration();
-            await using var runningServer = await builder.CreateRunningAspNetAuthServerAsync( SharedEngine.Map );
+            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -37,7 +39,7 @@ namespace CK.DB.AspNet.Auth.Tests
             var newAlbertName = Guid.NewGuid().ToString();
             await user.UserNameSetAsync( ctx, 1, idAlbert, newAlbertName );
 
-            r = await runningServer.Client.AuthenticationRefreshAsync();
+            r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserId.Should().Be( idAlbert );
             r.Info.User.UserName.Should().Be( newAlbertName );
@@ -55,13 +57,13 @@ namespace CK.DB.AspNet.Auth.Tests
             await user.UserNameSetAsync( ctx, 1, idAlbert, newAlbertName );
             await user.UserNameSetAsync( ctx, 1, idPaula, newPaulaName );
 
-            r = await runningServer.Client.AuthenticationRefreshAsync();
+            r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserName.Should().Be( newPaulaName );
             r.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
             await user.UserNameSetAsync( ctx, 1, idPaula, "Paula" );
-            r = await runningServer.Client.AuthenticationRefreshAsync();
+            r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserName.Should().Be( "Paula" );
             r.Info.ActualUser.UserName.Should().Be( newAlbertName );
@@ -73,7 +75,7 @@ namespace CK.DB.AspNet.Auth.Tests
             r.Info.User.UserName.Should().Be( newAlbertName,
                 "Impersonation in the ImpersonationForEverybodyService does not refresh the actual user." );
 
-            r = await runningServer.Client.AuthenticationRefreshAsync();
+            r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
             Throw.DebugAssert( r.Info != null );
             r.Info.ActualUser.UserName.Should().Be( "Albert" );
         }

@@ -108,7 +108,7 @@ namespace CK.AspNet.Auth.Tests
             // Request with token and ?schemes query parametrers: we receive the providers.
             {
                 runningServer.Client.Token = originalToken;
-                var tokenRefresh = await runningServer.Client.AuthenticationRefreshAsync( withSchemes: true );
+                var tokenRefresh = await runningServer.Client.AuthenticationRefreshAsync( schemes: true );
                 Debug.Assert( tokenRefresh.Info != null );
                 tokenRefresh.Info.Level.Should().Be( AuthLevel.Normal );
                 tokenRefresh.Info.User.UserName.Should().Be( "Albert" );

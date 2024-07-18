@@ -4,12 +4,14 @@ using CK.Core;
 using CK.DB.Auth;
 using CK.SqlServer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace CK.DB.AspNet.Auth.Tests
 {
+    [ExcludeCKType]
     public class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
     {
         readonly IAuthenticationTypeSystem _typeSystem;

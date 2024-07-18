@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web;
 using CK.Core;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 
 namespace CK.Testing
 {
@@ -75,18 +76,35 @@ namespace CK.Testing
         /// Calls <see cref="RefreshUri"/> and returns the server response.
         /// </summary>
         /// <param name="client">This client.</param>
-        /// <param name="withVersion">True to return the version.</param>
-        /// <param name="withSchemes">True to return the available authentication schemes.</param>
+        /// <param name="callBackend">
+        /// True to trigger a call to <see cref="IWebFrontAuthLoginService.RefreshAuthenticationInfoAsync"/>.
+        /// By default, when <see cref="WebFrontAuthOptions.AlwaysCallBackendOnRefresh"/> is false, the <see cref="IAuthenticationInfo.Expires"/>
+        /// is forwarded.
+        /// </param>
+        /// <param name="version">True to return the version.</param>
+        /// <param name="schemes">True to return the available authentication schemes.</param>
         /// <returns>The server response.</returns>
-        public static async Task<AuthServerResponse> AuthenticationRefreshAsync( this RunningAspNetServer.RunningClient client, bool withVersion = false, bool withSchemes = false )
+        public static async Task<AuthServerResponse> AuthenticationRefreshAsync( this RunningAspNetServer.RunningClient client,
+                                                                                 bool callBackend = false,
+                                                                                 bool version = false,
+                                                                                 bool schemes = false )
         {
             var url = RefreshUri;
-            if( withVersion && withSchemes )
+            if( callBackend || version || schemes )
             {
-                url += "?version&schemes";
+                url += '?';
+                if( callBackend ) url += "callBackend";
+                if( version )
+                {
+                    if( callBackend ) url += '&';
+                    url += "version";
+                }
+                if( schemes )
+                {
+                    if( callBackend || version ) url += '&';
+                    url += "schemes";
+                }
             }
-            else if( withVersion ) url += "?version";
-            else if( withSchemes ) url += "?schemes";
             using HttpResponseMessage tokenRefresh = await client.GetAsync( url );
             tokenRefresh.EnsureSuccessStatusCode();
             return await HandleResponseAsync( client, tokenRefresh );
@@ -220,12 +238,11 @@ namespace CK.Testing
             }
             body += "}";
             using HttpResponseMessage responseMessage = await client.PostJsonAsync( uri, body );
-            // Even when login failed, the Status is 200 and the response is here.
-            responseMessage.EnsureSuccessStatusCode();
             var response = await HandleResponseAsync( client, responseMessage );
             Throw.DebugAssert( response.Info != null );
             if( expectSuccess )
             {
+                responseMessage.EnsureSuccessStatusCode();
                 response.Info.Level.Should().BeOneOf( AuthLevel.Normal, AuthLevel.Critical );
                 response.Info.ActualUser.UserName.Should().Be( userName );
                 CheckClientCookies( client, response, rememberMe );
