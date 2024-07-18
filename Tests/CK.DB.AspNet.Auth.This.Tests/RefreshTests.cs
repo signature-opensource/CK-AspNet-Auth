@@ -6,6 +6,7 @@ using CK.Testing;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
@@ -20,7 +21,8 @@ namespace CK.DB.AspNet.Auth.Tests
         public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes_Async()
         {
             var builder = WebApplication.CreateSlimBuilder();
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
+            builder.AddApplicationIdentityServiceConfiguration();
+            await using var runningServer = await builder.CreateRunningAspNetAuthServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
