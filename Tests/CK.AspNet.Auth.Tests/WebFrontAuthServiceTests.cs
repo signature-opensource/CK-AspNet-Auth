@@ -18,7 +18,7 @@ namespace CK.AspNet.Auth.Tests
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync();
 
             // Login: the 2 cookies are set on .webFront/c/ path.
-            var login = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var login = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Debug.Assert( login.Info != null );
             await runningServer.Client.GetAsync( "/CallChallengeAsync" );
         }

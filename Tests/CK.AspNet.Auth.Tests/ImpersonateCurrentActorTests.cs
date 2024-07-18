@@ -75,20 +75,20 @@ namespace CK.AspNet.Auth.Tests
                     services.AddSingleton<IWebFrontAuthImpersonationService, ImpersonationAllowAliceToAlbert>();
                 } );
 
-            var r1 = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper );
+            var r1 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper );
             Throw.DebugAssert( r1.Info != null );
             r1.Info.ActualUser.UserName.Should().Be( "Albert" );
             r1.Info.User.UserName.Should().Be( "Albert" );
             r1.Info.IsImpersonated.Should().BeFalse();
 
-            var r2 = await runningServer.Client.LoginViaBasicProviderAsync( "Alice", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
+            var r2 = await runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
             Throw.DebugAssert( r2.Info != null );
             r2.Info.ActualUser.UserName.Should().Be( "Alice", "Alice is now the actual user." );
             r2.Info.User.UserName.Should().Be( "Albert", "Alice is impersonating Albert." );
             r2.Info.IsImpersonated.Should().BeTrue();
 
             // Impersonate to Alice: this clears the impersonation.
-            AuthServerResponse? r = await runningServer.Client.ImpersonateAsync( "Alice" );
+            AuthServerResponse? r = await runningServer.Client.AuthenticationImpersonateAsync( "Alice" );
             Throw.DebugAssert( r?.Info != null );
             r.Info.User.UserName.Should().Be( "Alice" );
             r.Info.ActualUser.UserName.Should().Be( "Alice" );
@@ -108,14 +108,14 @@ namespace CK.AspNet.Auth.Tests
                     }
                 } );
 
-            var r1 = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
+            var r1 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
             Throw.DebugAssert( r1.Info != null );
             r1.Info.Level.Should().Be( CK.Auth.AuthLevel.Normal );
             r1.Info.ActualUser.UserName.Should().Be( "Albert" );
             r1.Info.User.UserName.Should().Be( "Albert" );
             r1.Info.IsImpersonated.Should().BeFalse();
 
-            var r2 = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
+            var r2 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
             Throw.DebugAssert( r2.Info != null );
             r2.Info.Level.Should().Be( CK.Auth.AuthLevel.Normal );
             r2.Info.ActualUser.UserName.Should().Be( "Albert" );
@@ -144,7 +144,7 @@ namespace CK.AspNet.Auth.Tests
             // Login Albert.
             var initial = await (useLoginCommand
                                     ? runningServer.Client.LoginViaLocalCommandAsync( "Albert" )
-                                    : runningServer.Client.LoginViaBasicProviderAsync( "Albert", true ));
+                                    : runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true ));
             Throw.DebugAssert( initial.Info != null );
             initial.Info.IsImpersonated.Should().BeFalse();
             initial.Info.User.UserName.Should().Be( "Albert" );
@@ -152,7 +152,7 @@ namespace CK.AspNet.Auth.Tests
             // Alice impersonates Albert.
             var imp = await (useLoginCommand
                                 ? runningServer.Client.LoginViaLocalCommandAsync( "Alice", impersonateActualUser: true )
-                                : runningServer.Client.LoginViaBasicProviderAsync( "Alice", true, impersonateActualUser: true ));
+                                : runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, impersonateActualUser: true ));
             Throw.DebugAssert( imp.Info != null );
             imp.Info.IsImpersonated.Should().BeTrue();
             imp.Info.ActualUser.UserName.Should().Be( "Alice" );
@@ -165,7 +165,7 @@ namespace CK.AspNet.Auth.Tests
                 bool impersonateActualUser = Environment.TickCount % 2 == 0;
                 imp = await (useLoginCommand
                                 ? runningServer.Client.LoginViaLocalCommandAsync( "Alice", impersonateActualUser: true )
-                                : runningServer.Client.LoginViaBasicProviderAsync( "Alice", true, impersonateActualUser: true ));
+                                : runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, impersonateActualUser: true ));
                 Throw.DebugAssert( imp.Info != null );
                 imp.Info.IsImpersonated.Should().BeFalse();
                 imp.Info.ActualUser.UserName.Should().Be( "Alice" );
@@ -174,8 +174,8 @@ namespace CK.AspNet.Auth.Tests
             {
                 // When Alice impersonates to Alice, the impersonation is cleared.
                 var r = byUserId
-                        ? await runningServer.Client.ImpersonateAsync( imp.Info.ActualUser.UserId )
-                        : await runningServer.Client.ImpersonateAsync( "Alice" );
+                        ? await runningServer.Client.AuthenticationImpersonateAsync( imp.Info.ActualUser.UserId )
+                        : await runningServer.Client.AuthenticationImpersonateAsync( "Alice" );
                 Throw.DebugAssert( r?.Info != null );
                 r.Info.IsImpersonated.Should().BeFalse();
                 r.Info.User.UserName.Should().Be( "Alice" );

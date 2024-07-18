@@ -17,6 +17,7 @@ namespace CK.Testing
     /// This class can be totally specialized.
     /// </para>
     /// </summary>
+    [ExcludeCKType]
     public class FakeWebFrontAuthLoginService : IWebFrontAuthLoginService
     {
         readonly IAuthenticationTypeSystem _typeSystem;

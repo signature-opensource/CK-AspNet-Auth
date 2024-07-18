@@ -49,7 +49,7 @@ namespace CK.AspNet.Auth.Tests
                         } );
                     } );
                
-            AuthServerResponse r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            AuthServerResponse r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             runningServer.Client.Token = r.Token;
             var m = await runningServer.Client.GetAsync( "/TestAuth" );
             m.StatusCode.Should().Be( HttpStatusCode.PaymentRequired );

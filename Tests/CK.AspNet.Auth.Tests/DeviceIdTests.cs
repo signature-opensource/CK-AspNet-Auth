@@ -81,7 +81,7 @@ namespace CK.AspNet.Auth.Tests
                 deviceId = cookies.LTDeviceId;
             }
             {
-                await runningServer.Client.LoginViaBasicProviderAsync( "Albert", expectSuccess: true, rememberMe: false );
+                await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", expectSuccess: true, rememberMe: false );
                 var cookies = runningServer.Client.AuthenticationReadCookies();
                 cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
                 cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();

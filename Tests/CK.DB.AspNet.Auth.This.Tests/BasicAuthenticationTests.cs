@@ -6,6 +6,7 @@ using CK.DB.Auth;
 using CK.SqlServer;
 using CK.Testing;
 using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -28,7 +29,8 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             using var allowConfigure = DirectLoginAllower.SetAllow( allowed ? DirectLoginAllower.What.BasicOnly : DirectLoginAllower.What.None );
 
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var auth = runningServer.Services.GetRequiredService<IAuthenticationDatabaseService>();
@@ -77,7 +79,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass" )]
         public async Task basic_authentication_on_user_Async( string userName, string password )
         {
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -90,13 +93,13 @@ namespace CK.DB.AspNet.Auth.Tests
 
             string deviceId;
             {
-                var r = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, password: password );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password );
                 Throw.DebugAssert( r.Info != null );
                 deviceId = r.Info.DeviceId;
                 deviceId.Should().NotBeNullOrWhiteSpace();
             }
             {
-                var rFailed = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, password: "failed" + password );
+                var rFailed = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: "failed" + password );
                 ShouldBeUnsafeUser( rFailed, idUser, deviceId );
             }
         }
@@ -117,7 +120,8 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             using var allowConfigure = DirectLoginAllower.SetAllow( DirectLoginAllower.What.All );
 
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             // Missing userName or userId.
             {
@@ -160,7 +164,8 @@ namespace CK.DB.AspNet.Auth.Tests
         {
             using var allowConfigure = DirectLoginAllower.SetAllow( DirectLoginAllower.What.All );
 
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -174,7 +179,7 @@ namespace CK.DB.AspNet.Auth.Tests
 
             string deviceId;
             {
-                var r = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"good"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"good"}""" );
                 Throw.DebugAssert( r.Info != null );
                 deviceId = r.Info.DeviceId;
                 deviceId.Should().NotBeNullOrWhiteSpace();
@@ -182,7 +187,7 @@ namespace CK.DB.AspNet.Auth.Tests
             }
 
             {
-                var r = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
                 Throw.DebugAssert( r.Info != null );
                 if( okInEvil )
                 {
@@ -207,7 +212,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [TestCase( "Paula", "pass", false )]
         public async Task IWebFrontAuthValidateLoginService_can_prevent_basic_login_Async( string userName, string password, bool okInEvil )
         {
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -222,7 +228,7 @@ namespace CK.DB.AspNet.Auth.Tests
             string deviceId;
             {
                 // Zone is "good".
-                var r = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, password: password, jsonUserData: """{"zone":"good"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password, jsonUserData: """{"zone":"good"}""" );
                 Throw.DebugAssert( r.Info != null );
                 deviceId = r.Info.DeviceId;
                 r.Info.Level.Should().Be( AuthLevel.Normal );
@@ -233,7 +239,7 @@ namespace CK.DB.AspNet.Auth.Tests
             }
             {
                 // Zone is "<&>vil".
-                var r = await runningServer.Client.LoginViaBasicProviderAsync( userName, true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
+                var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password, jsonUserData: """{"zone":"<&>vil"}""" );
                 if( okInEvil ) // When userName is "Albert".
                 {
                     Throw.DebugAssert( r.Info != null );

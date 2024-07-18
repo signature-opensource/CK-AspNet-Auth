@@ -116,7 +116,7 @@ namespace CK.Testing
         /// <param name="client">This client.</param>
         /// <param name="userName">The user name to impersonate.</param>
         /// <returns>The server response or null if impersonation failed.</returns>
-        public static async Task<AuthServerResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, string userName )
+        public static async Task<AuthServerResponse?> AuthenticationImpersonateAsync( this RunningAspNetServer.RunningClient client, string userName )
         {
             using HttpResponseMessage tokenRefresh = await client.PostJsonAsync( ImpersonateUri, $$"""{"userName":"{{userName}}"}""" );
             return tokenRefresh.StatusCode == System.Net.HttpStatusCode.OK
@@ -130,7 +130,7 @@ namespace CK.Testing
         /// <param name="client">This client.</param>
         /// <param name="userId">The user identifier to impersonate.</param>
         /// <returns>The server response or null if impersonation failed.</returns>
-        public static async Task<AuthServerResponse?> ImpersonateAsync( this RunningAspNetServer.RunningClient client, int userId )
+        public static async Task<AuthServerResponse?> AuthenticationImpersonateAsync( this RunningAspNetServer.RunningClient client, int userId )
         {
             using HttpResponseMessage tokenRefresh = await client.PostJsonAsync( ImpersonateUri, $$"""{"userId":{{userId}}}""" );
             return tokenRefresh.StatusCode == System.Net.HttpStatusCode.OK
@@ -151,14 +151,14 @@ namespace CK.Testing
         /// <param name="jsonUserData">Optional user data (will be in <see cref="AuthServerResponse.UserData"/>.</param>
         /// <param name="password">Password to use.</param>
         /// <returns>The server response.</returns>
-        public static async Task<AuthServerResponse> LoginViaBasicProviderAsync( this RunningAspNetServer.RunningClient client,
-                                                                              string userName,
-                                                                              bool expectSuccess,
-                                                                              bool useGenericWrapper = false,
-                                                                              bool rememberMe = true,
-                                                                              bool impersonateActualUser = false,
-                                                                              string? jsonUserData = null,
-                                                                              string password = "success" )
+        public static async Task<AuthServerResponse> AuthenticationBasicLoginAsync( this RunningAspNetServer.RunningClient client,
+                                                                                    string userName,
+                                                                                    bool expectSuccess,
+                                                                                    bool useGenericWrapper = false,
+                                                                                    bool rememberMe = true,
+                                                                                    bool impersonateActualUser = false,
+                                                                                    string? jsonUserData = null,
+                                                                                    string password = "success" )
         {
             string uri;
             string body;
@@ -295,7 +295,7 @@ namespace CK.Testing
         /// </summary>
         /// <param name="client">This client.</param>
         /// <returns>The cookie information.</returns>
-        public static (string? AuthCookie, JObject? LTCookie, string? LTDeviceId, string? LTUserId, string? LTUserName) AuthenticationReadCookies( this RunningAspNetServer.RunningClient client )
+        public static AuthenticationCookieValues AuthenticationReadCookies( this RunningAspNetServer.RunningClient client )
         {
             var options = GetAuthenticationOptions( client.Server );
             System.Net.CookieCollection? all = null;

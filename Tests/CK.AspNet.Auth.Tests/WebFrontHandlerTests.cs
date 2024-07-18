@@ -81,7 +81,7 @@ namespace CK.AspNet.Auth.Tests
                                            webFrontAuthOptions: opt => opt.CookieMode = mode );
 
             // Login: the 2 cookies are set on .webFront/c/ path.
-            var login = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper: useGenericWrapper );
+            var login = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper );
             Debug.Assert( login.Info != null );
             DateTime basicLoginTime = login.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
             string? originalToken = login.Token;
@@ -123,7 +123,7 @@ namespace CK.AspNet.Auth.Tests
         {
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: opt => opt.CookieMode = mode );
 
-            var firstLogin = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var firstLogin = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
 
             string badToken = firstLogin.Token + 'B';
             runningServer.Client.Token = badToken;
@@ -141,7 +141,7 @@ namespace CK.AspNet.Auth.Tests
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: opt => opt.CookieMode = mode );
 
             // Login: the 2 cookies are set.
-            var firstLogin = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var firstLogin = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( firstLogin.Info != null );
             DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
             runningServer.Client.Token.Should().Be( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
@@ -167,7 +167,7 @@ namespace CK.AspNet.Auth.Tests
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: opt => opt.CookieMode = mode );
 
             // Login: the 2 cookies are set.
-            var firstLogin = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var firstLogin = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( firstLogin.Info != null );
             DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
             runningServer.Client.Token.Should().Be( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
@@ -206,7 +206,7 @@ namespace CK.AspNet.Auth.Tests
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: opt => opt.CookieMode = rootCookiePath
                                                                                                                       ? AuthenticationCookieMode.RootPath
                                                                                                                       : AuthenticationCookieMode.WebFrontPath );
-            var r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             {
                 // With token: it always works.
                 runningServer.Client.Token.Should().Be( r.Token );
@@ -253,7 +253,7 @@ namespace CK.AspNet.Auth.Tests
                 } );
 
             // This test is far from perfect but does the job without clock injection.
-            AuthServerResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, useGenericWrapper, rememberMe );
+            AuthServerResponse auth = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper, rememberMe );
             Throw.DebugAssert( auth.Info!.Expires != null );
 
             DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
@@ -278,7 +278,7 @@ namespace CK.AspNet.Auth.Tests
             } );
 
             // This test is far from perfect but does the job without clock injection.
-            AuthServerResponse auth = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            AuthServerResponse auth = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( auth.Info!.Expires != null );
 
             DateTime expCookie1 = runningServer.Client.CookieContainer.GetCookies( runningServer.Client.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();

@@ -4,6 +4,7 @@ using CK.DB.Auth;
 using CK.SqlServer;
 using CK.Testing;
 using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -18,11 +19,8 @@ namespace CK.DB.AspNet.Auth.Tests
         [Test]
         public async Task refreshing_with_callBackend_correctly_handles_impersonation_changes_Async()
         {
-            var engineConfiguration = SharedEngine.GetEngineConfiguration( reset: false );
-            engineConfiguration.FirstBinPath.ExcludedTypes.Add( typeof( FakeUserDatabase ) );
-            engineConfiguration.FirstBinPath.ExcludedTypes.Add( typeof( FakeWebFrontAuthLoginService ) );
-
-            await using var runningServer = await SharedEngine.Map.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( SharedEngine.Map );
 
             var user = runningServer.Services.GetRequiredService<UserTable>();
             var basic = runningServer.Services.GetRequiredService<IBasicAuthenticationProvider>();
@@ -32,7 +30,7 @@ namespace CK.DB.AspNet.Auth.Tests
             int idAlbert = await SetupUserAsync( ctx, "Albert", "pass", user, basic );
             int idPaula = await SetupUserAsync( ctx, "Paula", "pass", user, basic );
 
-            var r = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true, password: "pass" );
+            var r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, password: "pass" );
 
             var newAlbertName = Guid.NewGuid().ToString();
             await user.UserNameSetAsync( ctx, 1, idAlbert, newAlbertName );
@@ -42,7 +40,7 @@ namespace CK.DB.AspNet.Auth.Tests
             r.Info.User.UserId.Should().Be( idAlbert );
             r.Info.User.UserName.Should().Be( newAlbertName );
 
-            r = await runningServer.Client.ImpersonateAsync( idPaula );
+            r = await runningServer.Client.AuthenticationImpersonateAsync( idPaula );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserName.Should().Be( "Paula" );
             r.Info.ActualUser.UserName.Should().Be( newAlbertName );
@@ -67,7 +65,7 @@ namespace CK.DB.AspNet.Auth.Tests
             r.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
             await user.UserNameSetAsync( ctx, 1, idAlbert, "Albert" );
-            r = await runningServer.Client.ImpersonateAsync( idAlbert );
+            r = await runningServer.Client.AuthenticationImpersonateAsync( idAlbert );
             Throw.DebugAssert( r.Info != null );
             r.Info.User.UserId.Should().Be( idAlbert );
             r.Info.User.UserName.Should().Be( newAlbertName,

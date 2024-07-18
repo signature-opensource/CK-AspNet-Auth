@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="builder">This builder.</param>
         /// <param name="policyName">The policy name.</param>
-        /// <returns></returns>
+        /// <returns>This builder.</returns>
         public static WebApplicationBuilder AddCors( this WebApplicationBuilder builder,
                                                      string policyName )
         {
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var p = props[typeof( CorsPolicyBuilder )];
                 if( p is string name ) app.UseCors( name );
                 else app.UseCors( (Action<CorsPolicyBuilder>)p );
-                props.Remove( typeof( CorsPolicyBuilder );
+                props.Remove( typeof( CorsPolicyBuilder ) );
             };
         }
     }

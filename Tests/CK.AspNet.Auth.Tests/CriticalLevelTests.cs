@@ -17,7 +17,7 @@ namespace CK.AspNet.Auth.Tests
         {
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: options => options.ExpireTimeSpan = TimeSpan.FromHours( 1 ) );
 
-            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( response.Info != null );
             response.Info.Level.Should().Be( AuthLevel.Normal );
             response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
@@ -38,7 +38,7 @@ namespace CK.AspNet.Auth.Tests
 
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
 
-            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( response.Info != null );
             response.Info.Level.Should().Be( AuthLevel.Normal );
             response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
@@ -59,7 +59,7 @@ namespace CK.AspNet.Auth.Tests
 
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
 
-            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( response.Info != null );
             response.Info.Level.Should().Be( AuthLevel.Critical );
             response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
@@ -80,7 +80,7 @@ namespace CK.AspNet.Auth.Tests
 
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
 
-            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( response.Info != null );
             response.Info.Level.Should().Be( AuthLevel.Normal );
             response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
@@ -100,7 +100,7 @@ namespace CK.AspNet.Auth.Tests
 
             await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( webFrontAuthOptions: SetOptions );
 
-            var response = await runningServer.Client.LoginViaBasicProviderAsync( "Albert", true );
+            var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
             Throw.DebugAssert( response.Info != null );
             response.Info.Level.Should().Be( AuthLevel.Critical );
             response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
