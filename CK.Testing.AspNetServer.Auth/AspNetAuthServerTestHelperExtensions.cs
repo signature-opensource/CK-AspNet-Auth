@@ -44,10 +44,11 @@ namespace CK.Testing
             }
             if( !map.Services.Mappings.ContainsKey( typeof( IWebFrontAuthLoginService ) ) )
             {
+                builder.Services.TryAddSingleton<FakeUserDatabase>();
                 builder.Services.TryAddSingleton<IWebFrontAuthLoginService, FakeWebFrontAuthLoginService>();
             }
-            builder.AddWebFrontAuth( authOptions );
             builder.AddUnsafeAllowAllCors();
+            builder.AddWebFrontAuth( authOptions );
             return builder.CreateRunningAspNetServerAsync( map, configureApplication );
         }
 
