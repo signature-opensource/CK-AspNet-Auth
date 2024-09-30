@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer" Version="0.0.0--052zkum-develop" />
+    <PackageReference Include="CK.Testing.AspNetServer" Version="0.0.0--0535kiy-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />
