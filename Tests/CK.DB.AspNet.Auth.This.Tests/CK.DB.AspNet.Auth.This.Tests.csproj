@@ -7,9 +7,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.DB.User.UserPassword" Version="0.0.0--053imdj-develop" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="0.0.0--053imdi-develop" />
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="0.0.0--053imdh-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="0.0.0--053is6d-develop" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="0.0.0--053is65-develop" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="0.0.0--053is63-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
