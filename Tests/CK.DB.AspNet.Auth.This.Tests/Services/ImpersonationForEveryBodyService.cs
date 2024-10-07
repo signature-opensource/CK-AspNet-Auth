@@ -9,30 +9,28 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace CK.DB.AspNet.Auth.Tests
+namespace CK.DB.AspNet.Auth.Tests;
+
+[ExcludeCKType]
+public class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
 {
-    [ExcludeCKType]
-    public class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
+    readonly IAuthenticationTypeSystem _typeSystem;
+    readonly IAuthenticationDatabaseService _db;
+
+    public ImpersonationForEverybodyService( IAuthenticationTypeSystem typeSystem, IAuthenticationDatabaseService db )
     {
-        readonly IAuthenticationTypeSystem _typeSystem;
-        readonly IAuthenticationDatabaseService _db;
-
-        public ImpersonationForEverybodyService( IAuthenticationTypeSystem typeSystem, IAuthenticationDatabaseService db )
-        {
-            _typeSystem = typeSystem;
-            _db = db;
-        }
-
-        public async Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
-        {
-            IUserAuthInfo? dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetRequiredService<ISqlCallContext>(), 1, userId );
-            return _typeSystem.UserInfo.FromUserAuthInfo( dbUser );
-        }
-
-        public Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
-        {
-            throw new NotImplementedException( "Not tested." );
-        }
+        _typeSystem = typeSystem;
+        _db = db;
     }
 
+    public async Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, int userId )
+    {
+        IUserAuthInfo? dbUser = await _db.ReadUserAuthInfoAsync( ctx.RequestServices.GetRequiredService<ISqlCallContext>(), 1, userId );
+        return _typeSystem.UserInfo.FromUserAuthInfo( dbUser );
+    }
+
+    public Task<IUserInfo?> ImpersonateAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo info, string userName )
+    {
+        throw new NotImplementedException( "Not tested." );
+    }
 }
