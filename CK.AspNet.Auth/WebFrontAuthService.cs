@@ -22,10 +22,10 @@ namespace CK.AspNet.Auth;
 
 /// <summary>
 /// Sealed implementation of the actual authentication service.
-/// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(AuthenticationBuilder)" />,
+/// This implementation is registered as a singleton by <see cref="WebFrontAuthExtensions.AddWebFrontAuth(Microsoft.AspNetCore.Builder.WebApplicationBuilder, Action{WebFrontAuthOptions}?)" />,
 /// it is not a <see cref="IAutoService"/> and is a endpoint service (available only from the Global DI).
 /// </summary>
-[ContainerConfiguredSingletonService]
+[SingletonContainerConfiguredService]
 public sealed class WebFrontAuthService
 {
     /// <summary>
@@ -476,10 +476,9 @@ public sealed class WebFrontAuthService
         bool shouldSetCookies = false;
         FrontAuthenticationInfo? fAuth = null;
         // First try from the bearer: this is always the preferred way.
-        string authorization = c.Request.Headers[_bearerHeaderName];
-        bool fromBearer = !string.IsNullOrEmpty( authorization )
-                          && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase );
-        if( fromBearer )
+        string? authorization = c.Request.Headers[_bearerHeaderName];
+        if( !string.IsNullOrEmpty( authorization )
+            && authorization.StartsWith( "Bearer ", StringComparison.OrdinalIgnoreCase ) )
         {
             try
             {

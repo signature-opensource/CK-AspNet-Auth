@@ -45,7 +45,7 @@ public class RefreshTests
         r.Info.User.UserName.Should().Be( newAlbertName );
 
         r = await runningServer.Client.AuthenticationImpersonateAsync( idPaula );
-        Throw.DebugAssert( r.Info != null );
+        Throw.DebugAssert( r != null && r.Info != null );
         r.Info.User.UserName.Should().Be( "Paula" );
         r.Info.ActualUser.UserName.Should().Be( newAlbertName );
 
@@ -70,7 +70,7 @@ public class RefreshTests
 
         await user.UserNameSetAsync( ctx, 1, idAlbert, "Albert" );
         r = await runningServer.Client.AuthenticationImpersonateAsync( idAlbert );
-        Throw.DebugAssert( r.Info != null );
+        Throw.DebugAssert( r != null && r.Info != null );
         r.Info.User.UserId.Should().Be( idAlbert );
         r.Info.User.UserName.Should().Be( newAlbertName,
             "Impersonation in the ImpersonationForEverybodyService does not refresh the actual user." );

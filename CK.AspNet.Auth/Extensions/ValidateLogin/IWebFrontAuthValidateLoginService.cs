@@ -26,8 +26,8 @@ namespace CK.AspNet.Auth;
 ///  </item>
 /// </list>
 /// </summary>
-[ContainerConfiguredSingletonService]
-public interface IWebFrontAuthValidateLoginService : ISingletonAutoService
+[SingletonContainerConfiguredService]
+public interface IWebFrontAuthValidateLoginService : IAutoService
 {
     /// <summary>
     /// Called for each login. Any error set on the <paramref name="context"/> cancels the login.

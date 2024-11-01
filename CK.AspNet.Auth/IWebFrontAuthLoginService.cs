@@ -16,8 +16,8 @@ namespace CK.AspNet.Auth;
 /// This service is a endpoint service: it is available only in the global DI context, not from any other endpoints.
 /// </para>
 /// </summary>
-[ContainerConfiguredSingletonService]
-public interface IWebFrontAuthLoginService : ISingletonAutoService
+[SingletonContainerConfiguredService]
+public interface IWebFrontAuthLoginService : IAutoService
 {
     /// <summary>
     /// Gets whether <see cref="BasicLoginAsync"/> is supported.

@@ -17,14 +17,14 @@ namespace CK.AspNet.Auth;
 /// Others simply returns these informations in the <see cref="TicketReceivedContext"/>.
 /// </para>
 /// </summary>
-[ContainerConfiguredSingletonService]
-public interface IWebFrontAuthDynamicScopeProvider : ISingletonAutoService
+[SingletonContainerConfiguredService]
+public interface IWebFrontAuthDynamicScopeProvider : IAutoService
 {
     /// <summary>
     /// Called at the start of the external login flow.
     /// </summary>
-    /// <param name="m">The monitor to use.</param>
+    /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
     /// <returns>Scopes that should be submitted.</returns>
-    Task<string[]> GetScopesAsync( IActivityMonitor m, WebFrontAuthStartLoginContext context );
+    Task<string[]> GetScopesAsync( IActivityMonitor monitor, WebFrontAuthStartLoginContext context );
 }

@@ -17,8 +17,8 @@ namespace CK.AspNet.Auth;
 /// required to actually create the account and log in the user.
 /// Also, not all schemes should be systematically supported, nor all <see cref="IWebFrontAuthAutoCreateAccountContext.LoginMode"/>.
 /// </summary>
-[ContainerConfiguredSingletonService]
-public interface IWebFrontAuthAutoCreateAccountService : ISingletonAutoService
+[SingletonContainerConfiguredService]
+public interface IWebFrontAuthAutoCreateAccountService : IAutoService
 {
     /// <summary>
     /// Called for each failed login when <see cref="UserLoginResult.IsUnregisteredUser"/> is true and when there is
