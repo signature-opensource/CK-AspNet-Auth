@@ -116,18 +116,16 @@ public class SqlWebFrontAuthLoginService : IWebFrontAuthLoginService
     /// <param name="current">The current authentication info that should be refreshed. Can be null (None authentication is returned).</param>
     /// <param name="newExpires">New expiration date (can be the same as the current's one).</param>
     /// <returns>The refreshed information. Never null but may be the None authentication info.</returns>
-    public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo current, DateTime newExpires )
+    public virtual async Task<IAuthenticationInfo> RefreshAuthenticationInfoAsync( HttpContext ctx, IActivityMonitor monitor, IAuthenticationInfo? current, DateTime newExpires )
     {
         if( current == null ) return _typeSystem.AuthenticationInfo.None;
         var c = ctx.RequestServices.GetRequiredService<ISqlCallContext>();
         IUserAuthInfo? dbActual = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeActualUser.UserId, current.UnsafeActualUser.UserId );
-        Throw.DebugAssert( dbActual != null );
         IUserInfo? actual = _typeSystem.UserInfo.FromUserAuthInfo( dbActual );
         IAuthenticationInfo refreshed = _typeSystem.AuthenticationInfo.Create( actual, newExpires, current.CriticalExpires, current.DeviceId );
         if( refreshed.Level != AuthLevel.None && current.IsImpersonated )
         {
             IUserAuthInfo? dbUser = await _authPackage.ReadUserAuthInfoAsync( c, current.UnsafeUser.UserId, current.UnsafeUser.UserId );
-            Throw.DebugAssert( dbUser != null );
             IUserInfo user = _typeSystem.UserInfo.FromUserAuthInfo( dbUser ) ?? _typeSystem.UserInfo.Anonymous;
             refreshed = refreshed.Impersonate( user );
         }
