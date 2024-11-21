@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.DB.User.UserPassword" Version="22.0.0" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="22.0.0" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="27.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+    Currently, CK.AppIdentity.Hosting is not merged into CK.AppIdentity and we don't have
+    Auto Configuration support on Real Objects.
+    This test requires the hosting to be able to add CKAppIdentity configuration to the built hosts.     
+    -->
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
+    <ProjectReference Include="..\..\CK.Testing.AspNetServer.Auth\CK.Testing.AspNetServer.Auth.csproj" />
+  </ItemGroup>
+</Project>

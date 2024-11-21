@@ -10,58 +10,58 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.AspNet.Auth
+namespace CK.AspNet.Auth;
+
+static class InternalExtensions
 {
-    static class InternalExtensions
+    static public JProperty ToJProperty( this IDictionary<string, string?> @this, string name = "userData" )
     {
-        static public JProperty ToJProperty( this IDictionary<string, string?> @this, string name = "userData" )
-        {
-            return new JProperty( name,
-                            new JObject( @this.Select( d => new JProperty( d.Key, (string?)d.Value ) ) ) );
-        }
+        return new JProperty( name,
+                        new JObject( @this.Select( d => new JProperty( d.Key, (string?)d.Value ) ) ) );
+    }
 
-        static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
-        {
-            @this.Headers[HeaderNames.CacheControl] = "no-cache";
-            @this.Headers[HeaderNames.Pragma] = "no-cache";
-            @this.Headers[HeaderNames.Expires] = "-1";
-            @this.StatusCode = defaultStatusCode;
-        }
+    static public void SetNoCacheAndDefaultStatus( this HttpResponse @this, int defaultStatusCode )
+    {
+        @this.Headers[HeaderNames.CacheControl] = "no-cache";
+        @this.Headers[HeaderNames.Pragma] = "no-cache";
+        @this.Headers[HeaderNames.Expires] = "-1";
+        @this.StatusCode = defaultStatusCode;
+    }
 
-        /// <summary>
-        /// Reads a limited number of characters from the request body (with an UTF8 encoding).
-        /// </summary>
-        /// <param name="this">This request.</param>
-        /// <param name="maxLen">The maximal number of characters to read.</param>
-        /// <returns>The string or null on error.</returns>
-        static public async Task<string?> TryReadSmallBodyAsStringAsync( this HttpRequest @this, int maxLen )
+    /// <summary>
+    /// Reads a limited number of characters from the request body (with an UTF8 encoding).
+    /// </summary>
+    /// <param name="this">This request.</param>
+    /// <param name="maxLen">The maximal number of characters to read.</param>
+    /// <returns>The string or null on error.</returns>
+    static public async Task<string?> TryReadSmallBodyAsStringAsync( this HttpRequest @this, int maxLen )
+    {
+        using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
         {
-            using( var s = new StreamReader( @this.Body, Encoding.UTF8, true, 1024, true ) )
+            char[] max = new char[maxLen + 1];
+            int len = await s.ReadBlockAsync( max, 0, maxLen + 1 );
+            if( len >= maxLen )
             {
-                char[] max = new char[maxLen + 1];
-                int len = await s.ReadBlockAsync( max, 0, maxLen + 1 );
-                if( len >= maxLen )
-                {
-                    @this.HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    return null;
-                }
-                return new String( max, 0, len );
+                @this.HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return null;
             }
+            return new String( max, 0, len );
         }
+    }
 
-        static public Task WriteAsync( this HttpResponse @this, JObject? o, int code = StatusCodes.Status200OK )
-        {
-            @this.StatusCode = code;
-            @this.ContentType = "application/json";
-            return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
-        }
+    static public Task WriteAsync( this HttpResponse @this, JObject? o, int code = StatusCodes.Status200OK )
+    {
+        @this.StatusCode = code;
+        @this.ContentType = "application/json";
+        return @this.WriteAsync( o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}" );
+    }
 
-        static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string? callerOrigin )
-        {
-            @this.StatusCode = StatusCodes.Status200OK;
-            @this.ContentType = "text/html";
-            var oS = o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}";
-            var r = $@"<!DOCTYPE html>
+    static public Task WriteWindowPostMessageAsync( this HttpResponse @this, JObject o, string? callerOrigin )
+    {
+        @this.StatusCode = StatusCodes.Status200OK;
+        @this.ContentType = "text/html";
+        var oS = o != null ? o.ToString( Newtonsoft.Json.Formatting.None ) : "{}";
+        var r = $@"<!DOCTYPE html>
 <html>
 <head>
     <meta name=""viewport"" content=""width=device-width"" />
@@ -78,15 +78,14 @@ window.close();
 <!--{GetBreachPadding()}-->
 </body>
 </html>";
-            return @this.WriteAsync( r );
-        }
+        return @this.WriteAsync( r );
+    }
 
-        static string GetBreachPadding()
-        {
-            Random random = new Random();
-            byte[] data = new byte[random.Next( 10, 256 )];
-            random.NextBytes( data );
-            return Convert.ToBase64String( data );
-        }
+    static string GetBreachPadding()
+    {
+        Random random = new Random();
+        byte[] data = new byte[random.Next( 10, 256 )];
+        random.NextBytes( data );
+        return Convert.ToBase64String( data );
     }
 }

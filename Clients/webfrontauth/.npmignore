@@ -1,6 +1,0 @@
-.vscode
-spec
-node_modules
-ts
-*.map
-tsconfig.json
