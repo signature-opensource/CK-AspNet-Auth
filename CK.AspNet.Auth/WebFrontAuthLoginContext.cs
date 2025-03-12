@@ -5,17 +5,11 @@ using Microsoft.AspNetCore.Http.Authentication;
 #else
 using Microsoft.AspNetCore.Authentication;
 #endif
-using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Globalization;
 using CK.Core;
 
 namespace CK.AspNet.Auth;

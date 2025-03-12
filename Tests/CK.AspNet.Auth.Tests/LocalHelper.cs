@@ -2,14 +2,12 @@ using CK.Auth;
 using CK.Core;
 using CK.Testing;
 using FluentAssertions;
-using FluentAssertions.Common;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static CK.Testing.MonitorTestHelper;
 
 namespace CK.AspNet.Auth.Tests;
 

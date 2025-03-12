@@ -1,10 +1,8 @@
 using CK.AspNet.Auth;
 using CK.Auth;
-using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 using System.Linq;
 using System;
 using System.Net.Http;
@@ -12,7 +10,6 @@ using System.Threading.Tasks;
 using System.Web;
 using CK.Core;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 
 namespace CK.Testing;
 

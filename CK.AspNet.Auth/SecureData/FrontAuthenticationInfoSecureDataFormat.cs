@@ -2,10 +2,7 @@ using CK.Auth;
 using CK.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace CK.AspNet.Auth;
 

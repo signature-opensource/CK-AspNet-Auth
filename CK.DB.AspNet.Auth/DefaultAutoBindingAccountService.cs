@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using CK.AspNet.Auth;
 using CK.Auth;
 using CK.Core;
 using CK.DB.Auth;
-using System.Linq;
 using CK.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
 
