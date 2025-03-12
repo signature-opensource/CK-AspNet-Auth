@@ -4,7 +4,7 @@
     <Description>Implements CK.AspNet.Auth.WebFrontAuthMiddleware CK.AspNet.Auth.WebFrontAuthService abstract base class.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="8.1.1--0001-develop" />
-    <PackageReference Include="CK.AspNet" Version="16.1.1--0005-develop" />
+    <PackageReference Include="CK.Auth.Abstractions" Version="8.1.1--0002-develop" />
+    <PackageReference Include="CK.AspNet" Version="16.1.1--0006-develop" />
   </ItemGroup>
 </Project>
