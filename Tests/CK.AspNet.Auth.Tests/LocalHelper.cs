@@ -61,13 +61,13 @@ static class LocalHelper
                     }
                     else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LogoutCommand", out _ ) )
                     {
-                        var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                        var s = app.Services.GetRequiredService<WebFrontAuthService>();
                         await s.LogoutCommandAsync( new ActivityMonitor(), ctx );
                         ctx.Response.StatusCode = 200;
                     }
                     else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LoginCommand", out _ ) )
                     {
-                        var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                        var s = app.Services.GetRequiredService<WebFrontAuthService>();
                         var r = await s.BasicLoginCommandAsync( new ActivityMonitor(),
                                                                 ctx,
                                                                 ctx.Request.Query["userName"],

@@ -36,13 +36,12 @@ sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, I
     public WebFrontAuthHandler( IOptionsMonitor<WebFrontAuthOptions> options,
                                 ILoggerFactory logger,
                                 UrlEncoder encoder,
-                                ISystemClock clock,
                                 WebFrontAuthService authService,
                                 IAuthenticationTypeSystem typeSystem,
                                 IWebFrontAuthLoginService loginService,
                                 IAuthenticationSchemeProvider schemeProvider,
                                 IWebFrontAuthImpersonationService? impersonationService = null,
-                                IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null ) : base( options, logger, encoder, clock )
+                                IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null ) : base( options, logger, encoder )
     {
         _authService = authService;
         _typeSystem = typeSystem;
