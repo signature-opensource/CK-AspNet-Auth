@@ -26,10 +26,10 @@ public class FakeUserDatabase : IUserInfoProvider
         _users =
         [
             typeSystem.UserInfo.Create( 1, "System" ),
-            typeSystem.UserInfo.Create( 3711, "Alice", [new StdUserSchemeInfo( "Basic", DateTime.MinValue )] ),
-            typeSystem.UserInfo.Create( 3712, "Albert", [new StdUserSchemeInfo( "Basic", DateTime.MinValue )] ),
+            typeSystem.UserInfo.Create( 3711, "Alice", [new UserSchemeInfo( "Basic", DateTime.MinValue )] ),
+            typeSystem.UserInfo.Create( 3712, "Albert", [new UserSchemeInfo( "Basic", DateTime.MinValue )] ),
             typeSystem.UserInfo.Create( 3713, "Robert" ),
-            typeSystem.UserInfo.Create( 3714, "Hubert", [new StdUserSchemeInfo( "Basic", DateTime.MinValue ), new StdUserSchemeInfo( "Google", DateTime.MinValue )] )
+            typeSystem.UserInfo.Create( 3714, "Hubert", [new UserSchemeInfo( "Basic", DateTime.MinValue ), new UserSchemeInfo( "Google", DateTime.MinValue )] )
         ];
         _typeSystem = typeSystem;
     }

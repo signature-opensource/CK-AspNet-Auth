@@ -82,7 +82,7 @@ public class FakeWebFrontAuthLoginService : IWebFrontAuthLoginService
             if( u != null && u.Schemes.Any( p => p.Name == "Basic" ) )
             {
                 _userDB.AllUsers.Remove( u );
-                u = _typeSystem.UserInfo.Create( u.UserId, u.UserName, new[] { new StdUserSchemeInfo( "Basic", DateTime.UtcNow ) } );
+                u = _typeSystem.UserInfo.Create( u.UserId, u.UserName, new[] { new UserSchemeInfo( "Basic", DateTime.UtcNow ) } );
                 _userDB.AllUsers.Add( u );
             }
             return Task.FromResult( new UserLoginResult( u, 0, null, false ) );

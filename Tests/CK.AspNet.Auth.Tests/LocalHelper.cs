@@ -1,7 +1,7 @@
 using CK.Auth;
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,7 +55,7 @@ static class LocalHelper
                     else if( ctx.Request.Path.StartsWithSegments( "/CallChallengeAsync", out _ ) )
                     {
                         await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.ChallengeAsync( ctx );
-                        ctx.User.Identity!.Name.Should().Be( "Albert" );
+                        ctx.User.Identity!.Name.ShouldBe( "Albert" );
                     }
                     else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LogoutCommand", out _ ) )
                     {

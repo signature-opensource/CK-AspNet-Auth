@@ -23,7 +23,7 @@ public static class AuthenticationTypeSystemExtensions
                 ? @this.Create(
                         o.UserId,
                         o.UserName,
-                        o.Schemes.Select( x => new StdUserSchemeInfo( x.Name, x.LastUsed ) ).ToArray() )
+                        o.Schemes.Select( x => new UserSchemeInfo( x.Name, x.LastUsed ) ).ToArray() )
                 : null;
     }
 
