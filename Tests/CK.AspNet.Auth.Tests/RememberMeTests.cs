@@ -40,7 +40,7 @@ public class RememberMeTests
         cookies.Count.ShouldBe( 2 );
         if( rememberMe )
         {
-            cookies.ShouldBe( all => all.All( c => c.Expires > DateTime.UtcNow ) );
+            cookies.ShouldAll( c => c.Expires.ShouldBeGreaterThan( DateTime.UtcNow ) );
         }
         else
         {
