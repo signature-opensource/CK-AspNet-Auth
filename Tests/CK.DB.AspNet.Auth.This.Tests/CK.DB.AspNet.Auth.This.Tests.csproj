@@ -7,9 +7,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.DB.User.UserPassword" Version="23.1.1--0029-develop" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="23.1.1--0028-develop" />
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="28.1.1--0025-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="23.1.1--0030-develop" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="23.1.1--0029-develop" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="28.1.1--0026-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
@@ -19,7 +19,7 @@
     Auto Configuration support on Real Objects.
     This test requires the hosting to be able to add CKAppIdentity configuration to the built hosts.     
     -->
-    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.7.1--0018-develop" />
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.7.1--0019-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
