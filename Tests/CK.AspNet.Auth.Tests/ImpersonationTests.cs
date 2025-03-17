@@ -1,14 +1,10 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests;
@@ -22,11 +18,11 @@ public class ImpersonationTests
         await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync();
 
         using HttpResponseMessage m1 = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, """{ "userName": "Robert" }""" );
-        m1.StatusCode.Should().Be( HttpStatusCode.NotFound );
+        m1.StatusCode.ShouldBe( HttpStatusCode.NotFound );
 
         await runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true );
         using HttpResponseMessage m2 = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, """{ "userName": "Robert" }""" );
-        m2.StatusCode.Should().Be( HttpStatusCode.NotFound );
+        m2.StatusCode.ShouldBe( HttpStatusCode.NotFound );
     }
 
     [Test]
@@ -38,9 +34,9 @@ public class ImpersonationTests
 
         var r = await runningServer.Client.AuthenticationImpersonateAsync( "Albert" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeFalse();
-        r.Info.User.UserName.Should().Be( "Albert" );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.IsImpersonated.ShouldBeFalse();
+        r.Info.User.UserName.ShouldBe( "Albert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
     }
 
     [TestCase( true )]
@@ -58,27 +54,27 @@ public class ImpersonationTests
         // ...and impersonate Robert.
         var r = await runningServer.Client.AuthenticationImpersonateAsync( "Robert" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeTrue();
-        r.Info.User.UserName.Should().Be( "Robert" );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.IsImpersonated.ShouldBeTrue();
+        r.Info.User.UserName.ShouldBe( "Robert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
 
         // Impersonating again in Robert: nothing changes.
         r = byUserId
                 ? await runningServer.Client.AuthenticationImpersonateAsync( r.Info.User.UserId )
                 : await runningServer.Client.AuthenticationImpersonateAsync( "Robert" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeTrue();
-        r.Info.User.UserName.Should().Be( "Robert" );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.IsImpersonated.ShouldBeTrue();
+        r.Info.User.UserName.ShouldBe( "Robert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
 
         // When Albert impersonates to Albert, the impersonation is cleared.
         r = byUserId
                 ? await runningServer.Client.AuthenticationImpersonateAsync( r.Info.ActualUser.UserId )
                 : await runningServer.Client.AuthenticationImpersonateAsync( "Albert" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeFalse();
-        r.Info.User.UserName.Should().Be( "Albert" );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.IsImpersonated.ShouldBeFalse();
+        r.Info.User.UserName.ShouldBe( "Albert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
     }
 
     [Test]
@@ -91,14 +87,14 @@ public class ImpersonationTests
             } );
 
         using HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, @"{ ""userName"": ""Robert"" }" );
-        m.StatusCode.Should().Be( HttpStatusCode.Forbidden );
+        m.StatusCode.ShouldBe( HttpStatusCode.Forbidden );
 
         await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         var r = await runningServer.Client.AuthenticationImpersonateAsync( "Robert" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeTrue();
-        r.Info.User.UserName.Should().Be( "Robert" );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.IsImpersonated.ShouldBeTrue();
+        r.Info.User.UserName.ShouldBe( "Robert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
     }
 
     [Test]
@@ -113,13 +109,13 @@ public class ImpersonationTests
         await runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true );
         var r = await runningServer.Client.AuthenticationImpersonateAsync( 3712 );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.IsImpersonated.Should().BeTrue();
+        r.Info.IsImpersonated.ShouldBeTrue();
 
-        r.Info.User.UserId.Should().Be( 3712 );
-        r.Info.User.UserName.Should().Be( "Albert" );
+        r.Info.User.UserId.ShouldBe( 3712 );
+        r.Info.User.UserName.ShouldBe( "Albert" );
 
-        r.Info.ActualUser.UserId.Should().Be( 3711 );
-        r.Info.ActualUser.UserName.Should().Be( "Alice" );
+        r.Info.ActualUser.UserId.ShouldBe( 3711 );
+        r.Info.ActualUser.UserName.ShouldBe( "Alice" );
     }
 
     [Test]
@@ -133,10 +129,10 @@ public class ImpersonationTests
 
         await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         using HttpResponseMessage m1 = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, @"{ ""userId"": 1e34 }" );
-        m1.StatusCode.Should().Be( HttpStatusCode.Forbidden );
+        m1.StatusCode.ShouldBe( HttpStatusCode.Forbidden );
 
         using HttpResponseMessage m2 = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, @"{ ""userName"": ""kexistepas"" }" );
-        m2.StatusCode.Should().Be( HttpStatusCode.Forbidden );
+        m2.StatusCode.ShouldBe( HttpStatusCode.Forbidden );
     }
 
     [TestCase( "" )]
@@ -156,7 +152,7 @@ public class ImpersonationTests
             } );
         await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.ImpersonateUri, body );
-        m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+        m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
     }
 
 }

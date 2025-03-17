@@ -17,7 +17,6 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using ISystemClock = Microsoft.AspNetCore.Authentication.ISystemClock;
 
 namespace CK.AspNet.Auth;
 
@@ -36,13 +35,12 @@ sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, I
     public WebFrontAuthHandler( IOptionsMonitor<WebFrontAuthOptions> options,
                                 ILoggerFactory logger,
                                 UrlEncoder encoder,
-                                ISystemClock clock,
                                 WebFrontAuthService authService,
                                 IAuthenticationTypeSystem typeSystem,
                                 IWebFrontAuthLoginService loginService,
                                 IAuthenticationSchemeProvider schemeProvider,
                                 IWebFrontAuthImpersonationService? impersonationService = null,
-                                IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null ) : base( options, logger, encoder, clock )
+                                IWebFrontAuthUnsafeDirectLoginAllowService? unsafeDirectLoginAllower = null ) : base( options, logger, encoder )
     {
         _authService = authService;
         _typeSystem = typeSystem;

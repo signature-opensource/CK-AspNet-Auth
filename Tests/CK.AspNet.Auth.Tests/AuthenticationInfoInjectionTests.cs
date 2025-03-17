@@ -1,14 +1,9 @@
 using CK.Auth;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests;
@@ -42,7 +37,7 @@ public class AuthenticationInfoInjectionTests
                             if( c.Request.Path.StartsWithSegments( "/TestAuth" ) )
                             {
                                 var a = c.RequestServices.GetRequiredService<AuthenticationInfoDependent>();
-                                a.AuthInfo.User.UserName.Should().Be( "Albert" );
+                                a.AuthInfo.User.UserName.ShouldBe( "Albert" );
                                 c.Response.StatusCode = (int)HttpStatusCode.PaymentRequired;
                             }
                         };
@@ -52,6 +47,6 @@ public class AuthenticationInfoInjectionTests
         AuthServerResponse r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         runningServer.Client.Token = r.Token;
         var m = await runningServer.Client.GetAsync( "/TestAuth" );
-        m.StatusCode.Should().Be( HttpStatusCode.PaymentRequired );
+        m.StatusCode.ShouldBe( HttpStatusCode.PaymentRequired );
     }
 }

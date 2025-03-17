@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using CK.Auth;
-using CK.DB.Auth;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 
@@ -27,7 +23,7 @@ public static class AuthenticationTypeSystemExtensions
                 ? @this.Create(
                         o.UserId,
                         o.UserName,
-                        o.Schemes.Select( x => new StdUserSchemeInfo( x.Name, x.LastUsed ) ).ToArray() )
+                        o.Schemes.Select( x => new UserSchemeInfo( x.Name, x.LastUsed ) ).ToArray() )
                 : null;
     }
 

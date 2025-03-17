@@ -1,15 +1,13 @@
 using CK.Auth;
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using static CK.Testing.MonitorTestHelper;
 
 namespace CK.AspNet.Auth.Tests;
 
@@ -77,22 +75,22 @@ public class ImpersonateActualUserTests
 
         var r1 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper );
         Throw.DebugAssert( r1.Info != null );
-        r1.Info.ActualUser.UserName.Should().Be( "Albert" );
-        r1.Info.User.UserName.Should().Be( "Albert" );
-        r1.Info.IsImpersonated.Should().BeFalse();
+        r1.Info.ActualUser.UserName.ShouldBe( "Albert" );
+        r1.Info.User.UserName.ShouldBe( "Albert" );
+        r1.Info.IsImpersonated.ShouldBeFalse();
 
         var r2 = await runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
         Throw.DebugAssert( r2.Info != null );
-        r2.Info.ActualUser.UserName.Should().Be( "Alice", "Alice is now the actual user." );
-        r2.Info.User.UserName.Should().Be( "Albert", "Alice is impersonating Albert." );
-        r2.Info.IsImpersonated.Should().BeTrue();
+        r2.Info.ActualUser.UserName.ShouldBe( "Alice", "Alice is now the actual user." );
+        r2.Info.User.UserName.ShouldBe( "Albert", "Alice is impersonating Albert." );
+        r2.Info.IsImpersonated.ShouldBeTrue();
 
         // Impersonate to Alice: this clears the impersonation.
         AuthServerResponse? r = await runningServer.Client.AuthenticationImpersonateAsync( "Alice" );
         Throw.DebugAssert( r?.Info != null );
-        r.Info.User.UserName.Should().Be( "Alice" );
-        r.Info.ActualUser.UserName.Should().Be( "Alice" );
-        r.Info.IsImpersonated.Should().BeFalse();
+        r.Info.User.UserName.ShouldBe( "Alice" );
+        r.Info.ActualUser.UserName.ShouldBe( "Alice" );
+        r.Info.IsImpersonated.ShouldBeFalse();
     }
 
     [TestCase( true )]
@@ -110,17 +108,17 @@ public class ImpersonateActualUserTests
 
         var r1 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
         Throw.DebugAssert( r1.Info != null );
-        r1.Info.Level.Should().Be( CK.Auth.AuthLevel.Normal );
-        r1.Info.ActualUser.UserName.Should().Be( "Albert" );
-        r1.Info.User.UserName.Should().Be( "Albert" );
-        r1.Info.IsImpersonated.Should().BeFalse();
+        r1.Info.Level.ShouldBe( CK.Auth.AuthLevel.Normal );
+        r1.Info.ActualUser.UserName.ShouldBe( "Albert" );
+        r1.Info.User.UserName.ShouldBe( "Albert" );
+        r1.Info.IsImpersonated.ShouldBeFalse();
 
         var r2 = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper, impersonateActualUser: true );
         Throw.DebugAssert( r2.Info != null );
-        r2.Info.Level.Should().Be( CK.Auth.AuthLevel.Normal );
-        r2.Info.ActualUser.UserName.Should().Be( "Albert" );
-        r2.Info.User.UserName.Should().Be( "Albert" );
-        r2.Info.IsImpersonated.Should().BeFalse();
+        r2.Info.Level.ShouldBe( CK.Auth.AuthLevel.Normal );
+        r2.Info.ActualUser.UserName.ShouldBe( "Albert" );
+        r2.Info.User.UserName.ShouldBe( "Albert" );
+        r2.Info.IsImpersonated.ShouldBeFalse();
     }
 
     [TestCase( true, true, false )]
@@ -146,17 +144,17 @@ public class ImpersonateActualUserTests
                                 ? runningServer.Client.LoginViaLocalCommandAsync( "Albert" )
                                 : runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true ));
         Throw.DebugAssert( initial.Info != null );
-        initial.Info.IsImpersonated.Should().BeFalse();
-        initial.Info.User.UserName.Should().Be( "Albert" );
+        initial.Info.IsImpersonated.ShouldBeFalse();
+        initial.Info.User.UserName.ShouldBe( "Albert" );
 
         // Alice impersonates Albert.
         var imp = await (useLoginCommand
                             ? runningServer.Client.LoginViaLocalCommandAsync( "Alice", impersonateActualUser: true )
                             : runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, impersonateActualUser: true ));
         Throw.DebugAssert( imp.Info != null );
-        imp.Info.IsImpersonated.Should().BeTrue();
-        imp.Info.ActualUser.UserName.Should().Be( "Alice" );
-        imp.Info.User.UserName.Should().Be( "Albert" );
+        imp.Info.IsImpersonated.ShouldBeTrue();
+        imp.Info.ActualUser.UserName.ShouldBe( "Alice" );
+        imp.Info.User.UserName.ShouldBe( "Albert" );
 
         if( useLoginToLeaveImpersonation )
         {
@@ -167,8 +165,8 @@ public class ImpersonateActualUserTests
                             ? runningServer.Client.LoginViaLocalCommandAsync( "Alice", impersonateActualUser: true )
                             : runningServer.Client.AuthenticationBasicLoginAsync( "Alice", true, impersonateActualUser: true ));
             Throw.DebugAssert( imp.Info != null );
-            imp.Info.IsImpersonated.Should().BeFalse();
-            imp.Info.ActualUser.UserName.Should().Be( "Alice" );
+            imp.Info.IsImpersonated.ShouldBeFalse();
+            imp.Info.ActualUser.UserName.ShouldBe( "Alice" );
         }
         else
         {
@@ -177,8 +175,8 @@ public class ImpersonateActualUserTests
                     ? await runningServer.Client.AuthenticationImpersonateAsync( imp.Info.ActualUser.UserId )
                     : await runningServer.Client.AuthenticationImpersonateAsync( "Alice" );
             Throw.DebugAssert( r?.Info != null );
-            r.Info.IsImpersonated.Should().BeFalse();
-            r.Info.User.UserName.Should().Be( "Alice" );
+            r.Info.IsImpersonated.ShouldBeFalse();
+            r.Info.User.UserName.ShouldBe( "Alice" );
         }
     }
 

@@ -4,7 +4,7 @@ using CK.DB.Actor;
 using CK.DB.Auth;
 using CK.SqlServer;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,16 +41,18 @@ public class RefreshTests
 
         r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
         Throw.DebugAssert( r.Info != null );
-        r.Info.User.UserId.Should().Be( idAlbert );
-        r.Info.User.UserName.Should().Be( newAlbertName );
+        r.Info.User.UserId.ShouldBe( idAlbert );
+        r.Info.User.UserName.ShouldBe( newAlbertName );
 
         r = await runningServer.Client.AuthenticationImpersonateAsync( idPaula );
         Throw.DebugAssert( r != null && r.Info != null );
-        r.Info.User.UserName.Should().Be( "Paula" );
-        r.Info.ActualUser.UserName.Should().Be( newAlbertName );
+        r.Info.User.UserName.ShouldBe( "Paula" );
+        r.Info.ActualUser.UserName.ShouldBe( newAlbertName );
+        r.Info.Expires.ShouldNotBeNull();
 
         var rRefresh = await runningServer.Client.AuthenticationRefreshAsync();
-        rRefresh.Info.Should().BeEquivalentTo( r.Info, o => o.Excluding( info => info.Expires ) );
+        rRefresh.Info.ShouldNotBeNull();
+        rRefresh.Info.ShouldBeEquivalentTo( r.Info, "Expires should not have the time to change here." );
 
         newAlbertName = Guid.NewGuid().ToString();
         var newPaulaName = Guid.NewGuid().ToString();
@@ -59,25 +61,25 @@ public class RefreshTests
 
         r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
         Throw.DebugAssert( r.Info != null );
-        r.Info.User.UserName.Should().Be( newPaulaName );
-        r.Info.ActualUser.UserName.Should().Be( newAlbertName );
+        r.Info.User.UserName.ShouldBe( newPaulaName );
+        r.Info.ActualUser.UserName.ShouldBe( newAlbertName );
 
         await user.UserNameSetAsync( ctx, 1, idPaula, "Paula" );
         r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
         Throw.DebugAssert( r.Info != null );
-        r.Info.User.UserName.Should().Be( "Paula" );
-        r.Info.ActualUser.UserName.Should().Be( newAlbertName );
+        r.Info.User.UserName.ShouldBe( "Paula" );
+        r.Info.ActualUser.UserName.ShouldBe( newAlbertName );
 
         await user.UserNameSetAsync( ctx, 1, idAlbert, "Albert" );
         r = await runningServer.Client.AuthenticationImpersonateAsync( idAlbert );
         Throw.DebugAssert( r != null && r.Info != null );
-        r.Info.User.UserId.Should().Be( idAlbert );
-        r.Info.User.UserName.Should().Be( newAlbertName,
+        r.Info.User.UserId.ShouldBe( idAlbert );
+        r.Info.User.UserName.ShouldBe( newAlbertName,
             "Impersonation in the ImpersonationForEverybodyService does not refresh the actual user." );
 
         r = await runningServer.Client.AuthenticationRefreshAsync( callBackend: true );
         Throw.DebugAssert( r.Info != null );
-        r.Info.ActualUser.UserName.Should().Be( "Albert" );
+        r.Info.ActualUser.UserName.ShouldBe( "Albert" );
     }
 
     static async Task<int> SetupUserAsync( SqlStandardCallContext ctx, string userName, string password, UserTable user, IBasicAuthenticationProvider basic )

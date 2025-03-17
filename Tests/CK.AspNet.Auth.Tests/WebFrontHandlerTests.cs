@@ -1,7 +1,7 @@
 using CK.Auth;
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -33,16 +33,16 @@ public class WebFrontHandlerTests
         response.EnsureSuccessStatusCode();
         var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await response.Content.ReadAsStringAsync() );
         Debug.Assert( r.Info != null );
-        r.Info.User.UserId.Should().Be( 3712 );
-        r.Info.User.UserName.Should().Be( "Albert" );
-        r.Info.User.Schemes.Should().HaveCount( 1 );
-        r.Info.User.Schemes[0].Name.Should().Be( "Basic" );
-        r.Info.User.Schemes[0].LastUsed.Should().BeCloseTo( DateTime.UtcNow, TimeSpan.FromMilliseconds( 1500 ) );
-        r.Info.ActualUser.Should().BeSameAs( r.Info.User );
-        r.Info.Level.Should().Be( AuthLevel.Normal );
-        r.Info.IsImpersonated.Should().BeFalse();
-        r.Token.Should().NotBeNullOrWhiteSpace();
-        r.Refreshable.Should().BeFalse( "Since by default Options.SlidingExpirationTime is 0." );
+        r.Info.User.UserId.ShouldBe( 3712 );
+        r.Info.User.UserName.ShouldBe( "Albert" );
+        r.Info.User.Schemes.Count.ShouldBe( 1 );
+        r.Info.User.Schemes[0].Name.ShouldBe( "Basic" );
+        r.Info.User.Schemes[0].LastUsed.ShouldBe( DateTime.UtcNow, tolerance: TimeSpan.FromMilliseconds( 1500 ) );
+        r.Info.ActualUser.ShouldBeSameAs( r.Info.User );
+        r.Info.Level.ShouldBe( AuthLevel.Normal );
+        r.Info.IsImpersonated.ShouldBeFalse();
+        r.Token.ShouldNotBeNullOrWhiteSpace();
+        r.Refreshable.ShouldBeFalse( "Since by default Options.SlidingExpirationTime is 0." );
     }
 
     [Test]
@@ -52,7 +52,7 @@ public class WebFrontHandlerTests
         await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync( services => services.AddSingleton<IWebFrontAuthLoginService, NoSchemeLoginService>() );
 
         HttpResponseMessage response = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.BasicLoginUri, """{"userName":"Albert","password":"success"}""" );
-        response.StatusCode.Should().Be( HttpStatusCode.NotFound );
+        response.StatusCode.ShouldBe( HttpStatusCode.NotFound );
     }
 
     class BasicDirectLoginAllower : IWebFrontAuthUnsafeDirectLoginAllowService
@@ -92,28 +92,28 @@ public class WebFrontHandlerTests
             tokenRefresh.EnsureSuccessStatusCode();
             var c = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await tokenRefresh.Content.ReadAsStringAsync() );
             Debug.Assert( c.Info != null );
-            c.Info.Level.Should().Be( AuthLevel.Normal );
-            c.Info.User.UserName.Should().Be( "Albert" );
-            c.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
+            c.Info.Level.ShouldBe( AuthLevel.Normal );
+            c.Info.User.UserName.ShouldBe( "Albert" );
+            c.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.ShouldBe( basicLoginTime );
         }
         // Token less request: the authentication is restored from the cookie.
         {
             runningServer.Client.Token = null;
             var tokenLessResponse = await runningServer.Client.AuthenticationRefreshAsync();
             Debug.Assert( tokenLessResponse.Info != null );
-            tokenLessResponse.Info.Level.Should().Be( AuthLevel.Normal );
-            tokenLessResponse.Info.User.UserName.Should().Be( "Albert" );
-            tokenLessResponse.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
+            tokenLessResponse.Info.Level.ShouldBe( AuthLevel.Normal );
+            tokenLessResponse.Info.User.UserName.ShouldBe( "Albert" );
+            tokenLessResponse.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.ShouldBe( basicLoginTime );
         }
         // Request with token and ?schemes query parametrers: we receive the providers.
         {
             runningServer.Client.Token = originalToken;
             var tokenRefresh = await runningServer.Client.AuthenticationRefreshAsync( schemes: true );
             Debug.Assert( tokenRefresh.Info != null );
-            tokenRefresh.Info.Level.Should().Be( AuthLevel.Normal );
-            tokenRefresh.Info.User.UserName.Should().Be( "Albert" );
-            tokenRefresh.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.Should().Be( basicLoginTime );
-            tokenRefresh.Schemes.Should().ContainSingle( "Basic" );
+            tokenRefresh.Info.Level.ShouldBe( AuthLevel.Normal );
+            tokenRefresh.Info.User.UserName.ShouldBe( "Albert" );
+            tokenRefresh.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed.ShouldBe( basicLoginTime );
+            tokenRefresh.Schemes.ShouldHaveSingleItem().ShouldBe( "Basic" );
         }
     }
 
@@ -128,8 +128,8 @@ public class WebFrontHandlerTests
         string badToken = firstLogin.Token + 'B';
         runningServer.Client.Token = badToken;
         AuthServerResponse c = await runningServer.Client.AuthenticationRefreshAsync();
-        c.Info.Should().BeEquivalentTo( firstLogin.Info, "Authentication has been restored from cookies." );
-        c.Token.Should().NotBe( badToken );
+        c.Info.ShouldBeEquivalentTo( firstLogin.Info, "Authentication has been restored from cookies." );
+        c.Token.ShouldNotBe( badToken );
     }
 
     [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
@@ -144,18 +144,18 @@ public class WebFrontHandlerTests
         var firstLogin = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( firstLogin.Info != null );
         DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-        runningServer.Client.Token.Should().Be( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
+        runningServer.Client.Token.ShouldBe( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
 
         // Logout 
         if( !logoutWithToken ) runningServer.Client.Token = null;
 
         await runningServer.Client.AuthenticationLogoutAsync();
-        runningServer.Client.Token.Should().BeNull( "The AuthenticationLogout() clears the client token." );
+        runningServer.Client.Token.ShouldBeNull( "The AuthenticationLogout() clears the client token." );
 
         // Refresh: no authentication.
         var r = await runningServer.Client.AuthenticationRefreshAsync();
         Throw.DebugAssert( r.Info != null );
-        r.Info.Level.Should().Be( AuthLevel.None );
+        r.Info.Level.ShouldBe( AuthLevel.None );
     }
 
     [TestCase( AuthenticationCookieMode.WebFrontPath, true )]
@@ -170,7 +170,7 @@ public class WebFrontHandlerTests
         var firstLogin = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( firstLogin.Info != null );
         DateTime basicLoginTime = firstLogin.Info.User.Schemes.Single( p => p.Name == "Basic" ).LastUsed;
-        runningServer.Client.Token.Should().Be( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
+        runningServer.Client.Token.ShouldBe( firstLogin.Token, "The LoginViaBasicProviderAsync updates the client.Token." );
 
         // Logout 
         if( !logoutWithToken ) runningServer.Client.Token = null;
@@ -182,7 +182,7 @@ public class WebFrontHandlerTests
         runningServer.Client.Token = null;
         var r = await runningServer.Client.AuthenticationRefreshAsync();
         Throw.DebugAssert( r.Info != null );
-        r.Info.Level.Should().Be( AuthLevel.None );
+        r.Info.Level.ShouldBe( AuthLevel.None );
     }
 
     [Test]
@@ -191,12 +191,12 @@ public class WebFrontHandlerTests
         await using var runningServer = await LocalHelper.CreateLocalAuthServerAsync();
 
         HttpResponseMessage response = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.BasicLoginUri, "{\"userName\":\"\",\"password\":\"success\"}" );
-        response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-        runningServer.Client.CookieContainer.GetCookies( new Uri( $"{runningServer.ServerAddress}/.webfront/c/" ) ).Should().HaveCount( 0 );
+        response.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
+        runningServer.Client.CookieContainer.GetCookies( new Uri( $"{runningServer.ServerAddress}/.webfront/c/" ) ).Count.ShouldBe( 0 );
         response = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.BasicLoginUri, "{\"userName\":\"toto\",\"password\":\"\"}" );
-        response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+        response.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
         response = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.BasicLoginUri, "not a json" );
-        response.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+        response.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
     }
 
     [TestCase( false, Description = "With cookies on the .webfront path." )]
@@ -209,10 +209,10 @@ public class WebFrontHandlerTests
         var r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         {
             // With token: it always works.
-            runningServer.Client.Token.Should().Be( r.Token );
+            runningServer.Client.Token.ShouldBe( r.Token );
             HttpResponseMessage req = await runningServer.Client.GetAsync( tokenExplainUri );
             var tokenClear = await req.Content.ReadAsStringAsync();
-            tokenClear.Should().Contain( "Albert" );
+            tokenClear.ShouldContain( "Albert" );
         }
         {
             // Without token: it works only when CookieMode is AuthenticationCookieMode.RootPath.
@@ -222,11 +222,11 @@ public class WebFrontHandlerTests
             if( rootCookiePath )
             {
                 // Authentication Cookie has been used.
-                tokenClear.Should().Contain( "Albert" );
+                tokenClear.ShouldContain( "Albert" );
             }
             else
             {
-                tokenClear.Should().NotContain( "Albert" );
+                tokenClear.ShouldNotContain( "Albert" );
             }
         }
     }
@@ -262,9 +262,9 @@ public class WebFrontHandlerTests
         runningServer.Client.Token = auth.Token;
         AuthServerResponse refresh = await runningServer.Client.AuthenticationRefreshAsync();
         Throw.DebugAssert( refresh.Info!.Expires != null );
-        refresh.Info.Expires.Value.Should().BeAfter( auth.Info.Expires.Value.AddSeconds( 1 ), "Refresh increased the expiration time." );
+        refresh.Info.Expires.Value.ShouldBeGreaterThan( auth.Info.Expires.Value.AddSeconds( 1 ), "Refresh increased the expiration time." );
 
-        refresh.RememberMe.Should().BeFalse( "In CookieMode None, RememberMe is always false, no matter what." );
+        refresh.RememberMe.ShouldBeFalse( "In CookieMode None, RememberMe is always false, no matter what." );
     }
 
     [Test]
@@ -282,7 +282,7 @@ public class WebFrontHandlerTests
         Throw.DebugAssert( auth.Info!.Expires != null );
 
         DateTime expCookie1 = runningServer.Client.CookieContainer.GetCookies( runningServer.Client.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();
-        expCookie1.Should().BeCloseTo( auth.Info.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+        expCookie1.ShouldBe( auth.Info.Expires.Value, tolerance: TimeSpan.FromSeconds( 1 ) );
 
         DateTime next = auth.Info.Expires.Value - TimeSpan.FromSeconds( 1.7 );
         while( next > DateTime.UtcNow ) ;
@@ -291,15 +291,15 @@ public class WebFrontHandlerTests
         using HttpResponseMessage req = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.TokenExplainUri );
         var response = JObject.Parse( await req.Content.ReadAsStringAsync() );
 
-        ((bool?)response["rememberMe"]).Should().BeTrue();
+        ((bool?)response["rememberMe"]).ShouldNotBeNull().ShouldBeTrue();
         IAuthenticationInfo? refresh = runningServer.GetAuthenticationTypeSystem().AuthenticationInfo.FromJObject( (JObject?)response["info"] );
         Throw.DebugAssert( refresh!.Expires != null );
 
-        refresh.Expires.Value.Should().BeAfter( auth.Info.Expires.Value, "Token life time has been increased." );
+        refresh.Expires.Value.ShouldBeGreaterThan( auth.Info.Expires.Value, "Token life time has been increased." );
         Throw.DebugAssert( refresh.Expires != null );
 
         DateTime expCookie2 = runningServer.Client.CookieContainer.GetCookies( runningServer.Client.BaseAddress )[".webFront"]!.Expires.ToUniversalTime();
-        expCookie2.Should().BeCloseTo( refresh.Expires.Value, precision: TimeSpan.FromSeconds( 1 ) );
+        expCookie2.ShouldBe( refresh.Expires.Value, tolerance: TimeSpan.FromSeconds( 1 ) );
     }
 
     [Test]
@@ -313,18 +313,17 @@ public class WebFrontHandlerTests
         {
             // This scheme is not known but the test of the return url is done before.
             using var m = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://no.no" ) );
-            m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-            (await m.Content.ReadAsStringAsync()).Should()
-                .Be( """{"errorId":"DisallowedReturnUrl","errorText":"The returnUrl='https://no.no' doesn't start with any of configured AllowedReturnUrls prefixes."}""" );
+            m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
+            (await m.Content.ReadAsStringAsync()).ShouldBe( """{"errorId":"DisallowedReturnUrl","errorText":"The returnUrl='https://no.no' doesn't start with any of configured AllowedReturnUrls prefixes."}""" );
 
             // Invalid schemes triggers an error 500 in AspNet ChallengeAsync.
             // The exception is "No authentication handler is registered for the scheme 'NONE'. The registered schemes are: WebFrontAuth. Did you forget to call AddAuthentication().Add[SomeAuthHandler]("NONE",...)?"
             // TODO: since our scheme is provided by the front, we SHOULD test the available schemes and return a 400 instead of a 500.
             using var m2 = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes" ) );
-            m2.StatusCode.Should().Be( HttpStatusCode.InternalServerError );
+            m2.StatusCode.ShouldBe( HttpStatusCode.InternalServerError );
 
             using var m3 = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://yes.yes/hello" ) );
-            m3.StatusCode.Should().Be( HttpStatusCode.InternalServerError );
+            m3.StatusCode.ShouldBe( HttpStatusCode.InternalServerError );
         }
     }
 
@@ -335,9 +334,8 @@ public class WebFrontHandlerTests
 
         // This scheme is not known but the test of the return url is done before.
         using var m = await runningServer.Client.GetAsync( RunningAspNetAuthServerExtensions.StartLoginUri + "?scheme=NONE&returnUrl=" + WebUtility.UrlEncode( "https://un.reg.ister.ed" ) );
-        m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
-        (await m.Content.ReadAsStringAsync()).Should()
-            .Be( """{"errorId":"DisallowedReturnUrl","errorText":"The returnUrl='https://un.reg.ister.ed' doesn't start with any of configured AllowedReturnUrls prefixes."}""" );
+        m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
+        (await m.Content.ReadAsStringAsync()).ShouldBe( """{"errorId":"DisallowedReturnUrl","errorText":"The returnUrl='https://un.reg.ister.ed' doesn't start with any of configured AllowedReturnUrls prefixes."}""" );
     }
 
 }

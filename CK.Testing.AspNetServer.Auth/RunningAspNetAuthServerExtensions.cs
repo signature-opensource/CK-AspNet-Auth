@@ -1,18 +1,15 @@
 using CK.AspNet.Auth;
 using CK.Auth;
-using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 using System.Linq;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using CK.Core;
-using FluentAssertions;
-using Microsoft.AspNetCore.Http;
+using Shouldly;
 
 namespace CK.Testing;
 
@@ -243,8 +240,8 @@ public static class RunningAspNetAuthServerExtensions
         if( expectSuccess )
         {
             responseMessage.EnsureSuccessStatusCode();
-            response.Info.Level.Should().BeOneOf( AuthLevel.Normal, AuthLevel.Critical );
-            response.Info.ActualUser.UserName.Should().Be( userName );
+            response.Info.Level.ShouldBeOneOf( AuthLevel.Normal, AuthLevel.Critical );
+            response.Info.ActualUser.UserName.ShouldBe( userName );
             CheckClientCookies( client, response, rememberMe );
         }
         else
@@ -263,9 +260,9 @@ public static class RunningAspNetAuthServerExtensions
             {
                 case AuthenticationCookieMode.WebFrontPath:
                 {
-                    client.CookieContainer.GetCookies( client.BaseAddress ).Should().BeEmpty();
+                    client.CookieContainer.GetCookies( client.BaseAddress ).ShouldBeEmpty();
                     var allCookies = client.CookieContainer.GetCookies( new Uri( client.BaseAddress, "/.webfront/c/" ) );
-                    allCookies.Should().HaveCount( 2 );
+                    allCookies.Count.ShouldBe( 2 );
                     CookieIsNotTheSameAsToken( allCookies, cookieName, response );
                     CheckLongTermCookie( expectedRememberMe, allCookies, ltCookieName );
                     break;
@@ -273,7 +270,7 @@ public static class RunningAspNetAuthServerExtensions
                 case AuthenticationCookieMode.RootPath:
                 {
                     var allCookies = client.CookieContainer.GetCookies( client.BaseAddress );
-                    allCookies.Should().HaveCount( 2 );
+                    allCookies.Count.ShouldBe( 2 );
                     CookieIsNotTheSameAsToken( allCookies, cookieName, response );
                     CheckLongTermCookie( expectedRememberMe, allCookies, ltCookieName );
                     break;
@@ -282,27 +279,27 @@ public static class RunningAspNetAuthServerExtensions
                 {
                     // RemmeberMe returned by the server is always false when CookieMode is None.
                     expectedRememberMe = false;
-                    client.CookieContainer.GetCookies( client.BaseAddress ).Should().BeEmpty();
-                    client.CookieContainer.GetCookies( new Uri( client.BaseAddress, "/.webfront/c/" ) ).Should().BeEmpty();
+                    client.CookieContainer.GetCookies( client.BaseAddress ).ShouldBeEmpty();
+                    client.CookieContainer.GetCookies( new Uri( client.BaseAddress, "/.webfront/c/" ) ).ShouldBeEmpty();
                     break;
                 }
             }
-            response.RememberMe.Should().Be( expectedRememberMe );
+            response.RememberMe.ShouldBe( expectedRememberMe );
 
             static void CheckLongTermCookie( bool rememberMe, System.Net.CookieCollection all, string cookieName )
             {
                 var cookie = all.Single( c => c.Name == cookieName ).Value;
                 cookie = HttpUtility.UrlDecode( cookie );
                 var longTerm = JObject.Parse( cookie );
-                ((string?)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).Should().NotBeNullOrEmpty( "There is always a non empty 'device' member." );
-                longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).Should().Be( rememberMe, "The user is here only when remember is true." );
+                ((string?)longTerm[StdAuthenticationTypeSystem.DeviceIdKeyType]).ShouldNotBeNullOrEmpty( "There is always a non empty 'device' member." );
+                longTerm.ContainsKey( StdAuthenticationTypeSystem.UserIdKeyType ).ShouldBe( rememberMe, "The user is here only when remember is true." );
             }
 
             static void CookieIsNotTheSameAsToken( System.Net.CookieCollection all, string cookieName, AuthServerResponse r )
             {
                 var cookie = all.Single( c => c.Name == cookieName ).Value;
                 cookie = HttpUtility.UrlDecode( cookie );
-                cookie.Should().NotBe( r.Token );
+                cookie.ShouldNotBe( r.Token );
             }
         }
     }

@@ -10,7 +10,6 @@ using CK.Core;
 using System.Diagnostics;
 using CK.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Authentication;
 
 namespace CK.DB.AspNet.Auth;
 

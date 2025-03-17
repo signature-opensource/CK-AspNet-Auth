@@ -5,14 +5,13 @@ using CK.DB.Actor;
 using CK.DB.Auth;
 using CK.SqlServer;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -57,16 +56,16 @@ public partial class BasicAuthenticationTests
                 authBasic.EnsureSuccessStatusCode();
                 var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await authBasic.Content.ReadAsStringAsync() );
                 Throw.DebugAssert( r.Info != null );
-                r.Info.Level.Should().Be( AuthLevel.Normal );
-                r.Info.User.UserId.Should().Be( idUser );
-                r.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( new[] { "Basic" } );
-                r.Token.Should().NotBeNullOrWhiteSpace();
+                r.Info.Level.ShouldBe( AuthLevel.Normal );
+                r.Info.User.UserId.ShouldBe( idUser );
+                r.Info.User.Schemes.Select( p => p.Name ).ShouldBe( new[] { "Basic" } );
+                r.Token.ShouldNotBeNullOrWhiteSpace();
                 deviceId = r.Info.DeviceId;
                 Throw.DebugAssert( deviceId != null );
             }
             else
             {
-                authBasic.StatusCode.Should().Be( HttpStatusCode.Forbidden );
+                authBasic.StatusCode.ShouldBe( HttpStatusCode.Forbidden );
             }
         }
         if( allowed )
@@ -74,7 +73,7 @@ public partial class BasicAuthenticationTests
             var payload = new JObject( new JProperty( "userName", userName ), new JProperty( "password", "failed" ) );
             var param = new JObject( new JProperty( "provider", "Basic" ), new JProperty( "payload", payload ) );
             using HttpResponseMessage authFailed = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
-            authFailed.StatusCode.Should().Be( HttpStatusCode.Unauthorized );
+            authFailed.StatusCode.ShouldBe( HttpStatusCode.Unauthorized );
             var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await authFailed.Content.ReadAsStringAsync() );
             ShouldBeUnsafeUser( r, idUser, deviceId! );
         }
@@ -102,7 +101,7 @@ public partial class BasicAuthenticationTests
             var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password );
             Throw.DebugAssert( r.Info != null );
             deviceId = r.Info.DeviceId;
-            deviceId.Should().NotBeNullOrWhiteSpace();
+            deviceId.ShouldNotBeNullOrWhiteSpace();
         }
         {
             var rFailed = await runningServer.Client.AuthenticationBasicLoginAsync( userName, false, password: "failed" + password );
@@ -113,12 +112,12 @@ public partial class BasicAuthenticationTests
     static void ShouldBeUnsafeUser( AuthServerResponse r, int idUser, string deviceId )
     {
         Throw.DebugAssert( r.Info != null );
-        r.Info.Level.Should().Be( AuthLevel.Unsafe );
-        r.Info.User.UserId.Should().Be( 0 );
-        r.Info.ActualUser.UserId.Should().Be( 0 );
-        r.Info.UnsafeUser.UserId.Should().Be( idUser );
-        r.Token.Should().NotBeNullOrWhiteSpace();
-        r.Info.DeviceId.Should().Be( deviceId );
+        r.Info.Level.ShouldBe( AuthLevel.Unsafe );
+        r.Info.User.UserId.ShouldBe( 0 );
+        r.Info.ActualUser.UserId.ShouldBe( 0 );
+        r.Info.UnsafeUser.UserId.ShouldBe( idUser );
+        r.Token.ShouldNotBeNullOrWhiteSpace();
+        r.Info.DeviceId.ShouldBe( deviceId );
     }
 
     [Test]
@@ -137,10 +136,10 @@ public partial class BasicAuthenticationTests
                                         new JProperty( "payload",
                                             new JObject( new JProperty( "password", "pass" ) ) ) );
             using HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
-            m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+            m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
             var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
-            r.ErrorId.Should().Be( "System.ArgumentException" );
-            r.ErrorText.Should().Be( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string entry. (Parameter 'payload')" );
+            r.ErrorId.ShouldBe( "System.ArgumentException" );
+            r.ErrorText.ShouldBe( "Invalid payload. Missing 'UserId' -> int or 'UserName' -> string entry. (Parameter 'payload')" );
         }
         // Missing password.
         {
@@ -148,20 +147,20 @@ public partial class BasicAuthenticationTests
                                         new JProperty( "payload",
                                             new JObject( new JProperty( "userId", "3712" ) ) ) );
             using HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
-            m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+            m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
             var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
-            r.ErrorId.Should().Be( "System.ArgumentException" );
-            r.ErrorText.Should().Be( "Invalid payload. Missing 'Password' -> string entry. (Parameter 'payload')" );
+            r.ErrorId.ShouldBe( "System.ArgumentException" );
+            r.ErrorText.ShouldBe( "Invalid payload. Missing 'Password' -> string entry. (Parameter 'payload')" );
         }
         // Totally invalid payload.
         {
             var param = new JObject( new JProperty( "provider", "Basic" ),
                                         new JProperty( "payload", "Nimp" ) );
             using HttpResponseMessage m = await runningServer.Client.PostJsonAsync( RunningAspNetAuthServerExtensions.UnsafeDirectLoginUri, param.ToString() );
-            m.StatusCode.Should().Be( HttpStatusCode.BadRequest );
+            m.StatusCode.ShouldBe( HttpStatusCode.BadRequest );
             var r = AuthServerResponse.Parse( runningServer.GetAuthenticationTypeSystem(), await m.Content.ReadAsStringAsync() );
-            r.ErrorId.Should().Be( "System.ArgumentException" );
-            r.ErrorText.Should().Be( "Invalid payload. It must be either a Tuple or ValueTuple (int,string) or (string,string) or a IDictionary<string,object?> or IEnumerable<KeyValuePair<string,object?>> or IEnumerable<(string,object?)> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries. (Parameter 'payload')" );
+            r.ErrorId.ShouldBe( "System.ArgumentException" );
+            r.ErrorText.ShouldBe( "Invalid payload. It must be either a Tuple or ValueTuple (int,string) or (string,string) or a IDictionary<string,object?> or IEnumerable<KeyValuePair<string,object?>> or IEnumerable<(string,object?)> with 'Password' -> string and 'UserId' -> int or 'UserName' -> string entries. (Parameter 'payload')" );
         }
     }
 
@@ -192,8 +191,8 @@ public partial class BasicAuthenticationTests
             var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, useGenericWrapper: true, password: password, jsonUserData: """{"zone":"good"}""" );
             Throw.DebugAssert( r.Info != null );
             deviceId = r.Info.DeviceId;
-            deviceId.Should().NotBeNullOrWhiteSpace();
-            r.UserData.Should().Contain( [("zone", "good")] );
+            deviceId.ShouldNotBeNullOrWhiteSpace();
+            r.UserData.ShouldBe( [("zone", "good")] );
         }
 
         {
@@ -202,18 +201,18 @@ public partial class BasicAuthenticationTests
             if( okInEvil )
             {
                 Throw.DebugAssert( r.Info != null );
-                r.Info.Level.Should().Be( AuthLevel.Normal );
-                r.Info.User.UserId.Should().Be( idUser );
-                r.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( ["Basic"] );
-                r.Token.Should().NotBeNullOrWhiteSpace();
-                r.UserData.Should().Contain( [("zone", "<&>vil")] );
+                r.Info.Level.ShouldBe( AuthLevel.Normal );
+                r.Info.User.UserId.ShouldBe( idUser );
+                r.Info.User.Schemes.Select( p => p.Name ).ShouldBe( ["Basic"] );
+                r.Token.ShouldNotBeNullOrWhiteSpace();
+                r.UserData.ShouldBe( [("zone", "<&>vil")] );
             }
             else
             {
                 ShouldBeUnsafeUser( r, idUser, deviceId );
-                r.ErrorId.Should().Be( "Validation" );
-                r.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
-                r.UserData.Should().Contain( [("zone", "<&>vil")] );
+                r.ErrorId.ShouldBe( "Validation" );
+                r.ErrorText.ShouldBe( "Paula must not go in the <&>vil Zone!" );
+                r.UserData.ShouldBe( [("zone", "<&>vil")] );
             }
         }
     }
@@ -243,11 +242,11 @@ public partial class BasicAuthenticationTests
             var r = await runningServer.Client.AuthenticationBasicLoginAsync( userName, true, password: password, jsonUserData: """{"zone":"good"}""" );
             Throw.DebugAssert( r.Info != null );
             deviceId = r.Info.DeviceId;
-            r.Info.Level.Should().Be( AuthLevel.Normal );
-            r.Info.User.UserId.Should().Be( idUser );
-            r.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( ["Basic"] );
-            r.Token.Should().NotBeNullOrWhiteSpace();
-            r.UserData.Should().Contain( [("zone", "good")] );
+            r.Info.Level.ShouldBe( AuthLevel.Normal );
+            r.Info.User.UserId.ShouldBe( idUser );
+            r.Info.User.Schemes.Select( p => p.Name ).ShouldBe( ["Basic"] );
+            r.Token.ShouldNotBeNullOrWhiteSpace();
+            r.UserData.ShouldBe( [("zone", "good")] );
         }
         {
             // Zone is "<&>vil".
@@ -255,20 +254,20 @@ public partial class BasicAuthenticationTests
             if( okInEvil ) // When userName is "Albert".
             {
                 Throw.DebugAssert( r.Info != null );
-                r.Info.Level.Should().Be( AuthLevel.Normal );
-                r.Info.User.UserId.Should().Be( idUser );
-                r.Info.User.Schemes.Select( p => p.Name ).Should().BeEquivalentTo( ["Basic"] );
-                r.Token.Should().NotBeNullOrWhiteSpace();
-                r.ErrorId.Should().BeNull();
-                r.ErrorText.Should().BeNull();
-                r.UserData.Should().Contain( [("zone", "<&>vil")] );
+                r.Info.Level.ShouldBe( AuthLevel.Normal );
+                r.Info.User.UserId.ShouldBe( idUser );
+                r.Info.User.Schemes.Select( p => p.Name ).ShouldBe( ["Basic"] );
+                r.Token.ShouldNotBeNullOrWhiteSpace();
+                r.ErrorId.ShouldBeNull();
+                r.ErrorText.ShouldBeNull();
+                r.UserData.ShouldBe( [("zone", "<&>vil")] );
             }
             else  // When userName is "Paula".
             {
                 ShouldBeUnsafeUser( r, idUser, deviceId );
-                r.ErrorId.Should().Be( "Validation" );
-                r.ErrorText.Should().Be( "Paula must not go in the <&>vil Zone!" );
-                r.UserData.Should().Contain( [("zone", "<&>vil")] );
+                r.ErrorId.ShouldBe( "Validation" );
+                r.ErrorText.ShouldBe( "Paula must not go in the <&>vil Zone!" );
+                r.UserData.ShouldBe( [("zone", "<&>vil")] );
             }
         }
     }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using CK.Auth;
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 
 namespace CK.AspNet.Auth.Tests;
@@ -19,9 +19,9 @@ public class CriticalLevelTests
 
         var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( response.Info != null );
-        response.Info.Level.Should().Be( AuthLevel.Normal );
-        response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-        response.Info.CriticalExpires.HasValue.Should().BeFalse();
+        response.Info.Level.ShouldBe( AuthLevel.Normal );
+        response.Info.Expires.ShouldNotBeNull().ShouldBe( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+        response.Info.CriticalExpires.HasValue.ShouldBeFalse();
     }
 
     [Test]
@@ -40,9 +40,9 @@ public class CriticalLevelTests
 
         var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( response.Info != null );
-        response.Info.Level.Should().Be( AuthLevel.Normal );
-        response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-        response.Info.CriticalExpires.HasValue.Should().BeFalse();
+        response.Info.Level.ShouldBe( AuthLevel.Normal );
+        response.Info.Expires.ShouldNotBeNull().ShouldBe( DateTime.UtcNow + TimeSpan.FromHours( 1 ), tolerance: TimeSpan.FromSeconds( 60 ) );
+        response.Info.CriticalExpires.HasValue.ShouldBeFalse();
 
     }
 
@@ -61,9 +61,9 @@ public class CriticalLevelTests
 
         var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( response.Info != null );
-        response.Info.Level.Should().Be( AuthLevel.Critical );
-        response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
-        response.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
+        response.Info.Level.ShouldBe( AuthLevel.Critical );
+        response.Info.Expires.ShouldNotBeNull().ShouldBe( DateTime.UtcNow + TimeSpan.FromHours( 2 ), tolerance: TimeSpan.FromSeconds( 60 ) );
+        response.Info.CriticalExpires.ShouldNotBeNull().ShouldBe( DateTime.UtcNow + TimeSpan.FromHours( 1 ), tolerance: TimeSpan.FromSeconds( 60 ) );
 
     }
 
@@ -82,9 +82,9 @@ public class CriticalLevelTests
 
         var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( response.Info != null );
-        response.Info.Level.Should().Be( AuthLevel.Normal );
-        response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 1 ), TimeSpan.FromSeconds( 60 ) );
-        response.Info.CriticalExpires.HasValue.Should().BeFalse();
+        response.Info.Level.ShouldBe( AuthLevel.Normal );
+        response.Info.Expires.ShouldNotBeNull().ShouldBe(DateTime.UtcNow + TimeSpan.FromHours(1), tolerance: TimeSpan.FromSeconds(60));
+        response.Info.CriticalExpires.HasValue.ShouldBeFalse();
     }
 
     [Test]
@@ -102,8 +102,8 @@ public class CriticalLevelTests
 
         var response = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true );
         Throw.DebugAssert( response.Info != null );
-        response.Info.Level.Should().Be( AuthLevel.Critical );
-        response.Info.Expires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
-        response.Info.CriticalExpires.Should().BeCloseTo( DateTime.UtcNow + TimeSpan.FromHours( 2 ), TimeSpan.FromSeconds( 60 ) );
+        response.Info.Level.ShouldBe( AuthLevel.Critical );
+        response.Info.Expires.ShouldNotBeNull().ShouldBe(DateTime.UtcNow + TimeSpan.FromHours(2), tolerance: TimeSpan.FromSeconds(60));
+        response.Info.CriticalExpires.ShouldNotBeNull().ShouldBe(DateTime.UtcNow + TimeSpan.FromHours(2), tolerance: TimeSpan.FromSeconds(60));
     }
 }

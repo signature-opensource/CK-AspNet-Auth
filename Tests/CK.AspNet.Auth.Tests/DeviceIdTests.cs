@@ -1,13 +1,7 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
+using Shouldly;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CK.AspNet.Auth.Tests;
@@ -24,33 +18,33 @@ public class DeviceIdTests
         {
             using var message = await runningServer.Client.GetAsync( "echo/outside" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/outside" );
+            textMessage.ShouldBe( "/outside" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().BeNull();
-            cookies.LTUserId.Should().BeNull();
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldBeNull();
+            cookies.LTUserId.ShouldBeNull();
         }
         {
             await runningServer.Client.AuthenticationRefreshAsync();
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().NotBeNullOrEmpty();
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldNotBeNullOrEmpty();
             deviceId = cookies.LTDeviceId;
         }
         {
             using var message = await runningServer.Client.GetAsync( "echo/hop" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/hop" );
+            textMessage.ShouldBe( "/hop" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         {
             await runningServer.Client.AuthenticationRefreshAsync();
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().NotBeNullOrEmpty();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldNotBeNullOrEmpty();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
     }
 
@@ -64,89 +58,89 @@ public class DeviceIdTests
         {
             using var message = await runningServer.Client.GetAsync( "echo/none-yet" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/none-yet" );
+            textMessage.ShouldBe( "/none-yet" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().BeNull();
-            cookies.LTUserId.Should().BeNull();
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldBeNull();
+            cookies.LTUserId.ShouldBeNull();
         }
         if( callRefreshFirst )
         {
             var refreshResponse = await runningServer.Client.AuthenticationRefreshAsync();
             Throw.DebugAssert( refreshResponse.Info != null );
-            refreshResponse.Info.Level.Should().Be( CK.Auth.AuthLevel.None );
+            refreshResponse.Info.Level.ShouldBe( CK.Auth.AuthLevel.None );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().BeNull();
-            cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
+            cookies.AuthCookie.ShouldBeNull();
+            cookies.LTDeviceId.ShouldNotBeNullOrWhiteSpace();
             deviceId = cookies.LTDeviceId;
         }
         {
             await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", expectSuccess: true, rememberMe: false );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldNotBeNullOrWhiteSpace();
             if( callRefreshFirst )
             {
-                cookies.LTDeviceId.Should().Be( deviceId );
+                cookies.LTDeviceId.ShouldBe( deviceId );
             }
             else deviceId = cookies.LTDeviceId;
         }
         {
             using var message = await runningServer.Client.GetAsync( "echo/hop" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/hop" );
+            textMessage.ShouldBe( "/hop" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         {
             var refreshResponse = await runningServer.Client.AuthenticationRefreshAsync();
             Throw.DebugAssert( refreshResponse.Info != null );
-            refreshResponse.Info.User.UserName.Should().Be( "Albert" );
+            refreshResponse.Info.User.UserName.ShouldBe( "Albert" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         {
             // Calling without Token: the call is "Anonymous" but nothing must have changed.
             runningServer.Client.Token = null;
             using var message = await runningServer.Client.GetAsync( "echo/plop?userName" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/plop => ?userName (UserName: '')" );
+            textMessage.ShouldBe( "/plop => ?userName (UserName: '')" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         string? token = null;
         {
             var refreshResponse = await runningServer.Client.AuthenticationRefreshAsync();
             Throw.DebugAssert( refreshResponse.Info != null );
-            refreshResponse.Info.User.UserName.Should().Be( "Albert" );
+            refreshResponse.Info.User.UserName.ShouldBe( "Albert" );
             token = refreshResponse.Token;
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         {
             // Calling with a Token.
             runningServer.Client.Token = token;
             using var message = await runningServer.Client.GetAsync( "echo/plop?userName" );
             var textMessage = await message.Content.ReadAsStringAsync();
-            textMessage.Should().Be( "/plop => ?userName (UserName: 'Albert')" );
+            textMessage.ShouldBe( "/plop => ?userName (UserName: 'Albert')" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
         {
             var refreshResponse = await runningServer.Client.AuthenticationRefreshAsync();
             Throw.DebugAssert( refreshResponse.Info != null );
-            refreshResponse.Info.User.UserName.Should().Be( "Albert" );
+            refreshResponse.Info.User.UserName.ShouldBe( "Albert" );
             var cookies = runningServer.Client.AuthenticationReadCookies();
-            cookies.AuthCookie.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().NotBeNullOrWhiteSpace();
-            cookies.LTDeviceId.Should().Be( deviceId );
+            cookies.AuthCookie.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldNotBeNullOrWhiteSpace();
+            cookies.LTDeviceId.ShouldBe( deviceId );
         }
     }
 

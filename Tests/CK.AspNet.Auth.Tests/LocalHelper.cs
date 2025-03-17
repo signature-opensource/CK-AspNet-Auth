@@ -1,15 +1,13 @@
 using CK.Auth;
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
-using FluentAssertions.Common;
+using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static CK.Testing.MonitorTestHelper;
 
 namespace CK.AspNet.Auth.Tests;
 
@@ -57,17 +55,17 @@ static class LocalHelper
                     else if( ctx.Request.Path.StartsWithSegments( "/CallChallengeAsync", out _ ) )
                     {
                         await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.ChallengeAsync( ctx );
-                        ctx.User.Identity!.Name.Should().Be( "Albert" );
+                        ctx.User.Identity!.Name.ShouldBe( "Albert" );
                     }
                     else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LogoutCommand", out _ ) )
                     {
-                        var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                        var s = app.Services.GetRequiredService<WebFrontAuthService>();
                         await s.LogoutCommandAsync( new ActivityMonitor(), ctx );
                         ctx.Response.StatusCode = 200;
                     }
                     else if( ctx.Request.Path.StartsWithSegments( "/ComingFromCris/LoginCommand", out _ ) )
                     {
-                        var s = app.ApplicationServices.GetRequiredService<WebFrontAuthService>();
+                        var s = app.Services.GetRequiredService<WebFrontAuthService>();
                         var r = await s.BasicLoginCommandAsync( new ActivityMonitor(),
                                                                 ctx,
                                                                 ctx.Request.Query["userName"],

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -34,18 +34,18 @@ public class RememberMeTests
         var options = new WebFrontAuthOptions();
         AuthServerResponse r = await runningServer.Client.AuthenticationBasicLoginAsync( "Albert", true, useGenericWrapper: useGenericWrapper, rememberMe: rememberMe );
         Throw.DebugAssert( r.Info != null );
-        r.Info.User.UserName.Should().Be( "Albert" );
-        r.RememberMe.Should().Be( rememberMe );
+        r.Info.User.UserName.ShouldBe( "Albert" );
+        r.RememberMe.ShouldBe( rememberMe );
         var cookies = runningServer.Client.CookieContainer.GetCookies( new Uri( $"{runningServer.ServerAddress}/.webfront/c/" ) );
-        cookies.Should().HaveCount( 2 );
+        cookies.Count.ShouldBe( 2 );
         if( rememberMe )
         {
-            cookies.Should().Match( all => all.All( c => c.Expires > DateTime.UtcNow ) );
+            cookies.ShouldAll( c => c.Expires.ShouldBeGreaterThan( DateTime.UtcNow ) );
         }
         else
         {
             var authCookie = cookies.Single( c => c.Name == options.AuthCookieName );
-            authCookie.Expires.Should().Be( DateTime.MinValue, "RememberMe is false: the authentication cookie uses a session lifetime." );
+            authCookie.Expires.ShouldBe( DateTime.MinValue, "RememberMe is false: the authentication cookie uses a session lifetime." );
         }
     }
 
