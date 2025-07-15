@@ -148,7 +148,7 @@ sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, I
 
     async Task<bool> HandleStartLoginAsync( IActivityMonitor monitor )
     {
-        string scheme = Request.Query["scheme"];
+        string? scheme = Request.Query["scheme"];
         string? returnUrl = Request.Query["returnUrl"];
         string? callerOrigin = Request.Query["callerOrigin"];
         string? rememberMe = Request.Query["rememberMe"];

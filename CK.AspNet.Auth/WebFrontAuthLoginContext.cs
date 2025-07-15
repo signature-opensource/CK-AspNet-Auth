@@ -296,13 +296,12 @@ internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext,
 
     Task SendRemoteAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
     {
-        Debug.Assert( CallerOrigin != null, "/c/startLogin has been called." );
+        Throw.DebugAssert( "ReturnUrl (inline) and CallerOrigin (popup) cannot be both null or both not null.",
+                           (ReturnUrl == null) != (CallerOrigin != null) );
         if( ReturnUrl != null )
         {
             // "inline" mode.
-            var caller = new Uri( CallerOrigin );
-            var target = new Uri( caller, ReturnUrl );
-            HttpContext.Response.Redirect( target.ToString() );
+            HttpContext.Response.Redirect( ReturnUrl );
             return Task.CompletedTask;
         }
         // "popup" mode.
