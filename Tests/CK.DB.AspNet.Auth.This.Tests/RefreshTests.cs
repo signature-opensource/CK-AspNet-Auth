@@ -84,8 +84,8 @@ public class RefreshTests
 
     static async Task<int> SetupUserAsync( SqlStandardCallContext ctx, string userName, string password, UserTable user, IBasicAuthenticationProvider basic )
     {
-        int idUser = await user.CreateUserAsync( ctx, 1, userName );
-        if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+        int idUser = await user.FindByNameAsync( ctx, userName );
+        if( idUser == 0 ) idUser = await user.CreateUserAsync( ctx, 1, userName );
         await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
         return idUser;
     }
