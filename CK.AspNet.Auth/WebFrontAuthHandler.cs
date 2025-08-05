@@ -290,7 +290,7 @@ sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, I
 
 
             var m = new ROSpanCharMatcher( body );
-            if( m.TryMatchAnyJSON( out object? val )
+            if( m.TryMatchAnyJson( out object? val )
                 && val is List<(string Key, object? Value)> o )
             {
                 string? provider = o.FirstOrDefault( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, "provider" ) ).Value as string;
@@ -442,7 +442,7 @@ sealed class WebFrontAuthHandler : AuthenticationHandler<WebFrontAuthOptions>, I
     {
         var m = new ROSpanCharMatcher( body );
         List<(string Key, object? Value)>? param;
-        if( m.TryMatchAnyJSON( out object? val )
+        if( m.TryMatchAnyJson( out object? val )
             && (param = val as List<(string, object?)>) != null
             && param.Count == 1 )
         {
