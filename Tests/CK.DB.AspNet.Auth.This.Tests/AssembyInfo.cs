@@ -1,4 +1,3 @@
-using CK.Core;
 
-[assembly: PreserveAssemblyReference( typeof( CK.DB.User.UserPassword.Package ) )]
-[assembly: PreserveAssemblyReference( typeof( CK.DB.User.UserGoogle.Package ) )]
+[assembly: CK.Setup.PreserveAssemblyReference( typeof( CK.DB.User.UserPassword.Package ) )]
+[assembly: CK.Setup.PreserveAssemblyReference( typeof( CK.DB.User.UserGoogle.Package ) )]
