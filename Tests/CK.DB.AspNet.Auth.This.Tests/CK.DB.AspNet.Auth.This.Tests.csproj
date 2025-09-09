@@ -7,10 +7,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Engine" Version="0.39.2--0034-develop" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="25.0.1--0037-develop" />
-    <PackageReference Include="CK.DB.User.UserGoogle" Version="25.0.1--0037-develop" />
-    <PackageReference Include="CK.DB.Tests.NUnit" Version="30.0.1--0038-develop" />
+    <PackageReference Include="CK.Cris.Engine" Version="0.39.2--0035-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="25.0.1--0038-develop" />
+    <PackageReference Include="CK.DB.User.UserGoogle" Version="25.0.1--0038-develop" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="30.0.1--0039-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
