@@ -15,7 +15,7 @@ namespace CK.Testing;
 /// <see cref="AllUsers"/> is totally mutable and everything is virtual.
 /// </para>
 /// </summary>
-[ExcludeCKType]
+[ExcludedCKType]
 public class FakeUserDatabase : IUserInfoProvider
 {
     readonly List<IUserInfo> _users;

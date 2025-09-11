@@ -92,8 +92,9 @@ public partial class BasicAuthenticationTests
 
         using var ctx = new SqlStandardCallContext( TestHelper.Monitor );
 
-        int idUser = await user.CreateUserAsync( ctx, 1, userName );
-        if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+        int idUser = await user.FindByNameAsync( ctx, userName );
+        if( idUser == 0 ) idUser = await user.CreateUserAsync( ctx, 1, userName );
+
         await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
         string deviceId;
@@ -182,8 +183,9 @@ public partial class BasicAuthenticationTests
         using var ctx = new SqlStandardCallContext();
 
         await ctx[user].Connection.EnsureOpenAsync();
-        int idUser = await user.CreateUserAsync( ctx, 1, userName );
-        if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+        int idUser = await user.FindByNameAsync( ctx, userName ); 
+        if( idUser == 0 ) idUser = await user.CreateUserAsync( ctx, 1, userName );
+
         await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
         string deviceId;
@@ -232,8 +234,9 @@ public partial class BasicAuthenticationTests
         using var ctx = new SqlStandardCallContext( TestHelper.Monitor );
 
         await ctx[user].Connection.EnsureOpenAsync();
-        int idUser = await user.CreateUserAsync( ctx, 1, userName );
-        if( idUser == -1 ) idUser = await user.FindByNameAsync( ctx, userName );
+        int idUser = await user.FindByNameAsync( ctx, userName ); 
+        if( idUser == 0 ) idUser = await user.CreateUserAsync( ctx, 1, userName );
+
         await basic.CreateOrUpdatePasswordUserAsync( ctx, 1, idUser, password );
 
         string deviceId;

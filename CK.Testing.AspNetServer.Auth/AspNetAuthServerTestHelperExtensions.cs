@@ -28,14 +28,15 @@ public static class AspNetAuthServerTestHelperExtensions
     /// here (and in a way it shouldn't be).
     /// <remarks>
     /// </remarks>
+    /// <param name="builder">This WebApplicationBuilder.</param>
     /// <param name="map">This StObjMap.</param>
     /// <param name="authOptions">Optional option configuration.</param>
     /// <param name="configureApplication">Optional application configurator.</param>
     /// <returns>A running Asp.NET server with authentication support.</returns>
     public static Task<RunningAspNetServer> CreateRunningAspNetAuthenticationServerAsync( this WebApplicationBuilder builder,
-                                                                                         IStObjMap map,
-                                                                                         Action<WebFrontAuthOptions>? authOptions = null,
-                                                                                         Action<IApplicationBuilder>? configureApplication = null )
+                                                                                          IStObjMap map,
+                                                                                          Action<WebFrontAuthOptions>? authOptions = null,
+                                                                                          Action<WebApplication>? configureApplication = null )
     {
         // Use TryAdd to allow manual services configuration if the CKomposable map is missing it.
         if( !map.Services.Mappings.ContainsKey( typeof( IUserInfoProvider ) ) )

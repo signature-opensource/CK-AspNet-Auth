@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace CK.DB.AspNet.Auth.Tests;
 
-[ExcludeCKType]
+[ExcludedCKType]
 public class ImpersonationForEverybodyService : IWebFrontAuthImpersonationService
 {
     readonly IAuthenticationTypeSystem _typeSystem;
