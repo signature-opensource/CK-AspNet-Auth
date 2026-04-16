@@ -8,9 +8,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.AspNet.Auth.Tests/CK.AspNet.Auth.Tests.csproj" />
-    <Project Path="Tests/CK.DB.AspNet.Auth.This.Tests/CK.DB.AspNet.Auth.This.Tests.csproj" />
   </Folder>
   <Project Path="CK.AspNet.Auth/CK.AspNet.Auth.csproj" />
-  <Project Path="CK.DB.AspNet.Auth/CK.DB.AspNet.Auth.csproj" />
   <Project Path="CK.Testing.AspNetServer.Auth/CK.Testing.AspNetServer.Auth.csproj" />
 </Solution>

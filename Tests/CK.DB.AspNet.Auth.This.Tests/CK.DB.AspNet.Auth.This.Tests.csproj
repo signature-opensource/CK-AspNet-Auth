@@ -23,7 +23,6 @@
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.14.0--ci.9" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\CK.DB.AspNet.Auth\CK.DB.AspNet.Auth.csproj" />
     <ProjectReference Include="..\..\CK.Testing.AspNetServer.Auth\CK.Testing.AspNetServer.Auth.csproj" />
   </ItemGroup>
 </Project>
