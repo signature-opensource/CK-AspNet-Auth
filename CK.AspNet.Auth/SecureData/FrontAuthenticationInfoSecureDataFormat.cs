@@ -12,7 +12,7 @@ namespace CK.AspNet.Auth;
 /// </summary>
 class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthenticationInfo>
 {
-    class Serializer : IDataSerializer<FrontAuthenticationInfo>
+    sealed class Serializer : IDataSerializer<FrontAuthenticationInfo>
     {
         readonly IAuthenticationInfoType _t;
 
@@ -26,7 +26,16 @@ class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthentica
             using( var s = Util.RecyclableStreamManager.GetStream( data ) )
             using( var r = new BinaryReader( s ) )
             {
-                return new FrontAuthenticationInfo( _t.Read( r )!, r.ReadBoolean() );
+                try
+                {
+                    Throw.CheckData( "Version is currently 0.", r.ReadByte() == 0 );
+                    return new FrontAuthenticationInfo( _t.Read( r )!, r.ReadBoolean() );
+                }
+                catch
+                {
+                    s.Position = 0;
+                    return new FrontAuthenticationInfo( _t.Read( r )!, r.ReadBoolean() );
+                }
             }
         }
 
@@ -35,6 +44,7 @@ class FrontAuthenticationInfoSecureDataFormat : SecureDataFormat<FrontAuthentica
             using( var s = Util.RecyclableStreamManager.GetStream() )
             using( var w = new BinaryWriter( s ) )
             {
+                w.Write( (byte)0 ); // Version.
                 _t.Write( w, model.Info );
                 w.Write( model.RememberMe );
                 return s.ToArray();
