@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer" Version="22.0.0--ci.1" />
+    <PackageReference Include="CK.Testing.AspNetServer" Version="22.0.0--ci.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />
