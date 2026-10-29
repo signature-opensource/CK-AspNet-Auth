@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.0.ci.5" />
+    <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.0.ci.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.AspNet.Auth\CK.AspNet.Auth.csproj" />
