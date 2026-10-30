@@ -1,10 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>Implements CK.AspNet.Auth.WebFrontAuthMiddleware CK.AspNet.Auth.WebFrontAuthService abstract base class.</Description>
+    <!-- Tombstone: no assembly, no dependencies. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- NU5128: the package has no lib/ folder, on purpose. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <Description>Deprecated: replaced by CK.Cris.AspNet.Authentication and the AuthCenter packages (CK.AppIdentity.Cris.AuthCenter.Local or .Remote).</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Auth.Abstractions" Version="15.0.0-0.cris-auth.0.ci.8" />
-    <PackageReference Include="CK.AspNet" Version="24.0.0-0.cris-auth.0.ci.6" />
+    <Content Include="MSBuild/CK.AspNet.Auth.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.AspNet.Auth.targets</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>

@@ -1,12 +1,4 @@
-Starts a real ASP.NET Core server with WebFrontAuth already wired, so a test can log in on its first
-line.
+**Deprecated: replaced by `CK.Testing.AppIdentity.Cris.AuthCenter`** ([documentation](https://github.com/signature-opensource/CK-AppIdentity-Transport/blob/stable/CK.Testing.AppIdentity.Cris.AuthCenter/README.md)).
 
-What is missing is filled in conditionally: a map without a user provider gets a fake database of
-five named users, a map without a login service gets a fake one that takes "success" as everyone's
-password. An application that brings its own keeps its own.
-
-The fakes are built to be bent - the user list is mutable and the logic is virtual - and helpers
-parse both halves of what the server answers: the JSON response with its token and error pair, and
-the cookies, with the device and user read out of the long-term one.
-
-CORS is opened to everything, credentials included. Tests only.
+This package is a tombstone: a project that depends on it fails to build (`CKDEPRECATED`). See the
+[migration guide](https://github.com/signature-opensource/CK-Stack/blob/main/Docs/Migrations/v2026.282-to-explo-cris-auth.md).

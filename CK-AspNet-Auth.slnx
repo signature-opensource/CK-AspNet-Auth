@@ -7,7 +7,6 @@
     <File Path="NuGet.config" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="Tests/CK.AspNet.Auth.Tests/CK.AspNet.Auth.Tests.csproj" />
   </Folder>
   <Project Path="CK.AspNet.Auth/CK.AspNet.Auth.csproj" />
   <Project Path="CK.Testing.AspNetServer.Auth/CK.Testing.AspNetServer.Auth.csproj" />

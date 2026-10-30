@@ -1,10 +1,4 @@
-An authentication scheme for a front-end application talking to its API: a bearer token, optional
-cookies, and endpoints under one entry path, `/.webfront`.
+**Deprecated: replaced by `CK.Cris.AspNet.Authentication` and the AuthCenter packages (CK.AppIdentity.Cris.AuthCenter.Local or .Remote)** ([documentation](https://github.com/signature-opensource/CK-Cris-TypeScript/blob/stable/CK.Cris.AspNet.Authentication/README.md)).
 
-Expirations of different natures. The real authentication defaults to twenty minutes and can slide;
-a long-lived "unsafe" one outlives it, remembering this browser without authenticating it, and who
-was on it when asked to. Cookies can be scoped to the auth endpoints, set at the root, or disabled.
-
-Login validation, account creation, provider binding, impersonation, dynamic scopes and the unsafe
-direct login are each an optional service you implement. The token and the auth cookie go through the
-Data Protection API.
+This package is a tombstone: a project that depends on it fails to build (`CKDEPRECATED`). See the
+[migration guide](https://github.com/signature-opensource/CK-Stack/blob/main/Docs/Migrations/v2026.282-to-explo-cris-auth.md).
