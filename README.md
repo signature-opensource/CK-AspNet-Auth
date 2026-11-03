@@ -10,4 +10,4 @@ The packages of this repository are tombstones: a project that depends on one of
 | Package | Description |
 |---------|-------------|
 | [CK.AspNet.Auth](CK.AspNet.Auth/README.md) | **Deprecated**: replaced by CK.Cris.AspNet.Authentication and the AuthCenter packages. |
-| [CK.Testing.AspNetServer.Auth](CK.Testing.AspNetServer.Auth/README.md) | **Deprecated**: replaced by CK.Testing.AppIdentity.Cris.AuthCenter. |
+| [CK.Testing.AspNetServer.Auth](CK.Testing.AspNetServer.Auth/README.md) | **Deprecated**: replaced by CK.Testing.AppIdentity.AuthCenter. |

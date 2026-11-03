@@ -1,6 +1,6 @@
 # CK.AspNet.Auth
 
-**Deprecated: replaced by `CK.Cris.AspNet.Authentication` and the AuthCenter packages (CK.AppIdentity.Cris.AuthCenter.Local or .Remote)** ([documentation](https://github.com/signature-opensource/CK-Cris-TypeScript/blob/stable/CK.Cris.AspNet.Authentication/README.md)).
+**Deprecated: replaced by `CK.Cris.AspNet.Authentication` and the AuthCenter packages (CK.AppIdentity.AuthCenter.Local or .Remote)** ([documentation](https://github.com/signature-opensource/CK-Cris-TypeScript/blob/stable/CK.Cris.AspNet.Authentication/README.md)).
 
 This package is a tombstone: it has no code, and a project that depends on it (directly or through another package)
 fails to build with the `CKDEPRECATED` error. The authentication of the CK stack is now made of Cris commands and an

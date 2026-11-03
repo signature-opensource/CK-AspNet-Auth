@@ -6,7 +6,7 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <!-- NU5128: the package has no lib/ folder, on purpose. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
-    <Description>Deprecated: replaced by CK.Testing.AppIdentity.Cris.AuthCenter.</Description>
+    <Description>Deprecated: replaced by CK.Testing.AppIdentity.AuthCenter.</Description>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="MSBuild/CK.Testing.AspNetServer.Auth.targets">

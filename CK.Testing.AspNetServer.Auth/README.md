@@ -1,6 +1,6 @@
 # CK.Testing.AspNetServer.Auth
 
-**Deprecated: replaced by `CK.Testing.AppIdentity.Cris.AuthCenter`** ([documentation](https://github.com/signature-opensource/CK-AppIdentity-Transport/blob/stable/CK.Testing.AppIdentity.Cris.AuthCenter/README.md)).
+**Deprecated: replaced by `CK.Testing.AppIdentity.AuthCenter`** ([documentation](https://github.com/signature-opensource/CK-AppIdentity-Transport/blob/stable/CK.Testing.AppIdentity.AuthCenter/README.md)).
 
 This package is a tombstone: it has no code, and a project that depends on it (directly or through another package)
 fails to build with the `CKDEPRECATED` error. The authentication of the CK stack is now made of Cris commands and an
