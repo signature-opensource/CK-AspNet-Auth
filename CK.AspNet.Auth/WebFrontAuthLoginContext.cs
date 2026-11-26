@@ -297,7 +297,7 @@ internal class WebFrontAuthLoginContext : IWebFrontAuthValidateLoginContext,
     Task SendRemoteAuthenticationSuccessAsync( WebFrontAuthService.LoginResult r )
     {
         Throw.DebugAssert( "ReturnUrl (inline) and CallerOrigin (popup) cannot be both null or both not null.",
-                           (ReturnUrl == null) != (CallerOrigin != null) );
+                           (ReturnUrl != null) != (CallerOrigin != null) );
         if( ReturnUrl != null )
         {
             // "inline" mode.
